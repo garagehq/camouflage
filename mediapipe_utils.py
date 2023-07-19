@@ -7,6 +7,7 @@ from math import ceil, sqrt, exp, pi, floor, sin, cos, atan2, gcd
 # in line:  scores = 1 / (1 + np.exp(-scores))
 np.seterr(over='ignore')
 
+
 class HandRegion:
     """
         Attributes:
@@ -33,22 +34,24 @@ class HandRegion:
         gesture: (optional, set in recognize_gesture() when use_gesture==True) string corresponding to recognized gesture ("ONE","TWO","THREE","FOUR","FIVE","FIST","OK","PEACE") 
                 or None if no gesture has been recognized
         """
+
     def __init__(self, pd_score=None, pd_box=None, pd_kps=None):
-        self.pd_score = pd_score # Palm detection score 
-        self.pd_box = pd_box # Palm detection box [x, y, w, h] normalized
-        self.pd_kps = pd_kps # Palm detection keypoints
+        self.pd_score = pd_score  # Palm detection score
+        self.pd_box = pd_box  # Palm detection box [x, y, w, h] normalized
+        self.pd_kps = pd_kps  # Palm detection keypoints
 
     def get_rotated_world_landmarks(self):
         world_landmarks_rotated = self.world_landmarks.copy()
         sin_rot = sin(self.rotation)
         cos_rot = cos(self.rotation)
         rot_m = np.array([[cos_rot, sin_rot], [-sin_rot, cos_rot]])
-        world_landmarks_rotated[:,:2] = np.dot(world_landmarks_rotated[:,:2], rot_m)
+        world_landmarks_rotated[:, :2] = np.dot(world_landmarks_rotated[:, :2], rot_m)
         return world_landmarks_rotated
 
     def print(self):
         attrs = vars(self)
         print('\n'.join("%s: %s" % item for item in attrs.items()))
+
 
 class HandednessAverage:
     """
@@ -57,36 +60,41 @@ class HandednessAverage:
     that a right hand is a left hand (or vice versa). Instead of using the last inferred handedness, we prefer to use the average 
     of the inferred handedness on the last frames. This gives more robustness.
     """
+
     def __init__(self):
         self._total_handedness = 0
         self._nb = 0
+
     def update(self, new_handedness):
         self._total_handedness += new_handedness
         self._nb += 1
         return self._total_handedness / self._nb
+
     def reset(self):
         self._total_handedness = self._nb = 0
 
 
-SSDAnchorOptions = namedtuple('SSDAnchorOptions',[
-        'num_layers',
-        'min_scale',
-        'max_scale',
-        'input_size_height',
-        'input_size_width',
-        'anchor_offset_x',
-        'anchor_offset_y',
-        'strides',
-        'aspect_ratios',
-        'reduce_boxes_in_lowest_layer',
-        'interpolated_scale_aspect_ratio',
-        'fixed_anchor_size'])
+SSDAnchorOptions = namedtuple('SSDAnchorOptions', [
+    'num_layers',
+    'min_scale',
+    'max_scale',
+    'input_size_height',
+    'input_size_width',
+    'anchor_offset_x',
+    'anchor_offset_y',
+    'strides',
+    'aspect_ratios',
+    'reduce_boxes_in_lowest_layer',
+    'interpolated_scale_aspect_ratio',
+    'fixed_anchor_size'])
+
 
 def calculate_scale(min_scale, max_scale, stride_index, num_strides):
     if num_strides == 1:
         return (min_scale + max_scale) / 2
     else:
         return min_scale + (max_scale - min_scale) * stride_index / (num_strides - 1)
+
 
 def generate_anchors(options):
     """
@@ -114,15 +122,16 @@ def generate_anchors(options):
                 aspect_ratios += options.aspect_ratios
                 scales += [scale] * len(options.aspect_ratios)
                 if options.interpolated_scale_aspect_ratio > 0:
-                    if last_same_stride_layer == n_strides -1:
+                    if last_same_stride_layer == n_strides - 1:
                         scale_next = 1.0
                     else:
-                        scale_next = calculate_scale(options.min_scale, options.max_scale, last_same_stride_layer+1, n_strides)
+                        scale_next = calculate_scale(options.min_scale, options.max_scale, last_same_stride_layer + 1,
+                                                     n_strides)
                     scales.append(sqrt(scale * scale_next))
                     aspect_ratios.append(options.interpolated_scale_aspect_ratio)
             last_same_stride_layer += 1
-        
-        for i,r in enumerate(aspect_ratios):
+
+        for i, r in enumerate(aspect_ratios):
             ratio_sqrts = sqrt(r)
             anchor_height.append(scales[i] / ratio_sqrts)
             anchor_width.append(scales[i] * ratio_sqrts)
@@ -146,25 +155,27 @@ def generate_anchors(options):
                         # new_anchor.w = anchor_width[anchor_id]
                         # new_anchor.h = anchor_height[anchor_id]
                     anchors.append(new_anchor)
-        
+
         layer_id = last_same_stride_layer
     return np.array(anchors)
 
+
 def generate_handtracker_anchors(input_size_width, input_size_height):
     # https://github.com/google/mediapipe/blob/master/mediapipe/modules/palm_detection/palm_detection_cpu.pbtxt
-    anchor_options = SSDAnchorOptions(num_layers=4, 
-                            min_scale=0.1484375,
-                            max_scale=0.75,
-                            input_size_height=input_size_height,
-                            input_size_width=input_size_width,
-                            anchor_offset_x=0.5,
-                            anchor_offset_y=0.5,
-                            strides=[8, 16, 16, 16],
-                            aspect_ratios= [1.0],
-                            reduce_boxes_in_lowest_layer=False,
-                            interpolated_scale_aspect_ratio=1.0,
-                            fixed_anchor_size=True)
+    anchor_options = SSDAnchorOptions(num_layers=4,
+                                      min_scale=0.1484375,
+                                      max_scale=0.75,
+                                      input_size_height=input_size_height,
+                                      input_size_width=input_size_width,
+                                      anchor_offset_x=0.5,
+                                      anchor_offset_y=0.5,
+                                      strides=[8, 16, 16, 16],
+                                      aspect_ratios=[1.0],
+                                      reduce_boxes_in_lowest_layer=False,
+                                      interpolated_scale_aspect_ratio=1.0,
+                                      fixed_anchor_size=True)
     return generate_anchors(anchor_options)
+
 
 def decode_bboxes(score_thresh, scores, bboxes, anchors, scale=128, best_only=False):
     """
@@ -236,9 +247,9 @@ def decode_bboxes(score_thresh, scores, bboxes, anchors, scale=128, best_only=Fa
     if best_only:
         best_id = np.argmax(scores)
         if scores[best_id] < score_thresh: return regions
-        det_scores = scores[best_id:best_id+1]
-        det_bboxes2 = bboxes[best_id:best_id+1]
-        det_anchors = anchors[best_id:best_id+1]
+        det_scores = scores[best_id:best_id + 1]
+        det_bboxes2 = bboxes[best_id:best_id + 1]
+        det_anchors = anchors[best_id:best_id + 1]
     else:
         detection_mask = scores > score_thresh
         det_scores = scores[detection_mask]
@@ -254,16 +265,16 @@ def decode_bboxes(score_thresh, scores, bboxes, anchors, scale=128, best_only=Fa
     # cy = cy * anchor.h / hi + anchor.y_center
     # lx = lx * anchor.w / wi + anchor.x_center 
     # ly = ly * anchor.h / hi + anchor.y_center
-    det_bboxes = det_bboxes2* np.tile(det_anchors[:,2:4], 9) / scale + np.tile(det_anchors[:,0:2],9)
+    det_bboxes = det_bboxes2 * np.tile(det_anchors[:, 2:4], 9) / scale + np.tile(det_anchors[:, 0:2], 9)
     # w = w * anchor.w / wi (in the prvious line, we add anchor.x_center and anchor.y_center to w and h, we need to substract them now)
     # h = h * anchor.h / hi
-    det_bboxes[:,2:4] = det_bboxes[:,2:4] - det_anchors[:,0:2]
+    det_bboxes[:, 2:4] = det_bboxes[:, 2:4] - det_anchors[:, 0:2]
     # box = [cx - w*0.5, cy - h*0.5, w, h]
-    det_bboxes[:,0:2] = det_bboxes[:,0:2] - det_bboxes[:,3:4] * 0.5
+    det_bboxes[:, 0:2] = det_bboxes[:, 0:2] - det_bboxes[:, 3:4] * 0.5
 
     for i in range(det_bboxes.shape[0]):
         score = det_scores[i]
-        box = det_bboxes[i,0:4]
+        box = det_bboxes[i, 0:4]
         # Decoded detection boxes could have negative values for width/height due
         # to model prediction. Filter out those boxes
         if box[2] < 0 or box[3] < 0: continue
@@ -278,25 +289,28 @@ def decode_bboxes(score_thresh, scores, bboxes, anchors, scale=128, best_only=Fa
         # for j, name in enumerate(["0", "1", "2", "3", "4", "5", "6"]):
         #     kps[name] = det_bboxes[i,4+j*2:6+j*2]
         for kp in range(7):
-            kps.append(det_bboxes[i,4+kp*2:6+kp*2])
+            kps.append(det_bboxes[i, 4 + kp * 2:6 + kp * 2])
         regions.append(HandRegion(float(score), box, kps))
     return regions
 
+
 # Starting from opencv 4.5.4, cv2.dnn.NMSBoxes output format changed
 import re
+
 cv2_version = cv2.__version__.split('.')
 v0 = int(cv2_version[0])
 v1 = int(cv2_version[1])
 v2 = int(re.sub(r'\D+', '', cv2_version[2]))
-if  v0 > 4 or (v0 == 4 and (v1 > 5 or (v1 == 5 and v2 >= 4))):
+if v0 > 4 or (v0 == 4 and (v1 > 5 or (v1 == 5 and v2 >= 4))):
     def non_max_suppression(regions, nms_thresh):
         # cv2.dnn.NMSBoxes(boxes, scores, 0, nms_thresh) needs:
         # boxes = [ [x, y, w, h], ...] with x, y, w, h of type int
         # Currently, x, y, w, h are float between 0 and 1, so we arbitrarily multiply by 1000 and cast to int
         # boxes = [r.box for r in regions]
-        boxes = [ [int(x*1000) for x in r.pd_box] for r in regions]        
+        boxes = [[int(x * 1000) for x in r.pd_box] for r in regions]
         scores = [r.pd_score for r in regions]
-        indices = cv2.dnn.NMSBoxes(boxes, scores, 0, nms_thresh) # Not using top_k=2 here because it does not give expected result. Bug ?
+        indices = cv2.dnn.NMSBoxes(boxes, scores, 0,
+                                   nms_thresh)  # Not using top_k=2 here because it does not give expected result. Bug ?
         return [regions[i] for i in indices]
 else:
     def non_max_suppression(regions, nms_thresh):
@@ -304,17 +318,21 @@ else:
         # boxes = [ [x, y, w, h], ...] with x, y, w, h of type int
         # Currently, x, y, w, h are float between 0 and 1, so we arbitrarily multiply by 1000 and cast to int
         # boxes = [r.box for r in regions]
-        boxes = [ [int(x*1000) for x in r.pd_box] for r in regions]        
+        boxes = [[int(x * 1000) for x in r.pd_box] for r in regions]
         scores = [r.pd_score for r in regions]
-        indices = cv2.dnn.NMSBoxes(boxes, scores, 0, nms_thresh) # Not using top_k=2 here because it does not give expected result. Bug ?
+        indices = cv2.dnn.NMSBoxes(boxes, scores, 0,
+                                   nms_thresh)  # Not using top_k=2 here because it does not give expected result. Bug ?
         return [regions[i[0]] for i in indices]
+
 
 def normalize_radians(angle):
     return angle - 2 * pi * floor((angle + pi) / (2 * pi))
 
+
 def rot_vec(vec, rotation):
     vx, vy = vec
     return [vx * cos(rotation) - vy * sin(rotation), vx * sin(rotation) + vy * cos(rotation)]
+
 
 def detections_to_rect(regions):
     # https://github.com/google/mediapipe/blob/master/mediapipe/modules/hand_landmark/palm_detection_detection_to_roi.pbtxt
@@ -334,34 +352,35 @@ def detections_to_rect(regions):
     #       rotation_vector_target_angle_degrees: 90
     #     }
     #   }
-    
-    target_angle = pi * 0.5 # 90 = pi/2
+
+    target_angle = pi * 0.5  # 90 = pi/2
     for region in regions:
-        
         region.rect_w = region.pd_box[2]
         region.rect_h = region.pd_box[3]
         region.rect_x_center = region.pd_box[0] + region.rect_w / 2
         region.rect_y_center = region.pd_box[1] + region.rect_h / 2
 
-        x0, y0 = region.pd_kps[0] # wrist center
-        x1, y1 = region.pd_kps[2] # middle finger
+        x0, y0 = region.pd_kps[0]  # wrist center
+        x1, y1 = region.pd_kps[2]  # middle finger
         rotation = target_angle - atan2(-(y1 - y0), x1 - x0)
         region.rotation = normalize_radians(rotation)
-        
+
+
 def rotated_rect_to_points(cx, cy, w, h, rotation):
     b = cos(rotation) * 0.5
     a = sin(rotation) * 0.5
     points = []
-    p0x = cx - a*h - b*w
-    p0y = cy + b*h - a*w
-    p1x = cx + a*h - b*w
-    p1y = cy - b*h - a*w
-    p2x = int(2*cx - p0x)
-    p2y = int(2*cy - p0y)
-    p3x = int(2*cx - p1x)
-    p3y = int(2*cy - p1y)
+    p0x = cx - a * h - b * w
+    p0y = cy + b * h - a * w
+    p1x = cx + a * h - b * w
+    p1y = cy - b * h - a * w
+    p2x = int(2 * cx - p0x)
+    p2y = int(2 * cy - p0y)
+    p3x = int(2 * cx - p1x)
+    p3y = int(2 * cy - p1y)
     p0x, p0y, p1x, p1y = int(p0x), int(p0y), int(p1x), int(p1y)
-    return [[p0x,p0y], [p1x,p1y], [p2x,p2y], [p3x,p3y]]
+    return [[p0x, p0y], [p1x, p1y], [p2x, p2y], [p3x, p3y]]
+
 
 def rect_transformation(regions, w, h):
     """
@@ -396,25 +415,27 @@ def rect_transformation(regions, w, h):
             region.rect_x_center_a = (region.rect_x_center + width * shift_x) * w
             region.rect_y_center_a = (region.rect_y_center + height * shift_y) * h
         else:
-            x_shift = (w * width * shift_x * cos(rotation) - h * height * shift_y * sin(rotation)) #/ w
-            y_shift = (w * width * shift_x * sin(rotation) + h * height * shift_y * cos(rotation)) #/ h
-            region.rect_x_center_a = region.rect_x_center*w + x_shift
-            region.rect_y_center_a = region.rect_y_center*h + y_shift
+            x_shift = (w * width * shift_x * cos(rotation) - h * height * shift_y * sin(rotation))  # / w
+            y_shift = (w * width * shift_x * sin(rotation) + h * height * shift_y * cos(rotation))  # / h
+            region.rect_x_center_a = region.rect_x_center * w + x_shift
+            region.rect_y_center_a = region.rect_y_center * h + y_shift
 
         # square_long: true
         long_side = max(width * w, height * h)
         region.rect_w_a = long_side * scale_x
         region.rect_h_a = long_side * scale_y
-        region.rect_points = rotated_rect_to_points(region.rect_x_center_a, region.rect_y_center_a, region.rect_w_a, region.rect_h_a, region.rotation)
+        region.rect_points = rotated_rect_to_points(region.rect_x_center_a, region.rect_y_center_a, region.rect_w_a,
+                                                    region.rect_h_a, region.rotation)
+
 
 def hand_landmarks_to_rect(hand):
     # Calculates the ROI for the next frame from the current hand landmarks
     id_wrist = 0
     id_index_mcp = 5
     id_middle_mcp = 9
-    id_ring_mcp =13
-    
-    lms_xy =  hand.landmarks[:,:2]
+    id_ring_mcp = 13
+
+    lms_xy = hand.landmarks[:, :2]
     # print(lms_xy)
     # Compute rotation
     x0, y0 = lms_xy[id_wrist]
@@ -441,20 +462,24 @@ def hand_landmarks_to_rect(hand):
     next_hand.rect_x_center_a = center[0] + 0.1 * height * s
     next_hand.rect_y_center_a = center[1] - 0.1 * height * c
     next_hand.rotation = rotation
-    next_hand.rect_points = rotated_rect_to_points(next_hand.rect_x_center_a, next_hand.rect_y_center_a, next_hand.rect_w_a, next_hand.rect_h_a, next_hand.rotation)
+    next_hand.rect_points = rotated_rect_to_points(next_hand.rect_x_center_a, next_hand.rect_y_center_a,
+                                                   next_hand.rect_w_a, next_hand.rect_h_a, next_hand.rotation)
     return next_hand
 
+
 def warp_rect_img(rect_points, img, w, h):
-        src = np.array(rect_points[1:], dtype=np.float32) # rect_points[0] is left bottom point !
-        dst = np.array([(0, 0), (h, 0), (h, w)], dtype=np.float32)
-        mat = cv2.getAffineTransform(src, dst)
-        return cv2.warpAffine(img, mat, (w, h))
+    src = np.array(rect_points[1:], dtype=np.float32)  # rect_points[0] is left bottom point !
+    dst = np.array([(0, 0), (h, 0), (h, w)], dtype=np.float32)
+    mat = cv2.getAffineTransform(src, dst)
+    return cv2.warpAffine(img, mat, (w, h))
+
 
 def distance(a, b):
     """
     a, b: 2 points (in 2D or 3D)
     """
-    return np.linalg.norm(a-b)
+    return np.linalg.norm(a - b)
+
 
 def angle(a, b, c):
     # https://stackoverflow.com/questions/35176451/python-code-to-calculate-angle-between-three-point-using-their-3d-coordinates
@@ -465,6 +490,7 @@ def angle(a, b, c):
     angle = np.arccos(cosine_angle)
 
     return np.degrees(angle)
+
 
 def find_isp_scale_params(size, resolution, is_height=True):
     """
@@ -483,19 +509,19 @@ def find_isp_scale_params(size, resolution, is_height=True):
     # We are looking for the list on integers that are divisible by 16 and
     # that can be written like n/d where n <= 16 and d <= 63
     if is_height:
-        reference = height 
+        reference = height
         other = width
     else:
-        reference = width 
+        reference = width
         other = height
     size_candidates = {}
-    for s in range(288,reference,16):
+    for s in range(288, reference, 16):
         f = gcd(reference, s)
-        n = s//f
-        d = reference//f
+        n = s // f
+        d = reference // f
         if n <= 16 and d <= 63 and int(round(other * n / d) % 2 == 0):
             size_candidates[s] = (n, d)
-            
+
     # What is the candidate size closer to 'size' ?
     min_dist = -1
     for s in size_candidates:
@@ -509,7 +535,8 @@ def find_isp_scale_params(size, resolution, is_height=True):
             min_dist = dist
     return candidate, size_candidates[candidate]
 
-def recognize_gesture(hand):           
+
+def recognize_gesture(hand):
     # Finger states
     # state: -1=unknown, 0=close, 1=open
     d_3_5 = distance(hand.norm_landmarks[3], hand.norm_landmarks[5])
@@ -517,8 +544,8 @@ def recognize_gesture(hand):
     angle0 = angle(hand.norm_landmarks[0], hand.norm_landmarks[1], hand.norm_landmarks[2])
     angle1 = angle(hand.norm_landmarks[1], hand.norm_landmarks[2], hand.norm_landmarks[3])
     angle2 = angle(hand.norm_landmarks[2], hand.norm_landmarks[3], hand.norm_landmarks[4])
-    hand.thumb_angle = angle0+angle1+angle2
-    if angle0+angle1+angle2 > 460 and d_3_5 / d_2_3 > 1.2: 
+    hand.thumb_angle = angle0 + angle1 + angle2
+    if angle0 + angle1 + angle2 > 460 and d_3_5 / d_2_3 > 1.2:
         hand.thumb_state = 1
     else:
         hand.thumb_state = 0
@@ -557,7 +584,7 @@ def recognize_gesture(hand):
     elif hand.thumb_state == 0 and hand.index_state == 0 and hand.middle_state == 0 and hand.ring_state == 0 and hand.little_state == 0:
         hand.gesture = "FIST"
     elif hand.thumb_state == 1 and hand.index_state == 0 and hand.middle_state == 0 and hand.ring_state == 0 and hand.little_state == 0:
-        hand.gesture = "OK" 
+        hand.gesture = "OK"
     elif hand.thumb_state == 0 and hand.index_state == 1 and hand.middle_state == 1 and hand.ring_state == 0 and hand.little_state == 0:
         hand.gesture = "PEACE"
     elif hand.thumb_state == 0 and hand.index_state == 1 and hand.middle_state == 0 and hand.ring_state == 0 and hand.little_state == 0:
@@ -575,7 +602,8 @@ def recognize_gesture(hand):
 # Movenet
 
 class Body:
-    def __init__(self, scores=None, keypoints_norm=None, keypoints=None, score_thresh=None, crop_region=None, next_crop_region=None):
+    def __init__(self, scores=None, keypoints_norm=None, keypoints=None, score_thresh=None, crop_region=None,
+                 next_crop_region=None):
         """
         Attributes:
         scores : scores of the keypoints
@@ -586,14 +614,16 @@ class Body:
         crop_region : cropped region on which the current body was inferred
         next_crop_region : cropping region calculated from the current body keypoints and that will be used on next frame
         """
-        self.scores = scores 
-        self.keypoints_norm = keypoints_norm 
+        self.scores = scores
+        self.keypoints_norm = keypoints_norm
         self.keypoints = keypoints
         self.score_thresh = score_thresh
         self.crop_region = crop_region
         self.next_crop_region = next_crop_region
         # self.keypoints_square = (self.keypoints_norm * self.crop_region.size).astype(np.int32)
-        self.keypoints = (np.array([self.crop_region.xmin, self.crop_region.ymin]) + self.keypoints_norm * self.crop_region.size).astype(np.int32)
+        self.keypoints = (np.array(
+            [self.crop_region.xmin, self.crop_region.ymin]) + self.keypoints_norm * self.crop_region.size).astype(
+            np.int32)
 
     def print(self):
         attrs = vars(self)
@@ -606,9 +636,12 @@ class Body:
         As the hand.landmarks cooordinates are expressed in the padded image, we must substract the padding (given by pad_w and pad_w)
         to be coherent with the body keypoint coordinates which are expressed in the source image.
         """
-        return distance(hand.landmarks[0]-np.array([pad_w, pad_h]), self.keypoints[BODY_KP[wrist_handedness+'_wrist']])
+        return distance(hand.landmarks[0] - np.array([pad_w, pad_h]),
+                        self.keypoints[BODY_KP[wrist_handedness + '_wrist']])
 
-CropRegion = namedtuple('CropRegion',['xmin', 'ymin', 'xmax',  'ymax', 'size']) # All values are in pixel. The region is a square of size 'size' pixels
+
+CropRegion = namedtuple('CropRegion', ['xmin', 'ymin', 'xmax', 'ymax',
+                                       'size'])  # All values are in pixel. The region is a square of size 'size' pixels
 
 # Dictionary that maps from joint names to keypoint indices.
 BODY_KP = {
@@ -631,6 +664,7 @@ BODY_KP = {
     'right_ankle': 16
 }
 
+
 class BodyPreFocusing:
     """
     Body Pre Focusing with Movenet
@@ -642,8 +676,10 @@ class BodyPreFocusing:
     Both Smart cropping and Body Pre Focusing are important for model accuracy when 
     the body is far.
     """
-    def __init__(self, img_w, img_h, pad_w, pad_h, frame_size, mode="group", score_thresh=0.2, scale=1.0, hands_up_only=True):
-        
+
+    def __init__(self, img_w, img_h, pad_w, pad_h, frame_size, mode="group", score_thresh=0.2, scale=1.0,
+                 hands_up_only=True):
+
         self.img_w = img_w
         self.img_h = img_h
         self.pad_w = pad_w
@@ -655,23 +691,26 @@ class BodyPreFocusing:
         self.hands_up_only = hands_up_only
         # Defines the default crop region (pads the full image from both sides to make it a square image) 
         # Used when the algorithm cannot reliably determine the crop region from the previous frame.
-        self.init_crop_region = CropRegion(-self.pad_w, -self.pad_h,-self.pad_w+self.frame_size, -self.pad_h+self.frame_size, self.frame_size)
+        self.init_crop_region = CropRegion(-self.pad_w, -self.pad_h, -self.pad_w + self.frame_size,
+                                           -self.pad_h + self.frame_size, self.frame_size)
 
     """
     Smart cropping stuff
     """
+
     def crop_and_resize(self, frame, crop_region):
         """Crops and resize the image to prepare for the model input."""
-        cropped = frame[max(0,crop_region.ymin):min(self.img_h,crop_region.ymax), max(0,crop_region.xmin):min(self.img_w,crop_region.xmax)]
-        
+        cropped = frame[max(0, crop_region.ymin):min(self.img_h, crop_region.ymax),
+                  max(0, crop_region.xmin):min(self.img_w, crop_region.xmax)]
+
         if crop_region.xmin < 0 or crop_region.xmax >= self.img_w or crop_region.ymin < 0 or crop_region.ymax >= self.img_h:
             # Padding is necessary        
-            cropped = cv2.copyMakeBorder(cropped, 
-                                        max(0,-crop_region.ymin), 
-                                        max(0, crop_region.ymax-self.img_h),
-                                        max(0,-crop_region.xmin), 
-                                        max(0, crop_region.xmax-self.img_w),
-                                        cv2.BORDER_CONSTANT)
+            cropped = cv2.copyMakeBorder(cropped,
+                                         max(0, -crop_region.ymin),
+                                         max(0, crop_region.ymax - self.img_h),
+                                         max(0, -crop_region.xmin),
+                                         max(0, crop_region.xmax - self.img_w),
+                                         cv2.BORDER_CONSTANT)
 
         cropped = cv2.resize(cropped, (self.pd_input_length, self.pd_input_length), interpolation=cv2.INTER_AREA)
         return cropped
@@ -683,9 +722,9 @@ class BodyPreFocusing:
         shoulders/hips which is required to determine a good crop region.
         """
         return ((scores[BODY_KP['left_hip']] > self.score_thresh or
-                scores[BODY_KP['right_hip']] > self.score_thresh) and
+                 scores[BODY_KP['right_hip']] > self.score_thresh) and
                 (scores[BODY_KP['left_shoulder']] > self.score_thresh or
-                scores[BODY_KP['right_shoulder']] > self.score_thresh))
+                 scores[BODY_KP['right_shoulder']] > self.score_thresh))
 
     def determine_torso_and_body_range(self, keypoints, scores, center_x, center_y):
         """Calculates the maximum distance from each keypoints to the center location.
@@ -732,8 +771,10 @@ class BodyPreFocusing:
         if self.torso_visible(body.scores):
             center_x = (body.keypoints[BODY_KP['left_hip']][0] + body.keypoints[BODY_KP['right_hip']][0]) // 2
             center_y = (body.keypoints[BODY_KP['left_hip']][1] + body.keypoints[BODY_KP['right_hip']][1]) // 2
-            max_torso_yrange, max_torso_xrange, max_body_yrange, max_body_xrange = self.determine_torso_and_body_range(body.keypoints, body.scores, center_x, center_y)
-            crop_length_half = np.amax([max_torso_xrange * 1.9, max_torso_yrange * 1.9, max_body_yrange * 1.2, max_body_xrange * 1.2])
+            max_torso_yrange, max_torso_xrange, max_body_yrange, max_body_xrange = self.determine_torso_and_body_range(
+                body.keypoints, body.scores, center_x, center_y)
+            crop_length_half = np.amax(
+                [max_torso_xrange * 1.9, max_torso_yrange * 1.9, max_body_yrange * 1.2, max_body_xrange * 1.2])
             tmp = np.array([center_x, self.img_w - center_x, center_y, self.img_h - center_y])
             crop_length_half = int(round(np.amin([crop_length_half, np.amax(tmp)])))
             crop_corner = [center_x - crop_length_half, center_y - crop_length_half]
@@ -742,13 +783,15 @@ class BodyPreFocusing:
                 return self.init_crop_region
             else:
                 crop_length = crop_length_half * 2
-                return CropRegion(crop_corner[0], crop_corner[1], crop_corner[0]+crop_length, crop_corner[1]+crop_length,crop_length)
+                return CropRegion(crop_corner[0], crop_corner[1], crop_corner[0] + crop_length,
+                                  crop_corner[1] + crop_length, crop_length)
         else:
             return self.init_crop_region
 
     """
     Body Pre Focusing stuff
     """
+
     def torso_visible(self, scores):
         """Checks whether there are enough torso keypoints.
 
@@ -756,9 +799,9 @@ class BodyPreFocusing:
         shoulders/hips which is required to determine a good crop region.
         """
         return ((scores[BODY_KP['left_hip']] > self.score_thresh or
-                scores[BODY_KP['right_hip']] > self.score_thresh) and
+                 scores[BODY_KP['right_hip']] > self.score_thresh) and
                 (scores[BODY_KP['left_shoulder']] > self.score_thresh or
-                scores[BODY_KP['right_shoulder']] > self.score_thresh))
+                 scores[BODY_KP['right_shoulder']] > self.score_thresh))
 
     def determine_torso_and_body_range(self, keypoints, scores, center_x, center_y):
         """Calculates the maximum distance from each keypoints to the center location.
@@ -790,7 +833,7 @@ class BodyPreFocusing:
             if dist_x > max_body_xrange:
                 max_body_xrange = dist_x
 
-        return [max_torso_yrange, max_torso_xrange, max_body_yrange, max_body_xrange]  
+        return [max_torso_yrange, max_torso_xrange, max_body_yrange, max_body_xrange]
 
     def determine_crop_region(self, body):
         """Determines the region to crop the image for the model to run inference on.
@@ -805,8 +848,10 @@ class BodyPreFocusing:
         if self.torso_visible(body.scores):
             center_x = (body.keypoints[BODY_KP['left_hip']][0] + body.keypoints[BODY_KP['right_hip']][0]) // 2
             center_y = (body.keypoints[BODY_KP['left_hip']][1] + body.keypoints[BODY_KP['right_hip']][1]) // 2
-            max_torso_yrange, max_torso_xrange, max_body_yrange, max_body_xrange = self.determine_torso_and_body_range(body.keypoints, body.scores, center_x, center_y)
-            crop_length_half = np.amax([max_torso_xrange * 1.9, max_torso_yrange * 1.9, max_body_yrange * 1.2, max_body_xrange * 1.2])
+            max_torso_yrange, max_torso_xrange, max_body_yrange, max_body_xrange = self.determine_torso_and_body_range(
+                body.keypoints, body.scores, center_x, center_y)
+            crop_length_half = np.amax(
+                [max_torso_xrange * 1.9, max_torso_yrange * 1.9, max_body_yrange * 1.2, max_body_xrange * 1.2])
             tmp = np.array([center_x, self.img_w - center_x, center_y, self.img_h - center_y])
             crop_length_half = int(round(np.amin([crop_length_half, np.amax(tmp)])))
             crop_corner = [center_x - crop_length_half, center_y - crop_length_half]
@@ -815,9 +860,10 @@ class BodyPreFocusing:
                 return self.init_crop_region
             else:
                 crop_length = crop_length_half * 2
-                return CropRegion(crop_corner[0], crop_corner[1], crop_corner[0]+crop_length, crop_corner[1]+crop_length,crop_length)
+                return CropRegion(crop_corner[0], crop_corner[1], crop_corner[0] + crop_length,
+                                  crop_corner[1] + crop_length, crop_length)
         else:
-            return self.init_crop_region  
+            return self.init_crop_region
 
     def estimate_focus_zone_size(self, body):
         """
@@ -845,15 +891,15 @@ class BodyPreFocusing:
             if body.scores[BODY_KP[s[0]]] > self.score_thresh and body.scores[BODY_KP[s[1]]] > self.score_thresh:
                 l = np.linalg.norm(body.keypoints[BODY_KP[s[0]]] - body.keypoints[BODY_KP[s[1]]])
                 lengths.append(l)
-        if lengths:   
-            if ( body.scores[BODY_KP["left_hip"]] < self.score_thresh and
-                body.scores[BODY_KP["right_hip"]] < self.score_thresh or
-                body.scores[BODY_KP["left_shoulder"]] < self.score_thresh and
-                body.scores[BODY_KP["right_shoulder"]] < self.score_thresh) :
+        if lengths:
+            if (body.scores[BODY_KP["left_hip"]] < self.score_thresh and
+                    body.scores[BODY_KP["right_hip"]] < self.score_thresh or
+                    body.scores[BODY_KP["left_shoulder"]] < self.score_thresh and
+                    body.scores[BODY_KP["right_shoulder"]] < self.score_thresh):
                 coef = 1.5
             else:
                 coef = 1.0
-            return 2 * int(coef * self.scale * max(lengths) / 2) # The size is made even
+            return 2 * int(coef * self.scale * max(lengths) / 2)  # The size is made even
         else:
             return 0
 
@@ -894,16 +940,15 @@ class BodyPreFocusing:
             elif x1 + size > self.img_w + self.pad_w:
                 x1 = self.img_w + self.pad_w - size
             x2 = x1 + size
-            if size > self.img_h: 
+            if size > self.img_h:
                 y = self.img_h // 2
             y1 = y - half_size
-            if y1 < -self.pad_h: 
+            if y1 < -self.pad_h:
                 y1 = -self.pad_h
             elif y1 + size > self.img_h + self.pad_h:
                 y1 = self.img_h + self.pad_h - size
             y2 = y1 + size
             return [x1, y1, x2, y2]
-            
 
         def get_one_hand_zone(hand_label):
             """
@@ -914,18 +959,19 @@ class BodyPreFocusing:
             """
             wrist_kp = hand_label + "_wrist"
             wrist_score = body.scores[BODY_KP[wrist_kp]]
-            if wrist_score < self.score_thresh: 
+            if wrist_score < self.score_thresh:
                 return None
             x, y = body.keypoints[BODY_KP[wrist_kp]]
             if self.hands_up_only:
                 # We want to detect only hands where the wrist is above the elbow (when visible)
                 elbow_kp = hand_label + "_elbow"
                 if body.scores[BODY_KP[elbow_kp]] > self.score_thresh and \
-                    body.keypoints[BODY_KP[elbow_kp]][1] < body.keypoints[BODY_KP[wrist_kp]][1]:
+                        body.keypoints[BODY_KP[elbow_kp]][1] < body.keypoints[BODY_KP[wrist_kp]][1]:
                     return None
             # Let's evaluate the size of the focus zone
             size = self.estimate_focus_zone_size(body)
-            if size == 0: return [-self.pad_w, -self.pad_h, self.frame_size-self.pad_w, self.frame_size-self.pad_h] # The hand is too close. No need to focus
+            if size == 0: return [-self.pad_w, -self.pad_h, self.frame_size - self.pad_w,
+                                  self.frame_size - self.pad_h]  # The hand is too close. No need to focus
             return zone_from_center_size(x, y, size)
 
         if self.mode == "group":
@@ -940,10 +986,10 @@ class BodyPreFocusing:
                     x2 = max(xl2, xr2)
                     y2 = max(yl2, yr2)
                     # Global zone center (x,y)
-                    x = int((x1+x2)/2)
-                    y = int((y1+y2)/2)
-                    size_x = x2-x1
-                    size_y = y2-y1
+                    x = int((x1 + x2) / 2)
+                    y = int((y1 + y2) / 2)
+                    size_x = x2 - x1
+                    size_y = y2 - y1
                     size = 2 * (max(size_x, size_y) // 2)
                     return (zone_from_center_size(x, y, size), "group")
                 else:
@@ -957,7 +1003,7 @@ class BodyPreFocusing:
                         hand_label = "right"
                     else:
                         hand_label = "left"
-                else: 
+                else:
                     hand_label = "left"
             else:
                 if body.scores[BODY_KP["right_wrist"]] > self.score_thresh:
@@ -965,8 +1011,5 @@ class BodyPreFocusing:
                 else:
                     return (None, None)
             return (get_one_hand_zone(hand_label), hand_label)
-        else: # "left" or "right"
+        else:  # "left" or "right"
             return (get_one_hand_zone(self.mode), self.mode)
-
-            
-            
