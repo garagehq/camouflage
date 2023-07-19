@@ -60,8 +60,8 @@ def torso_visible(scores):
     # This function checks whether the model is confident at predicting one of the
     # shoulders/hips which is required to determine a good crop region.
 
-    return ((scores[BODY_KP["left_hip"]] > body_score_thresh or
-            scores[BODY_KP["right_hip"]] > body_score_thresh) and
+    return ((scores[BODY_KP["left_elbow"]] > body_score_thresh or
+            scores[BODY_KP["right_elbow"]] > body_score_thresh) and
             (scores[BODY_KP["left_shoulder"]] > body_score_thresh or
             scores[BODY_KP["right_shoulder"]] > body_score_thresh))
 
