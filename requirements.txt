@@ -1,4 +1,5 @@
 opencv-python >= 4.5.1.48
 depthai>=2.13
-numpy
+numpy~=1.24.3
 depthai
+tensorflow~=2.13.0

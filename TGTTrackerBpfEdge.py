@@ -2,17 +2,15 @@
 # Modified from HandTrackerBpfEdge
 import marshal
 import sys
-from ctypes import Union
 from pathlib import Path
 from string import Template
-from typing import Literal, get_args, Tuple, cast
+from typing import Literal, get_args, Tuple, cast, Union, Dict
 
 import cv2
 import depthai.node as n
 import numpy as np
 from depthai import Pipeline, CameraBoardSocket, Device, CameraSensorType, MonoCameraProperties, \
     ColorCameraProperties, OpenVINO, ImgFrame
-
 import mediapipe_utils as mpu
 from FPS import FPS
 
@@ -42,15 +40,13 @@ def to_planar(arr: np.ndarray, shape: tuple) -> np.ndarray:
     return cv2.resize(arr, shape).transpose(2, 0, 1).flatten()
 
 
-TOFLaconic = Literal['tof_laconic']
-TOF = Literal['tof']
-AnyTOF = Literal[TOFLaconic, TOF]
-RGBLaconic = Literal['rgb_laconic']
-RGB = Literal['rgb']
-AnyRGB = Literal[RGBLaconic, RGB]
-Laconic = Literal[TOFLaconic, RGBLaconic]
-NoLaconic = Literal[TOF, RGB]
-SourceType = Literal[Laconic, NoLaconic]
+TOF = Literal['oak_d_sr_poe']
+SRBase = Literal['oak_d_sr']
+RGBStereoPair = Literal[SRBase, TOF]
+MonoStereoPair = Literal['oak_d_s2', 'oak_d_lite', 'oak_d_pro']
+DisparityDepth = Literal[SRBase, MonoStereoPair]
+
+DeviceModel = Literal[TOF, RGBStereoPair, MonoStereoPair]
 
 MovenetModel = Literal["lightning", "thunder"]
 
@@ -58,11 +54,47 @@ RGBFullResolution = Literal["full"]
 RGBUltraResolution = Literal["ultra"]
 ResolutionType = Literal[RGBFullResolution, RGBUltraResolution]
 
-TOFRGBResolutionDim = Tuple[Literal[1280], Literal[800]]
+SRRGBResolutionDim = Tuple[Literal[1280], Literal[800]]
 RGBFullResolutionDim = Tuple[Literal[1920], Literal[1080]]
 RGBUltraResolutionDim = Tuple[Literal[3840], Literal[2160]]
+SupportedResolution = Union[SRRGBResolutionDim, RGBFullResolutionDim, RGBUltraResolutionDim]
 
 TraceLevel = Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+
+
+class DeviceConfig:
+    def __init__(self, res: SupportedResolution, mono_stereo: bool):
+        self.res, self.mono_stereo = res, mono_stereo
+        self.res_type = MonoCameraProperties.SensorResolution.THE_400_P \
+            if mono_stereo else ColorCameraProperties.SensorResolution.THE_800_P
+
+    def choose_constructor(self, pipeline):
+        return pipeline.createMonoCamera if self.mono_stereo else pipeline.createColorCamera
+
+
+# noinspection PyTypeChecker
+device_cfgs: Dict[DeviceModel, DeviceConfig] = {
+    "oak_d_sr_poe": DeviceConfig(
+        tuple(get_args(item)[0] for item in get_args(SRRGBResolutionDim)),
+        False
+    ),
+    "oak_d_sr": DeviceConfig(
+        tuple(get_args(item)[0] for item in get_args(SRRGBResolutionDim)),
+        False
+    ),
+    "oak_d_s2": DeviceConfig(
+        tuple(get_args(item)[0] for item in get_args(RGBFullResolutionDim)),
+        True
+    ),
+    "oak_d_lite": DeviceConfig(
+        tuple(get_args(item)[0] for item in get_args(RGBFullResolutionDim)),
+        True
+    ),
+    "oak_d_pro": DeviceConfig(
+        tuple(get_args(item)[0] for item in get_args(RGBFullResolutionDim)),
+        True
+    ),
+}
 
 
 # noinspection DuplicatedCode
@@ -103,10 +135,6 @@ class TGTTracker:
                     The width is calculated accordingly to height and depends on the value of 'crop'
     - `use_gesture` : boolean, when True, recognize hand poses from a predefined set of poses
                     (ONE, TWO, THREE, FOUR, FIVE, OK, PEACE, FIST)
-    - `body_pre_focusing`: `right` or `left` or `group` or `higher`, body pre focusing is the use
-                    of a body pose detector to help to focus on the region of the image that
-                    contains one hand (`left` or `right`) or `both` hands;
-                    if not in solo mode, body_pre_focusing is forced to 'group'
     - `body_model`: Movenet single pose model: `lightning` or `thunder`
     - `body_score_thresh`: Movenet score thresh
     - `hands_up_only`: when using body_pre_focusing, if hands_up_only is True, consider only hands for which
@@ -132,25 +160,22 @@ class TGTTracker:
 
     def __init__(
             self,
-            input_src: Union[
-                SourceType,
-                None,
-            ] = None,
+            input_src: DeviceModel = 'oak_d_sr_poe',
+            laconic=True,
             pd_model=PALM_DETECTION_MODEL,
             pd_score_thresh=0.5,
             use_lm=True,
             lm_model="lite",
             lm_score_thresh=0.5,
-            use_world_landmarks=False,
+            use_world_landmarks=True,
             pp_model=DETECTION_POSTPROCESSING_MODEL,
             max_bodies=4,
-            xyz=False,
             crop=False,
             internal_fps=None,
-            resolution: Union[ResolutionType, None] = 'ultra',
+            resolution: ResolutionType = 'full',
             internal_frame_height: int = 640,
-            use_gesture=False,
-            # TODO swap to ozone trained from https://tfhub.dev/google/movenet/multipose/lightning/1
+            use_gesture=True,
+            # TODO swap to Centernet trained from https://github.com/xingyizhou/CenterNet.git
             body_model: MovenetModel = "thunder",
             body_score_thresh=0.2,
             hands_up_only=False,
@@ -212,15 +237,15 @@ class TGTTracker:
 
         self.device = Device()
 
-        if input_src is None or input_src in get_args(SourceType):
-            self.input_type = input_src
+        if input_src in get_args(DeviceModel):
+            self.input_device = input_src
             # Camera frames are not sent to the host
-            self.laconic = input_src in get_args(Laconic)
+            self.laconic = laconic
 
-            if input_src == "tof":
-                if resolution != 'ultra':
+            if input_src in get_args(RGBStereoPair):
+                if resolution != 'full':
                     raise ValueError("Varying resolution for tof sensor has not been implemented, use full")
-                self.resolution = get_args(TOFRGBResolutionDim)
+                self.resolution = tuple(get_args(item)[0] for item in get_args(SRRGBResolutionDim))
             else:
                 if resolution == "full":
                     self.resolution = get_args(RGBFullResolutionDim)
@@ -231,23 +256,20 @@ class TGTTracker:
                     sys.exit()
             print("Sensor resolution:", self.resolution)
 
-            if xyz:
-                # Check if the device supports stereo
-                cameras = self.device.getConnectedCameras()
-                tof = next(
-                    camera for camera in self.device.getConnectedCameraFeatures()
-                    if CameraSensorType.TOF in camera.supportedTypes
-                )
-                stereo = CameraBoardSocket.CAM_B in cameras and CameraBoardSocket.CAM_C in cameras
-                if stereo or tof:
-                    self.xyz = True
-                else:
-                    print(
-                        "Warning: depth unavailable on this device, 'xyz' argument is ignored"
-                    )
+            # Check if the device supports stereo
+            cameras = self.device.getConnectedCameras()
+            camera_features = self.device.getConnectedCameraFeatures()
+
+            tof = any([cam for cam in camera_features if CameraSensorType.TOF in cam.supportedTypes])
+            l_stereo = next(filter(lambda x: x.socket == CameraBoardSocket.CAM_B, camera_features), False)
+            r_stereo = next(filter(lambda x: x.socket == CameraBoardSocket.CAM_C, camera_features), False)
+            has_stereo = l_stereo and r_stereo and l_stereo.sensorName == r_stereo.sensorName
+
+            if has_stereo or tof:
+                self.xyz = True
 
             if internal_fps is None:
-                base_internal_fps = 39
+                base_internal_fps = 20
                 lm_frame_cost = {"full": 13, "lite": 3, "sparse": 10}
                 xyz_no_tof_cost = 5
                 # fmt: off
@@ -265,6 +287,9 @@ class TGTTracker:
             self.video_fps = (
                 self.internal_fps
             )  # Used when saving the output in a video file. Should be close to the real fps
+
+            if input_src in get_args(TOF):
+                self.internal_fps = 15
 
             if self.crop:
                 self.frame_size, self.scale_nd = mpu.find_isp_scale_params(
@@ -300,9 +325,6 @@ class TGTTracker:
             print("Invalid input source:", input_src)
             sys.exit()
 
-        if input_src in get_args(AnyTOF):
-            self.internal_fps = 15
-
         # Defines the default crop region (pads the full image from both sides to make it a square image)
         # Used when the algorithm cannot reliably determine the crop region from the previous frame.
         self.crop_region = mpu.CropRegion(
@@ -315,7 +337,7 @@ class TGTTracker:
 
         # Define and start pipeline
         usb_speed = self.device.getUsbSpeed()
-        self.device.startPipeline(self.create_pipeline())
+        success = self.device.startPipeline(self.create_pipeline())
         print(f"Pipeline started - USB speed: {str(usb_speed).split('.')[-1]}")
 
         # Define data queues
@@ -356,32 +378,22 @@ class TGTTracker:
 
         # ColorCamera
         print("Creating Color Camera...")
-        cam = pipeline.createColorCamera()
-        cam.setBoardSocket(CameraBoardSocket.CAM_B if self.input_type in get_args(AnyTOF) else CameraBoardSocket.CAM_A)
-        if self.input_type in get_args(AnyRGB):
+        cam = None
+        if self.input_device in get_args(MonoStereoPair):
+            cam = pipeline.createColorCamera()
+            cam.setInterleaved(False)
+            cam.setIspScale(self.scale_nd[0], self.scale_nd[1])
+            cam.setFps(self.internal_fps)
             if self.resolution == get_args(RGBFullResolutionDim):
                 cam.setResolution(ColorCameraProperties.SensorResolution.THE_1080_P)
             else:
                 cam.setResolution(ColorCameraProperties.SensorResolution.THE_4_K)
-        else:
-            cam.setResolution(ColorCameraProperties.SensorResolution.THE_800_P)
-        cam.setInterleaved(False)
-        cam.setIspScale(self.scale_nd[0], self.scale_nd[1])
-        cam.setFps(self.internal_fps)
-
-        if self.crop:
-            cam.setVideoSize(self.frame_size, self.frame_size)
-            cam.setPreviewSize(self.frame_size, self.frame_size)
-        else:
-            cam.setVideoSize(self.img_w, self.img_h)
-            cam.setPreviewSize(self.img_w, self.img_h)
-
-        if not self.laconic:
-            cam_out = pipeline.createXLinkOut()
-            cam_out.setStreamName("cam_out")
-            cam_out.input.setQueueSize(1)
-            cam_out.input.setBlocking(False)
-            cam.video.link(cam_out.input)
+            if self.crop:
+                cam.setVideoSize(self.frame_size, self.frame_size)
+                cam.setPreviewSize(self.frame_size, self.frame_size)
+            else:
+                cam.setVideoSize(self.img_w, self.img_h)
+                cam.setPreviewSize(self.img_w, self.img_h)
 
         # Define manager script node
         manager_script = pipeline.create(n.Script)
@@ -393,31 +405,28 @@ class TGTTracker:
             spatial_location_calculator.inputDepth.setBlocking(False)
             spatial_location_calculator.inputDepth.setQueueSize(1)
 
-            if self.input_type in get_args(AnyRGB):
+            if self.input_device in get_args(DisparityDepth):
                 print("Creating XYZ Nodes")
                 # For now, RGB needs fixed focus to properly align with depth.
                 # The value used during calibration should be used here
-                calib_data = self.device.readCalibration()
-                calib_lens_pos = calib_data.getLensPosition(CameraBoardSocket.CAM_A)
-                print(f"RGB calibration lens position: {calib_lens_pos}")
-                cam.initialControl.setManualFocus(calib_lens_pos)
 
-                mono_resolution = MonoCameraProperties.SensorResolution.THE_400_P
-                left = pipeline.createMonoCamera()
+                left = device_cfgs[self.input_device].choose_constructor(pipeline)()
                 left.setBoardSocket(CameraBoardSocket.CAM_B)
-                left.setResolution(mono_resolution)
+                left.setResolution(device_cfgs[self.input_device].res_type)
                 left.setFps(self.internal_fps)
+                left.setInterleaved(False)
 
-                right = pipeline.createMonoCamera()
+                right = device_cfgs[self.input_device].choose_constructor(pipeline)()
                 right.setBoardSocket(CameraBoardSocket.CAM_C)
-                right.setResolution(mono_resolution)
+                right.setResolution(device_cfgs[self.input_device].res_type)
                 right.setFps(self.internal_fps)
+                right.setInterleaved(False)
 
                 stereo = pipeline.createStereoDepth()
+                # stereo.inputConfig.possibleDatatypes.append()
                 stereo.setConfidenceThreshold(230)
                 # LR-check is required for depth alignment
                 stereo.setLeftRightCheck(True)
-                stereo.setDepthAlign(CameraBoardSocket.CAM_A)
                 stereo.setSubpixel(False)  # subpixel True brings latency
                 # MEDIAN_OFF necessary in depthai 2.7.2.
                 # Otherwise : [critical] Fatal error.
@@ -425,12 +434,21 @@ class TGTTracker:
                 # Log: 'StereoSipp' '533'
                 # stereo.setMedianFilter(StereoDepthProperties.MedianFilter.MEDIAN_OFF)
 
-                left.out.link(stereo.left)
-                right.out.link(stereo.right)
+                if self.input_device in get_args(MonoStereoPair):
+                    calib_data = self.device.readCalibration()
+                    calib_lens_pos = calib_data.getLensPosition(CameraBoardSocket.CAM_A)
+                    print(f"RGB calibration lens position: {calib_lens_pos}")
+                    cam.initialControl.setManualFocus(calib_lens_pos)
+                    stereo.setDepthAlign(CameraBoardSocket.CAM_A)
+                else:
+                    cam = left
+
+                left.preview.link(stereo.left)
+                right.preview.link(stereo.right)
 
                 stereo.depth.link(spatial_location_calculator.inputDepth)
 
-            elif self.input_type in get_args(AnyTOF):
+            elif self.input_device in get_args(TOF):
                 cam_a: n.Camera = pipeline.create(n.Camera)
                 # We assume the ToF camera sensor is on port CAM_A
                 cam_a.setBoardSocket(CameraBoardSocket.CAM_A)
@@ -440,7 +458,7 @@ class TGTTracker:
 
                 tof.depth.link(spatial_location_calculator.inputDepth)
             else:
-                raise ValueError(f"{self.input_type} is not a supported type")
+                raise ValueError(f"{self.input_device} is not a supported type")
 
             manager_script.outputs["spatial_location_config"].link(
                 spatial_location_calculator.inputConfig
@@ -450,6 +468,14 @@ class TGTTracker:
             # Define body pose detection pre-processing: resize preview to (self.body_input_length,
             # self.body_input_length)
         # and transform BGR to RGB
+
+        if not self.laconic:
+            cam_out = pipeline.createXLinkOut()
+            cam_out.setStreamName("cam_out")
+            cam_out.input.setQueueSize(1)
+            cam_out.input.setBlocking(False)
+            cam.video.link(cam_out.input)
+
         print("Creating Body Pose Detection pre processing image manip...")
         pre_body_manip = pipeline.create(n.ImageManip)
         pre_body_manip.setMaxOutputFrameSize(
@@ -458,7 +484,9 @@ class TGTTracker:
         pre_body_manip.setWaitForConfigInput(True)
         pre_body_manip.inputImage.setQueueSize(1)
         pre_body_manip.inputImage.setBlocking(False)
+
         cam.preview.link(pre_body_manip.inputImage)
+
         manager_script.outputs["pre_body_manip_cfg"].link(pre_body_manip.inputConfig)
         # For debugging
         if self.trace & 4:
@@ -470,7 +498,7 @@ class TGTTracker:
         print("Creating Body Pose Detection Neural Network...")
         body_nn = pipeline.create(n.NeuralNetwork)
         body_nn.setBlobPath(Path(self.body_model))
-        # lm_nn.setNumInferenceThreads(1)
+        # body_nn.setNumInferenceThreads(2)
         pre_body_manip.out.link(body_nn.input)
         body_nn.out.link(manager_script.inputs["from_body_nn"])
 
@@ -706,13 +734,13 @@ class TGTTracker:
             post_palm_frames = self.nb_frames_lm_inference - self.nb_frames_lm_inference_after_landmarks_ROI
             print(
                 "# frames w/ landmark inference : "
-                f"{self.nb_frames_lm_inference} ({100 * self.nb_frames_lm_inference / nb_frames:.1f}%)- " 
-                f"# after palm detection: {post_palm_frames} - " 
+                f"{self.nb_frames_lm_inference} ({100 * self.nb_frames_lm_inference / nb_frames:.1f}%)- "
+                f"# after palm detection: {post_palm_frames} - "
                 f"# after landmarks ROI prediction: {self.nb_frames_lm_inference_after_landmarks_ROI}"
             )
             if self.nb_lm_inferences:
                 print(
-                    f"# lm inferences: {self.nb_lm_inferences} - " 
+                    f"# lm inferences: {self.nb_lm_inferences} - "
                     f"# failed lm inferences: {self.nb_failed_lm_inferences} ("
                     f"{100 * self.nb_failed_lm_inferences / self.nb_lm_inferences:.1f}%)"
                 )

@@ -143,13 +143,13 @@ def move(event):
 
 def press_release(event):
     if event.trigger == "enter": 
-        mouse.press(Button.left)
+        mouse.press(Button.left_type)
     elif event.trigger == "leave":
-        mouse.release(Button.left)
+        mouse.release(Button.left_type)
 
 def click(event):
-    mouse.press(Button.left)
-    mouse.release(Button.left)
+    mouse.press(Button.left_type)
+    mouse.release(Button.left_type)
 
 config = {
     'renderer' : {'enable': True},

@@ -37,9 +37,9 @@ def move(event):
     event.print_line()
     rotation = event.hand.rotation
     if -1 < rotation < -0.2:
-        press_key(Key.right)
+        press_key(Key.right_type)
     elif 0.4 < rotation < 1.5:
-        press_key(Key.left)
+        press_key(Key.left_type)
 
 def rotate(event):
     event.print_line()
