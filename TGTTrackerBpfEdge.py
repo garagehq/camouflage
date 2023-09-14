@@ -1,5 +1,6 @@
 # noinspection DuplicatedCode
 # Modified from HandTrackerBpfEdge
+import json
 import marshal
 import sys
 from pathlib import Path
@@ -62,35 +63,43 @@ SupportedResolution = Union[SRRGBResolutionDim, RGBFullResolutionDim, RGBUltraRe
 TraceLevel = Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
 
-class DeviceConfig:
+class DeviceCapability:
     def __init__(self, res: SupportedResolution, mono_stereo: bool):
         self.res, self.mono_stereo = res, mono_stereo
         self.res_type = MonoCameraProperties.SensorResolution.THE_400_P \
             if mono_stereo else ColorCameraProperties.SensorResolution.THE_800_P
 
-    def choose_constructor(self, pipeline):
-        return pipeline.createMonoCamera if self.mono_stereo else pipeline.createColorCamera
+    def run_constructor(self, pipeline: Pipeline) -> n.ColorCamera | n.MonoCamera:
+        con = pipeline.createMonoCamera if self.mono_stereo else pipeline.createColorCamera
+        return con()
+
+    def correct_preview_size(self, cam: n.ColorCamera | n.MonoCamera):
+        if self.mono_stereo:
+            return
+        cam.setPreviewSize(320, 320)
+
+
 
 
 # noinspection PyTypeChecker
-device_cfgs: Dict[DeviceModel, DeviceConfig] = {
-    "oak_d_sr_poe": DeviceConfig(
+device_cfgs: Dict[DeviceModel, DeviceCapability] = {
+    "oak_d_sr_poe": DeviceCapability(
         tuple(get_args(item)[0] for item in get_args(SRRGBResolutionDim)),
         False
     ),
-    "oak_d_sr": DeviceConfig(
+    "oak_d_sr": DeviceCapability(
         tuple(get_args(item)[0] for item in get_args(SRRGBResolutionDim)),
         False
     ),
-    "oak_d_s2": DeviceConfig(
+    "oak_d_s2": DeviceCapability(
         tuple(get_args(item)[0] for item in get_args(RGBFullResolutionDim)),
         True
     ),
-    "oak_d_lite": DeviceConfig(
+    "oak_d_lite": DeviceCapability(
         tuple(get_args(item)[0] for item in get_args(RGBFullResolutionDim)),
         True
     ),
-    "oak_d_pro": DeviceConfig(
+    "oak_d_pro": DeviceCapability(
         tuple(get_args(item)[0] for item in get_args(RGBFullResolutionDim)),
         True
     ),
@@ -166,7 +175,7 @@ class TGTTracker:
             pd_score_thresh=0.5,
             use_lm=True,
             lm_model="lite",
-            lm_score_thresh=0.5,
+            lm_score_thresh=0.3,
             use_world_landmarks=True,
             pp_model=DETECTION_POSTPROCESSING_MODEL,
             max_bodies=4,
@@ -177,7 +186,7 @@ class TGTTracker:
             use_gesture=True,
             # TODO swap to Centernet trained from https://github.com/xingyizhou/CenterNet.git
             body_model: MovenetModel = "thunder",
-            body_score_thresh=0.2,
+            body_score_thresh=0.3,
             hands_up_only=False,
             single_hand_tolerance_thresh: int = 10,
             use_same_image=True,
@@ -257,7 +266,6 @@ class TGTTracker:
             print("Sensor resolution:", self.resolution)
 
             # Check if the device supports stereo
-            cameras = self.device.getConnectedCameras()
             camera_features = self.device.getConnectedCameraFeatures()
 
             tof = any([cam for cam in camera_features if CameraSensorType.TOF in cam.supportedTypes])
@@ -336,9 +344,9 @@ class TGTTracker:
         )
 
         # Define and start pipeline
-        usb_speed = self.device.getUsbSpeed()
-        success = self.device.startPipeline(self.create_pipeline())
-        print(f"Pipeline started - USB speed: {str(usb_speed).split('.')[-1]}")
+        pipeline = self.create_pipeline()
+        self.device.startPipeline(pipeline)
+        print(f"Pipeline started - USB speed: {str(self.device.getUsbSpeed()).split('.')[-1]}")
 
         # Define data queues
         if not self.laconic:
@@ -373,7 +381,7 @@ class TGTTracker:
     def create_pipeline(self):
         print("Creating pipeline...")
         # Start defining a pipeline
-        pipeline = Pipeline()
+        pipeline: Pipeline = Pipeline()
         pipeline.setOpenVINOVersion(version=OpenVINO.Version.VERSION_2021_4)
 
         # ColorCamera
@@ -410,17 +418,20 @@ class TGTTracker:
                 # For now, RGB needs fixed focus to properly align with depth.
                 # The value used during calibration should be used here
 
-                left = device_cfgs[self.input_device].choose_constructor(pipeline)()
+                left = device_cfgs[self.input_device].run_constructor(pipeline)
                 left.setBoardSocket(CameraBoardSocket.CAM_B)
                 left.setResolution(device_cfgs[self.input_device].res_type)
                 left.setFps(self.internal_fps)
                 left.setInterleaved(False)
 
-                right = device_cfgs[self.input_device].choose_constructor(pipeline)()
+                right = device_cfgs[self.input_device].run_constructor(pipeline)
                 right.setBoardSocket(CameraBoardSocket.CAM_C)
                 right.setResolution(device_cfgs[self.input_device].res_type)
                 right.setFps(self.internal_fps)
                 right.setInterleaved(False)
+
+                device_cfgs[self.input_device].correct_preview_size(left)
+                device_cfgs[self.input_device].correct_preview_size(right)
 
                 stereo = pipeline.createStereoDepth()
                 # stereo.inputConfig.possibleDatatypes.append()
@@ -467,7 +478,7 @@ class TGTTracker:
 
             # Define body pose detection pre-processing: resize preview to (self.body_input_length,
             # self.body_input_length)
-        # and transform BGR to RGB
+            # and transform BGR to RGB
 
         if not self.laconic:
             cam_out = pipeline.createXLinkOut()

@@ -290,7 +290,7 @@ def get_focus_zone(hand_label):
 
 # BufferMgr is used to statically allocate buffers once 
 # (replace dynamic allocation). 
-# These buffers are used for sending result to host
+# These buffers are used for sending the result to host
 class BufferMgr:
     def __init__(self):
         self._bufs = {}
@@ -361,7 +361,6 @@ detected_hands = []
 reuse_prev_image = False
 
 while True:
-    
     hand_label = None
     nb_lm_inf = 0
     if send_new_frame_to_branch == 0: # Routing frame to body detection
@@ -608,6 +607,8 @@ while True:
             updated_detect_hands.append(hand)
 
             last_detected_hands_id = ih
+        else:
+            ${_TRACE2} (f"Reject lm score {lm_score} < theshhold { ${_lm_score_thresh} }")
 
     detected_hands = updated_detect_hands
 
