@@ -33,7 +33,7 @@ MOVENET_THUNDER_MODEL = str(
 TEMPLATE_MANAGER_SCRIPT_SOLO = str(SCRIPT_DIR / "template_manager_script_bpf_solo.py")
 TEMPLATE_MANAGER_SCRIPT_DUO = str(SCRIPT_DIR / "template_manager_script_bpf_duo.py")
 TEMPLATE_MANAGER_SCRIPT_MULTI_BODY = str(
-    SCRIPT_DIR / "template_manager_script_bpf_multi_body.py"
+    SCRIPT_DIR / "pipeline_scripts" / "multi_bfp" / "template_manager_script_bpf_multi_body.py"
 )
 
 
@@ -186,7 +186,7 @@ class TGTTracker:
             use_gesture=True,
             # TODO swap to Centernet trained from https://github.com/xingyizhou/CenterNet.git
             body_model: MovenetModel = "thunder",
-            body_score_thresh=0.3,
+            body_score_thresh=0.1,
             hands_up_only=False,
             single_hand_tolerance_thresh: int = 10,
             use_same_image=True,
@@ -598,6 +598,7 @@ class TGTTracker:
 
         # Perform the substitution
         code = template.substitute(
+            _STUB_IMPORTS='"""',
             _TRACE1="node.warn" if self.trace & 1 else "#",
             _TRACE2="node.warn" if self.trace & 2 else "#",
             _pd_score_thresh=self.pd_score_thresh,
@@ -620,6 +621,10 @@ class TGTTracker:
         import re
 
         code = re.sub(r'"{3}.*?"{3}', "", code, flags=re.DOTALL)
+        # Remove None placeholders
+        code = re.sub(r"[^ ]+ {2}###", "", code)
+        # Remove triple comment on traces and blocks
+        code = re.sub(r"###", "", code)
         code = re.sub(r"#.*", "", code)
         code = re.sub('\n\s*\n', "\n", code)
         # For debugging
