@@ -16,7 +16,7 @@ img_w = ${_img_w}
 frame_size = ${_frame_size}
 crop_w = ${_crop_w}
 
-${_TRACE1} ("Starting manager script node")
+${_TRACE1}("Starting manager script node")
 
 ${_IF_USE_HANDEDNESS_AVERAGE}
 class HandednessAverage:
@@ -51,7 +51,7 @@ class BufferMgr:
             buf = self._bufs[size]
         except KeyError:
             buf = self._bufs[size] = Buffer(size)
-            ${_TRACE2} (f"New buffer allocated: {size}")
+            ${_TRACE2}(f"New buffer allocated: {size}")
         return buf
 
 buffer_mgr = BufferMgr()
@@ -61,7 +61,7 @@ def send_result(result):
     buffer = buffer_mgr(len(result_serial))  
     buffer.getData()[:] = result_serial  
     node.io['host'].send(buffer)
-    ${_TRACE2} ("Manager sent result to host")
+    ${_TRACE2}("Manager sent result to host")
 
 # pd_inf: boolean. Has the palm detection run on the frame ?
 # nb_lm_inf: 0 or 1 (or 2 in duo mode). Number of landmark regression inferences on the frame.
@@ -113,10 +113,10 @@ while True:
     if send_new_frame_to_branch == 1: # Routing frame to pd branch
         hands = []
         node.io['pre_pd_manip_cfg'].send(cfg_pre_pd)
-        ${_TRACE2} ("Manager sent thumbnail config to pre_pd manip")
+        ${_TRACE2}("Manager sent thumbnail config to pre_pd manip")
         # Wait for pd post processing's result 
         detection = node.io['from_post_pd_nn'].get().getLayerFp16("result")
-        ${_TRACE2} (f"Manager received pd result (len={len(detection)}) : "+str(detection))
+        ${_TRACE2}(f"Manager received pd result (len={len(detection)}) : "+str(detection))
         # detection is list of 2x8 float
         # Looping the detection twice to obtain data for 2 hands
         for i in range(2):
@@ -133,7 +133,7 @@ while True:
                 sqn_rr_center_y = box_y - 0.5*box_size*cos(rotation)
                 hands.append([sqn_rr_size, rotation, sqn_rr_center_x, sqn_rr_center_y])
         
-        ${_TRACE1} (f"Palm detection - nb hands detected: {len(hands)}")
+        ${_TRACE1}(f"Palm detection - nb hands detected: {len(hands)}")
         # If list is empty, meaning no hand is detected
         if len(hands) == 0:
             send_result_no_hand(True, 0)
@@ -147,7 +147,7 @@ while True:
             detected_hands = hands
         else:
             # otherwise detected_hands come from last frame
-            ${_TRACE1} (f"Keep previous landmarks")
+            ${_TRACE1}(f"Keep previous landmarks")
             pass
 
     # Constructing input data for landmark inference, the input data of both hands are sent for inference without 
@@ -171,7 +171,7 @@ while True:
         ${_IF_USE_SAME_IMAGE}
         node.io['pre_lm_manip_cfg'].send(cfg)
         nb_lm_inf += 1
-        ${_TRACE2} (f"Manager sent config to pre_lm manip (reuse previous frame = {reuse_prev_image})")
+        ${_TRACE2}(f"Manager sent config to pre_lm manip (reuse previous frame = {reuse_prev_image})")
 
     hand_landmarks = dict([("lm_score", []), ("handedness", []), ("rotation", []),
                      ("rect_center_x", []), ("rect_center_y", []), ("rect_size", []), ("rrn_lms", []), ('sqn_lms', []),
@@ -184,7 +184,7 @@ while True:
         sqn_rr_size, rotation, sqn_rr_center_x, sqn_rr_center_y = hand
         # Wait for lm's result
         lm_result = node.io['from_lm_nn'].get()
-        ${_TRACE2} ("Manager received result from lm nn")
+        ${_TRACE2}("Manager received result from lm nn")
         lm_score = lm_result.getLayerFp16("Identity_1")[0]
         if lm_score > ${_lm_score_thresh}:
             handedness = lm_result.getLayerFp16("Identity_2")[0]
@@ -221,10 +221,10 @@ while True:
             cfg = SpatialLocationCalculatorConfig()
             cfg.addROI(conf_data)
             node.io['spatial_location_config'].send(cfg)
-            ${_TRACE2} ("Manager sent ROI to spatial_location_config")
+            ${_TRACE2}("Manager sent ROI to spatial_location_config")
             # Wait xyz response
             xyz_data = node.io['spatial_data'].get().getSpatialLocations()
-            ${_TRACE2} ("Manager received spatial_location")
+            ${_TRACE2}("Manager received spatial_location")
             coords = xyz_data[0].spatialCoordinates
             xyz = [coords.x, coords.y, coords.z]
             roi = xyz_data[0].config.roi
@@ -293,7 +293,7 @@ while True:
             updated_detect_hands.append(hand)
     detected_hands = updated_detect_hands
 
-    ${_TRACE1} (f"Landmarks - nb hands confirmed : {len(detected_hands)}")
+    ${_TRACE1}(f"Landmarks - nb hands confirmed : {len(detected_hands)}")
 
     # Check that 2 detected hands do not correspond to the same hand in the image
     # That may happen when one hand in the image cross another one
@@ -309,7 +309,7 @@ while True:
             for k in hand_landmarks:
                 hand_landmarks[k].pop(pop_i)
             detected_hands.pop(pop_i)
-            ${_TRACE1} ("!!! Removing one hand because too close to the other one")
+            ${_TRACE1}("!!! Removing one hand because too close to the other one")
 
     nb_hands = len(detected_hands)
 
@@ -317,7 +317,7 @@ while True:
     if send_new_frame_to_branch == 1 or nb_hands_in_previous_frame != nb_hands:
         for i in range(2):
             handedness_avg[i].reset()
-        ${_TRACE2} (f"Reset handedness_avg")
+        ${_TRACE2}(f"Reset handedness_avg")
     # Replace current inferred handedness by the average handedness
     for i in range(nb_hands):
         hand_landmarks["handedness"][i] = handedness_avg[i].update(hand_landmarks["handedness"][i])
@@ -328,7 +328,7 @@ while True:
         for k in hand_landmarks:
             hand_landmarks[k].pop(1)
         nb_hands = 1
-        ${_TRACE1} ("!!! Removing one hand because same handedness")
+        ${_TRACE1}("!!! Removing one hand because same handedness")
 
     if nb_hands == 1:
         single_hand_count += 1

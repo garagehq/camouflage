@@ -20,7 +20,7 @@ img_w = 0  ###${_img_w} # noqa
 frame_size = 0  ###${_frame_size} # noqa
 crop_w = 0  ###${_crop_w} # noqa
 
-###${_TRACE1} ("Starting manager script node") # noqa
+###${_TRACE1}("Starting manager script node") # noqa
 
 single_hand_count = 0
 
@@ -108,6 +108,7 @@ def determine_torso_and_body_range(x, y, scores, center_x, center_y):
     return [max_torso_yrange, max_torso_xrange, max_body_yrange, max_body_xrange]
 
 
+# noinspection DuplicatedCode
 def determine_crop_region(scores, x, y):
     # Determines the region to crop the image for the model to run inference on.
     # The algorithm uses the detected joints from the previous frame to estimate
@@ -119,22 +120,36 @@ def determine_crop_region(scores, x, y):
 
     if torso_visible(scores):
         # noinspection DuplicatedCode
-        viable_joints = [idx for idx in torso_joints if scores[idx] > body_score_thresh]
-        if len(viable_joints) < 2:
+        viable_joints_indexes = [idx for idx in torso_joints if scores[idx] > body_score_thresh]
+
+        if len(viable_joints_indexes) < 2:
             return init_crop_region
-        viable_center_x = sum([x[idx] for idx in viable_joints]) // len(viable_joints)
-        viable_center_y = sum([y[idx] for idx in viable_joints]) // len(viable_joints)
+        viable_center_x = sum([x[idx] for idx in viable_joints_indexes]) // len(viable_joints_indexes)
+        viable_center_y = sum([y[idx] for idx in viable_joints_indexes]) // len(viable_joints_indexes)
+        node.warn(f"x: {viable_center_x} y: {viable_center_y}")
 
         max_torso_yrange, max_torso_xrange, max_body_yrange, max_body_xrange = \
             (determine_torso_and_body_range(x, y, scores, viable_center_x, viable_center_y))
         # noinspection DuplicatedCode
-        crop_length_half_torso_range = max(max_torso_xrange * 2.1, max_torso_yrange * 2.1,
-                                           max_body_yrange * 1.2, max_body_xrange * 1.2)
-        crop_length_half = int(round(min(
-            crop_length_half_torso_range,
-            max(viable_center_x, img_w - viable_center_x, viable_center_y, img_h - viable_center_y))
-        ))
+        crop_length_half_torso_range = round(max(max_torso_xrange * 4.5, max_torso_yrange * 4.5,
+                                                 max_body_yrange * 1.8, max_body_xrange * 1.8))
+
+        # node.warn(f"center size raw: {viable_center_x, viable_center_y, crop_length_half_torso_range}")
+
+        # calculate the amount by which the crop region exceeds the closest edge and nudge it away
+        x_overhang = crop_length_half_torso_range - min(viable_center_x, img_w - viable_center_x)
+        y_overhang = crop_length_half_torso_range - min(viable_center_y, img_h - viable_center_y)
+        if x_overhang > 0:
+            viable_center_x += x_overhang if viable_center_x < img_w - viable_center_x else -x_overhang
+        if y_overhang > 0:
+            viable_center_y += y_overhang if viable_center_y < img_w - viable_center_y else -y_overhang
+
+        # node.warn(f"center size: {viable_center_x, viable_center_y, crop_length_half_torso_range}")
+
+        crop_length_half = crop_length_half_torso_range
+
         crop_corner = [viable_center_x - crop_length_half, viable_center_y - crop_length_half]
+
 
         if crop_length_half > max(img_w, img_h) / 2:
             return init_crop_region
@@ -226,9 +241,8 @@ def get_one_hand_zone(hand_label):
     # Values are expressed in pixels in the source image C.S.
     # If the wrist keypoint is not visible, return None.
     # If self.hands_up_only is True, return None if wrist keypoint is below elbow keypoint.
-    wrist_kp = hand_label + "_wrist"
-    id_wrist = BODY_KP[wrist_kp]
-    if body_scores[id_wrist] < body_score_thresh:
+    id_wrist = BODY_KP[hand_label + "_wrist"]
+    if body_scores[id_wrist] < body_score_thresh / 2:
         return None
     x = body_x[id_wrist]
     y = body_y[id_wrist]
@@ -332,7 +346,7 @@ class BufferMgr:
             buf = self._bufs[size]
         except KeyError:
             buf = self._bufs[size] = Buffer(size)
-            ###${_TRACE2} (f"New buffer allocated: {size}") # noqa
+            ###${_TRACE2}(f"New buffer allocated: {size}") # noqa
         return buf
 
 
@@ -344,7 +358,7 @@ def send_result(result):
     buffer = buffer_mgr(len(result_serial))
     buffer.getData()[:] = result_serial
     node.io['host'].send(buffer)
-    ###${_TRACE2} ("Manager sent result to host") # noqa
+    ###${_TRACE2}("Manager sent result to host") # noqa
 
 
 def send_result_no_hand(bd_pd_inf, nb_lm_inf):
@@ -412,38 +426,40 @@ while True:
     if send_new_frame_to_branch == 0:  # Routing frame to body detection
         cfg_pre_body = ImageManipConfig()
         points = [
-            [crop_region['x_min'], crop_region['y_min']],
-            [crop_region['x_max'] - 1, crop_region['y_min']],
-            [crop_region['x_max'] - 1, crop_region['y_max'] - 1],
-            [crop_region['x_min'], crop_region['y_max'] - 1]]
+            [init_crop_region['x_min'], init_crop_region['y_min']],
+            [init_crop_region['x_max'] - 1, init_crop_region['y_min']],
+            [init_crop_region['x_max'] - 1, init_crop_region['y_max'] - 1],
+            [init_crop_region['x_min'], init_crop_region['y_max'] - 1]]
+        node.warn(f"points {points}")
         point2fList = []
         for p in points:
             pt = Point2f()
             pt.x, pt.y = p[0], p[1]
             point2fList.append(pt)
         cfg_pre_body.setWarpTransformFourPoints(point2fList, False)
-        body_input_length = None  ###${_body_input_length} # noqa
+        body_input_length = 0  ###${_body_input_length} # noqa
+        # noinspection DuplicatedCode
         cfg_pre_body.setResize(body_input_length, body_input_length)
         cfg_pre_body.setFrameType(ImgFrame.Type.RGB888p)
         node.io['pre_body_manip_cfg'].send(cfg_pre_body)
-        ###${_TRACE2} ("Manager sent thumbnail config to pre_body manip") # noqa
+        ###${_TRACE2}("Manager sent thumbnail config to pre_body manip") # noqa
         # Wait for the body detection result 
         body = node.io['from_body_nn'].get().getLayerFp16("Identity")
-        ###${_TRACE2} ("Manager received result from body_nn")
+        ###${_TRACE2}("Manager received result from body_nn")
         # Extract body keypoints and calculate smart crop for the next frame
-        body_x, body_y, body_scores, crop_region = movenet_postprocess(body, crop_region)
+        body_x, body_y, body_scores, crop_region_DUMMY = movenet_postprocess(body, crop_region)
         # node.warn(f"{str(crop_region)}")
 
         # Calculate pre focus zone
         zone, hand_label = get_focus_zone("${_body_pre_focusing}")
         if not zone:
-            ###${_TRACE1} (f"Body pre focusing zone: None") # noqa
+            ###${_TRACE1}(f"Body pre focusing zone: None") # noqa
             send_result_no_hand(1, 0)
             nb_hands_in_previous_frame = 0
             continue
 
         x_min, y_min, x_max, y_max = zone
-        ###${_TRACE1} (f"Body pre focusing zone: ({x_min}, {y_min}), ({x_max}, {y_max})") # noqa
+        ###${_TRACE1}(f"Body pre focusing zone: ({x_min}, {y_min}), ({x_max}, {y_max})") # noqa
         # noinspection DuplicatedCode
         points = [
             [x_min, y_min],
@@ -463,32 +479,37 @@ while True:
     if send_new_frame_to_branch == 1:  # Routing frame to pd branch
         hands = []
         node.io['pre_pd_manip_cfg'].send(cfg_pre_pd)
-        ###${_TRACE2} ("Manager sent thumbnail config to pre_pd manip") # noqa
+        ###${_TRACE2}("Manager sent thumbnail config to pre_pd manip") # noqa
         # Wait for pd post-processing result
         detection = node.io['from_post_pd_nn'].get().getLayerFp16("result")
-        ###${_TRACE2} ("Manager received pd result (len={len(detection)}) : "+str(detection)) # noqa
+        ###${_TRACE2}("Manager received pd result (len={len(detection)}) : "+str(detection)) # noqa
         # detection is a list of 2x8 float
         # Looping the detection twice to obtain data for 2 hands
+        out = []
         for i in range(2):
             pd_score, box_x, box_y, box_size, kp0_x, kp0_y, kp2_x, kp2_y = detection[i * 8:(i + 1) * 8]
-            # node.warn(f"{round(box_x,2)}, {round(box_y,2)}, {round(box_size,2)}, {round(kp0_x,2)}, {round(kp0_y,2)}, {round(kp2_x,2)}, {round(kp2_y,2)}")
             if pd_score >= pd_score_thresh and box_size > 0:
                 # noinspection DuplicatedCode  # noqa
                 if zone:
                     # x_min, y_min, x_max are expressed in pixel in the source image C.S. box_x, box_y, box_size, 
                     # kp0_x, kp0_y, kp2_x, kp2_y are normalized coords in square zone We need box_x, box_y, box_size,
                     # kp0_x, kp0_y, kp2_x, kp2_y expressed in normalized coords in squared source image (sqn_)!
+                    # conversion factor from frame size to box size
                     sqn_zone_size = (x_max - x_min) / frame_size
+                    # determine box size relative to frame in normals
                     box_size *= sqn_zone_size
+                    # divide by conversion factor for box norms -> frame norms
                     sqn_x_min = x_min / frame_size
                     sqn_y_min = (y_min + pad_h) / frame_size
-                    box_x = sqn_x_min + box_x * sqn_zone_size
+
+                    box_x = (box_x * sqn_zone_size) + sqn_x_min
                     # node.warn(f"{round(sqn_y_min, 2)}, {round(box_y, 2)}, {round(sqn_zone_size, 2)}")
-                    box_y = sqn_y_min + box_y * sqn_zone_size
-                    kp0_x = sqn_x_min + kp0_x * sqn_zone_size
-                    kp0_y = sqn_y_min + kp0_y * sqn_zone_size
-                    kp2_x = sqn_x_min + kp2_x * sqn_zone_size
-                    kp2_y = sqn_y_min + kp2_y * sqn_zone_size
+                    box_y = (box_y * sqn_zone_size) + sqn_y_min
+                    kp0_x = (kp0_x * sqn_zone_size) + sqn_x_min
+                    kp0_y = (kp0_y * sqn_zone_size) + sqn_y_min
+                    kp2_x = (kp2_x * sqn_zone_size) + sqn_x_min
+                    kp2_y = (kp2_y * sqn_zone_size) + sqn_y_min
+                    out.append(box_x)
 
                 # scale_center_x = sqn_scale_x - sqn_rr_center_x
                 # scale_center_y = sqn_scale_y - sqn_rr_center_y
@@ -501,7 +522,9 @@ while True:
                 sqn_rr_center_y = box_y - 0.5 * box_size * cos(rotation)
                 hands.append([sqn_rr_size, rotation, sqn_rr_center_x, sqn_rr_center_y])
 
-        ###${_TRACE1} (f"Palm detection - nb hands detected: {len(hands)}") # noqa
+        # node.warn(f"{out}")
+
+        ###${_TRACE1}(f"Palm detection - nb hands detected: {len(hands)}") # noqa
         # Check if the list is empty, meaning no hand is detected
         if len(hands) == 0:
             send_result_no_hand(2, 0)
@@ -513,7 +536,7 @@ while True:
             detected_hands = hands
         else:
             # otherwise detected_hands come from the last frame
-            ###${_TRACE1} (f"Keep previous landmarks") # noqa
+            ###${_TRACE1}(f"Keep previous landmarks") # noqa
             pass
 
     # Constructing input data for landmark inference, the input data of both hands are sent for inference without 
@@ -541,7 +564,7 @@ while True:
         ###${_IF_USE_SAME_IMAGE} # noqa
         node.io['pre_lm_manip_cfg'].send(cfg)
         nb_lm_inf += 1
-        ###${_TRACE2} (f"Manager sent config to pre_lm manip (reuse previous frame = {reuse_prev_image})") # noqa
+        ###${_TRACE2}(f"Manager sent config to pre_lm manip (reuse previous frame = {reuse_prev_image})") # noqa
 
     hand_landmarks = dict([("lm_score", []), ("handedness", []), ("rotation", []),
                            ("rect_center_x", []), ("rect_center_y", []), ("rect_size", []), ("rrn_lms", []),
@@ -555,7 +578,7 @@ while True:
         sqn_rr_size, rotation, sqn_rr_center_x, sqn_rr_center_y = hand
         # Wait for lm's result
         lm_result = node.io['from_lm_nn'].get()
-        ###${_TRACE2} ("Manager received result from lm nn") # noqa
+        ###${_TRACE2}("Manager received result from lm nn") # noqa
         lm_score = lm_result.getLayerFp16("Identity_1")[0]
         if lm_score > lm_score_thresh:
             # noinspection DuplicatedCode
@@ -591,10 +614,10 @@ while True:
             cfg = SpatialLocationCalculatorConfig()
             cfg.addROI(conf_data)
             node.io['spatial_location_config'].send(cfg)
-            ###${_TRACE2} ("Manager sent ROI to spatial_location_config") # noqa
+            ###${_TRACE2}("Manager sent ROI to spatial_location_config") # noqa
             # Wait xyz response
             xyz_data = node.io['spatial_data'].get().getSpatialLocations()
-            ###${_TRACE2} ("Manager received spatial_location") # noqa
+            ###${_TRACE2}("Manager received spatial_location") # noqa
             coords = xyz_data[0].spatialCoordinates
             xyz = [coords.x, coords.y, coords.z]
             roi = xyz_data[0].config.roi
@@ -666,11 +689,11 @@ while True:
 
             last_detected_hands_id = ih
 
-        ###${_TRACE2} (f"compared lm score {lm_score} with theshhold { ${_lm_score_thresh} }") # noqa
+        ###${_TRACE2}(f"compared lm score {lm_score} with theshhold { ${_lm_score_thresh} }") # noqa
 
     detected_hands = updated_detect_hands
 
-    ###${_TRACE1} (f"Landmarks - nb hands confirmed : {len(detected_hands)}") # noqa
+    ###${_TRACE1}(f"Landmarks - nb hands confirmed : {len(detected_hands)}") # noqa
 
     # Check that 2 detected hands do not correspond to the same hand in the image
     # That may happen when one hand in the image cross another one
@@ -687,7 +710,7 @@ while True:
             for k in hand_landmarks:
                 hand_landmarks[k].pop(pop_i)
             detected_hands.pop(pop_i)
-            ###${_TRACE1} ("!!! Removing one hand because too close to the other one") # noqa
+            ###${_TRACE1}("!!! Removing one hand because too close to the other one") # noqa
 
     nb_hands = len(detected_hands)
 

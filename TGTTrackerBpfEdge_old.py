@@ -11,7 +11,7 @@ import cv2
 import depthai.node as n
 import numpy as np
 from depthai import Pipeline, CameraBoardSocket, Device, CameraSensorType, MonoCameraProperties, \
-    ColorCameraProperties, OpenVINO, ImgFrame, Point2f, ImageManipConfig
+    ColorCameraProperties, OpenVINO, ImgFrame
 import mediapipe_utils as mpu
 from FPS import FPS
 
@@ -30,9 +30,11 @@ MOVENET_LIGHTNING_MODEL = str(
 MOVENET_THUNDER_MODEL = str(
     SCRIPT_DIR / "models/movenet_singlepose_thunder_U8_transpose.blob"
 )
-SCRIPT_BODY_CONF = str(SCRIPT_DIR / "pipeline_scripts" / "multi_bfp" / "build_pd_config.py")
-SCRIPT_HAND_LM_CONF = str(SCRIPT_DIR / "pipeline_scripts" / "multi_bfp" / "build_lm_config.py")
-SCRIPT_RESULTS = str(SCRIPT_DIR / "pipeline_scripts" / "multi_bfp" / "result_out.py")
+TEMPLATE_MANAGER_SCRIPT_SOLO = str(SCRIPT_DIR / "template_manager_script_bpf_solo.py")
+TEMPLATE_MANAGER_SCRIPT_DUO = str(SCRIPT_DIR / "template_manager_script_bpf_duo.py")
+TEMPLATE_MANAGER_SCRIPT_MULTI_BODY = str(
+    SCRIPT_DIR / "pipeline_scripts" / "multi_bfp" / "template_manager_script_bpf_multi_body.py"
+)
 
 
 def to_planar(arr: np.ndarray, shape: tuple) -> np.ndarray:
@@ -58,8 +60,7 @@ RGBFullResolutionDim = Tuple[Literal[1920], Literal[1080]]
 RGBUltraResolutionDim = Tuple[Literal[3840], Literal[2160]]
 SupportedResolution = Union[SRRGBResolutionDim, RGBFullResolutionDim, RGBUltraResolutionDim]
 
-TraceLevel = Literal[
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+TraceLevel = Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
 
 class DeviceCapability:
@@ -76,6 +77,8 @@ class DeviceCapability:
         if self.mono_stereo:
             return
         cam.setPreviewSize(320, 320)
+
+
 
 
 # noinspection PyTypeChecker
@@ -189,7 +192,7 @@ class TGTTracker:
             use_same_image=True,
             lm_nb_threads: int = 2,
             stats=False,
-            trace: TraceLevel = 0,
+            trace: int = 0,
     ):
         self.pd_input_length = 128
         self.lm_input_length = 224
@@ -296,9 +299,6 @@ class TGTTracker:
             if input_src in get_args(TOF):
                 self.internal_fps = 15
 
-            if self.trace & 16:
-                self.internal_fps = 2
-
             if self.crop:
                 self.frame_size, self.scale_nd = mpu.find_isp_scale_params(
                     internal_frame_height, self.resolution
@@ -404,17 +404,8 @@ class TGTTracker:
                 cam.setPreviewSize(self.img_w, self.img_h)
 
         # Define manager script node
-        pd_script = self.build_manager_script(SCRIPT_BODY_CONF, pipeline)
-        hand_lm_script = self.build_manager_script(SCRIPT_HAND_LM_CONF, pipeline)
-
-        results_script = self.build_manager_script(SCRIPT_RESULTS, pipeline)
-        results_script.inputs["early_out_pd"].setBlocking(False)
-        results_script.inputs["early_out_pd"].setQueueSize(4)
-        results_script.inputs["early_out_lm"].setBlocking(False)
-        results_script.inputs["early_out_lm"].setQueueSize(4)
-
-        pd_script.outputs["early_out_pd"].link(results_script.inputs["early_out_pd"])
-        hand_lm_script.outputs["early_out_lm"].link(results_script.inputs["early_out_lm"])
+        manager_script = pipeline.create(n.Script)
+        manager_script.setScript(self.build_manager_script())
 
         if self.xyz:
             spatial_location_calculator = pipeline.createSpatialLocationCalculator()
@@ -480,10 +471,10 @@ class TGTTracker:
             else:
                 raise ValueError(f"{self.input_device} is not a supported type")
 
-            # manager_script.outputs["spatial_location_config"].link(
-            #     spatial_location_calculator.inputConfig
-            # )
-            # spatial_location_calculator.out.link(manager_script.inputs["spatial_data"])
+            manager_script.outputs["spatial_location_config"].link(
+                spatial_location_calculator.inputConfig
+            )
+            spatial_location_calculator.out.link(manager_script.inputs["spatial_data"])
 
             # Define body pose detection pre-processing: resize preview to (self.body_input_length,
             # self.body_input_length)
@@ -498,37 +489,21 @@ class TGTTracker:
 
         print("Creating Body Pose Detection pre processing image manip...")
         pre_body_manip = pipeline.create(n.ImageManip)
-
         pre_body_manip.setMaxOutputFrameSize(
             self.body_input_length * self.body_input_length * 3
         )
+        pre_body_manip.setWaitForConfigInput(True)
         pre_body_manip.inputImage.setQueueSize(1)
         pre_body_manip.inputImage.setBlocking(False)
 
-        crop_region = {'x_min': 0, 'y_min': -self.pad_h, 'x_max': self.frame_size,
-                       'y_max': -self.pad_h + self.frame_size, 'size': self.frame_size}
-        points = [
-            [crop_region['x_min'], crop_region['y_min']],
-            [crop_region['x_max'] - 1, crop_region['y_min']],
-            [crop_region['x_max'] - 1, crop_region['y_max'] - 1],
-            [crop_region['x_min'], crop_region['y_max'] - 1]]
-        point2fList = []
-        for p in points:
-            pt = Point2f()
-            pt.x, pt.y = p[0], p[1]
-            point2fList.append(pt)
-        pre_body_manip.initialConfig.setWarpTransformFourPoints(point2fList, False)
-        pre_body_manip.initialConfig.setResize(self.body_input_length, self.body_input_length)
-        pre_body_manip.initialConfig.setFrameType(ImgFrame.Type.RGB888p)
-
         cam.preview.link(pre_body_manip.inputImage)
 
-        # manager_script.outputs["pre_body_manip_cfg"].link(pre_body_manip.inputConfig)
-        # # For debugging
-        # if self.trace & 4:
-        #     pre_body_manip_out = pipeline.createXLinkOut()
-        #     pre_body_manip_out.setStreamName("pre_body_manip_out")
-        #     pre_body_manip.out.link(pre_body_manip_out.input)
+        manager_script.outputs["pre_body_manip_cfg"].link(pre_body_manip.inputConfig)
+        # For debugging
+        if self.trace & 4:
+            pre_body_manip_out = pipeline.createXLinkOut()
+            pre_body_manip_out.setStreamName("pre_body_manip_out")
+            pre_body_manip.out.link(pre_body_manip_out.input)
 
         # Define landmark model
         print("Creating Body Pose Detection Neural Network...")
@@ -536,10 +511,9 @@ class TGTTracker:
         body_nn.setBlobPath(Path(self.body_model))
         # body_nn.setNumInferenceThreads(2)
         pre_body_manip.out.link(body_nn.input)
-        body_nn.out.link(pd_script.inputs["body_nn_data"])
-        body_nn.passthrough.link(pd_script.inputs["body_nn_frame"])
+        body_nn.out.link(manager_script.inputs["from_body_nn"])
 
-        # # Define palm detection pre-processing: resize preview to (self.pd_input_length, self.pd_input_length)
+        # Define palm detection pre-processing: resize preview to (self.pd_input_length, self.pd_input_length)
         print("Creating Palm Detection pre processing image manip...")
         pre_pd_manip = pipeline.create(n.ImageManip)
         pre_pd_manip.setMaxOutputFrameSize(
@@ -549,13 +523,13 @@ class TGTTracker:
         pre_pd_manip.inputImage.setQueueSize(1)
         pre_pd_manip.inputImage.setBlocking(False)
         cam.preview.link(pre_pd_manip.inputImage)
-        pd_script.outputs["pre_pd_manip_cfg"].link(pre_pd_manip.inputConfig)
+        manager_script.outputs["pre_pd_manip_cfg"].link(pre_pd_manip.inputConfig)
 
-        # # For debugging
-        # if self.trace & 4:
-        #     pre_pd_manip_out = pipeline.createXLinkOut()
-        #     pre_pd_manip_out.setStreamName("pre_pd_manip_out")
-        #     pre_pd_manip.out.link(pre_pd_manip_out.input)
+        # For debugging
+        if self.trace & 4:
+            pre_pd_manip_out = pipeline.createXLinkOut()
+            pre_pd_manip_out.setStreamName("pre_pd_manip_out")
+            pre_pd_manip.out.link(pre_pd_manip_out.input)
 
         # Define palm detection model
         print("Creating Palm Detection Neural Network...")
@@ -563,21 +537,20 @@ class TGTTracker:
         pd_nn.setBlobPath(Path(self.pd_model))
         pre_pd_manip.out.link(pd_nn.input)
 
-        # Define palm detection post-processing "model"
-        print("Creating Palm Detection post-processing Neural Network...")
+        # Define pose detection post processing "model"
+        print("Creating Palm Detection post processing Neural Network...")
         post_pd_nn = pipeline.create(n.NeuralNetwork)
         post_pd_nn.setBlobPath(Path(self.pp_model))
         pd_nn.out.link(post_pd_nn.input)
-        post_pd_nn.out.link(hand_lm_script.inputs["pd_data"])
-        post_pd_nn.passthrough.link(hand_lm_script.inputs["pd_frame"])
+        post_pd_nn.out.link(manager_script.inputs["from_post_pd_nn"])
 
         # Define link to send result to host
         manager_out = pipeline.create(n.XLinkOut)
         manager_out.setStreamName("manager_out")
-        results_script.outputs["host"].link(manager_out.input)
+        manager_script.outputs["host"].link(manager_out.input)
 
         # Define landmark pre-processing image manip
-        print("Creating Hand Landmark pre-processing image manip...")
+        print("Creating Hand Landmark pre processing image manip...")
         pre_lm_manip = pipeline.create(n.ImageManip)
         pre_lm_manip.setMaxOutputFrameSize(
             self.lm_input_length * self.lm_input_length * 3
@@ -587,27 +560,28 @@ class TGTTracker:
         pre_lm_manip.inputImage.setBlocking(False)
         cam.preview.link(pre_lm_manip.inputImage)
 
-        # # For debugging
-        # if self.trace & 4:
-        #     pre_lm_manip_out = pipeline.createXLinkOut()
-        #     pre_lm_manip_out.setStreamName("pre_lm_manip_out")
-        #     pre_lm_manip.out.link(pre_lm_manip_out.input)
+        # For debugging
+        if self.trace & 4:
+            pre_lm_manip_out = pipeline.createXLinkOut()
+            pre_lm_manip_out.setStreamName("pre_lm_manip_out")
+            pre_lm_manip.out.link(pre_lm_manip_out.input)
 
-        hand_lm_script.outputs["pre_lm_manip_cfg"].link(pre_lm_manip.inputConfig)
+        manager_script.outputs["pre_lm_manip_cfg"].link(pre_lm_manip.inputConfig)
 
         # Define landmark model
-        print(f"Creating Hand Landmark Neural Network ({self.lm_nb_threads} threads)...")
+        print(
+            f"Creating Hand Landmark Neural Network ({self.lm_nb_threads} threads)..."
+        )
         lm_nn = pipeline.create(n.NeuralNetwork)
         lm_nn.setBlobPath(Path(self.lm_model))
         lm_nn.setNumInferenceThreads(self.lm_nb_threads)
         pre_lm_manip.out.link(lm_nn.input)
-        lm_nn.out.link(results_script.inputs["lm_nn_data"])
-        lm_nn.passthrough.link(results_script.inputs["lm_nn_frame"])
+        lm_nn.out.link(manager_script.inputs["from_lm_nn"])
 
         print("Pipeline created.")
         return pipeline
 
-    def build_manager_script(self, script_path, pipeline):
+    def build_manager_script(self):
         """
         The code of the scripting node 'manager_script' depends on:
             - the score threshold,
@@ -615,59 +589,50 @@ class TGTTracker:
         So we build this code from the content of the file template_manager_script_*.py,
         which is a python template
         """
-        manager_script = pipeline.create(n.Script)
-
         # Read the template
-        with open(script_path, "r") as file:
+        with open(
+                TEMPLATE_MANAGER_SCRIPT_MULTI_BODY,
+                "r",
+        ) as file:
             template = Template(file.read())
-            name = file.name.split("/")[-1].split(".")[0]
-            if len(name) > 15:
-                raise NameError("make the script name shorter or edit the padding code below this error")
-            name += (" "*(15-len(name)))
 
-            subs = {
-                "_STUB_IMPORTS": '"""',
-                "_NAME": name,
-                "_TRACE1": "node.warn" if self.trace & 1 else "#",
-                "_TRACE2": "node.warn" if self.trace & 2 else "#",
-                "_TRACE_DUMP": "node.warn" if self.trace & 16 else "#",
-                "_frame_queue_size": 4,
-                "_fps": self.internal_fps,
-                "_pd_score_thresh": self.pd_score_thresh,
-                "_lm_score_thresh": self.lm_score_thresh,
-                "_pad_h": self.pad_h,
-                "_img_h": self.img_h,
-                "_img_w": self.img_w,
-                "_frame_size": self.frame_size,
-                "_crop_w": self.crop_w,
-                "_IF_XYZ": "" if self.xyz else '"""',
-                "_body_pre_focusing": self.body_pre_focusing,
-                "_body_score_thresh": self.body_score_thresh,
-                "_body_input_length": self.body_input_length,
-                "_hands_up_only": self.hands_up_only,
-                "_single_hand_tolerance_thresh": self.single_hand_tolerance_thresh,
-                "_IF_USE_SAME_IMAGE": "" if self.use_same_image else '"""',
-                "_IF_USE_WORLD_LANDMARKS": "" if self.use_world_landmarks else '"""'
-            }
-            # Perform the substitution
-            code = template.substitute(**subs)
-            # Remove comments and empty lines
-            import re
+        # Perform the substitution
+        code = template.substitute(
+            _STUB_IMPORTS='"""',
+            _TRACE1="node.warn" if self.trace & 1 else "#",
+            _TRACE2="node.warn" if self.trace & 2 else "#",
+            _pd_score_thresh=self.pd_score_thresh,
+            _lm_score_thresh=self.lm_score_thresh,
+            _pad_h=self.pad_h,
+            _img_h=self.img_h,
+            _img_w=self.img_w,
+            _frame_size=self.frame_size,
+            _crop_w=self.crop_w,
+            _IF_XYZ="" if self.xyz else '"""',
+            _body_pre_focusing=self.body_pre_focusing,
+            _body_score_thresh=self.body_score_thresh,
+            _body_input_length=self.body_input_length,
+            _hands_up_only=self.hands_up_only,
+            _single_hand_tolerance_thresh=self.single_hand_tolerance_thresh,
+            _IF_USE_SAME_IMAGE="" if self.use_same_image else '"""',
+            _IF_USE_WORLD_LANDMARKS="" if self.use_world_landmarks else '"""',
+        )
+        # Remove comments and empty lines
+        import re
 
-            # Remove None placeholders
-            code = re.sub(r"[^#\s]+ *#{3}", "", code)
-            # Remove triple comment on traces and blocks
-            code = re.sub(r"###", "", code)
-            code = re.sub(r'"{3}.*?"{3}', "", code, flags=re.DOTALL)
-            code = re.sub(r"#.*", "", code)
-            code = re.sub('\n\s*\n', "\n", code)
-            # For debugging
-            if self.trace & 8:
-                with open("tmp_code.py", "w") as file:
-                    file.write(code)
+        code = re.sub(r'"{3}.*?"{3}', "", code, flags=re.DOTALL)
+        # Remove None placeholders
+        code = re.sub(r"[^ ]+ {2}###", "", code)
+        # Remove triple comment on traces and blocks
+        code = re.sub(r"###", "", code)
+        code = re.sub(r"#.*", "", code)
+        code = re.sub('\n\s*\n', "\n", code)
+        # For debugging
+        if self.trace & 8:
+            with open("tmp_code.py", "w") as file:
+                file.write(code)
 
-            manager_script.setScript(code)
-        return manager_script
+        return code
 
     def extract_hand_data(self, res, hand_idx):
         hand = mpu.HandRegion()
@@ -741,9 +706,9 @@ class TGTTracker:
         # Get result from device
         res = marshal.loads(cast(ImgFrame, self.q_manager_out.get()).getData())
         hands = []
-        # for i in range(len(res.get("lm_score", []))):
-        #     hand = self.extract_hand_data(res, i)
-        #     hands.append(hand)
+        for i in range(len(res.get("lm_score", []))):
+            hand = self.extract_hand_data(res, i)
+            hands.append(hand)
 
         # Statistics
         if self.stats:
