@@ -29,6 +29,8 @@ if __name__ == "__main__":
                 "r",
         ) as file:
             template = Template(file.read())
+            name = file.name.split("/")[-1].split(".")[0]
+            name += (" " * (15 - len(name))) + ":"
 
         subs = {
             "_STUB_IMPORTS": '"""',
@@ -61,7 +63,7 @@ if __name__ == "__main__":
         code = re.sub(r"#.*", "", code)
         code = re.sub('\n\s*\n', "\n", code)
 
-        manager_script.setScript(code, )
+        manager_script.setScript(code, name)
         return manager_script
 
     device = Device()

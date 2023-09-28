@@ -50,7 +50,7 @@ BODY_KP = {
 torso_joints = [BODY_KP["left_hip"], BODY_KP["right_hip"], BODY_KP["left_shoulder"], BODY_KP["right_shoulder"]]
 
 
-def movenet_postprocess(body_lms):
+def centernet_postprocess(body_lms):
     scores = []
     x = []
     y = []
@@ -164,13 +164,13 @@ def get_focus_zone(p_body_x, p_body_y, p_body_scores):
                 return 0
 
         focus_size = estimate_focus_zone_size()
-        ###${_TRACE_DUMP}(f"${_NAME}: focus zone size????? {focus_size} center: ({wrist_x},{wrist_y})") # noqa
+        ###${_TRACE_DUMP}(f"${_NAME} focus zone size????? {focus_size} center: ({wrist_x},{wrist_y})") # noqa
         return [0, -pad_h, frame_size, frame_size - pad_h] if focus_size == 0 else zone_from_center_size(wrist_x,
                                                                                                          wrist_y, focus_size)
 
     zone_l = get_one_hand_zone("left")
     zone_r = get_one_hand_zone("right")
-    ###${_TRACE_DUMP}(f"${_NAME}: hand zones: l: {zone_l} r: {zone_r}") # noqa
+    ###${_TRACE_DUMP}(f"${_NAME} hand zones: l: {zone_l} r: {zone_r}") # noqa
     if zone_l is not None and zone_r is not None:
         xl1, yl1, xl2, yl2 = zone_l
         xr1, yr1, xr2, yr2 = zone_r
@@ -189,26 +189,67 @@ def get_focus_zone(p_body_x, p_body_y, p_body_scores):
         zone_hand = [None, None]
     else:
         zone_hand = [zone_l, "left"] if zone_l is not None else [zone_r, "right"]
-    ###${_TRACE_DUMP}(f"${_NAME}: hand zone determination: {zone_hand}") # noqa
+    ###${_TRACE_DUMP}(f"${_NAME} hand zone determination: {zone_hand}") # noqa
     return zone_hand
+
+
+def normalize_results(results, detection_zone):
+    # TODO
+    """
+    pd_score, box_x, box_y, box_size, kp0_x, kp0_y, kp2_x, kp2_y = detection[i * 8:(i + 1) * 8]
+    if pd_score >= pd_score_thresh and box_size > 0:
+        # noinspection DuplicatedCode  # noqa
+        if zone:
+            # x_min, y_min, x_max are expressed in pixel in the source image C.S. box_x, box_y, box_size,
+            # kp0_x, kp0_y, kp2_x, kp2_y are normalized coords in square zone We need box_x, box_y, box_size,
+            # kp0_x, kp0_y, kp2_x, kp2_y expressed in normalized coords in squared source image (sqn_)!
+            # conversion factor from frame size to box size
+            sqn_zone_size = (x_max - x_min) / frame_size
+            # determine box size relative to frame in normals
+            box_size *= sqn_zone_size
+            # divide by conversion factor for box norms -> frame norms
+            sqn_x_min = x_min / frame_size
+            sqn_y_min = (y_min + pad_h) / frame_size
+
+            box_x = (box_x * sqn_zone_size) + sqn_x_min
+            # node.warn(f"{round(sqn_y_min, 2)}, {round(box_y, 2)}, {round(sqn_zone_size, 2)}")
+            box_y = (box_y * sqn_zone_size) + sqn_y_min
+            kp0_x = (kp0_x * sqn_zone_size) + sqn_x_min
+            kp0_y = (kp0_y * sqn_zone_size) + sqn_y_min
+            kp2_x = (kp2_x * sqn_zone_size) + sqn_x_min
+            kp2_y = (kp2_y * sqn_zone_size) + sqn_y_min
+            out.append(box_x)
+
+        # scale_center_x = sqn_scale_x - sqn_rr_center_x
+        # scale_center_y = sqn_scale_y - sqn_rr_center_y
+        kp02_x = kp2_x - kp0_x
+        kp02_y = kp2_y - kp0_y
+        sqn_rr_size = 2.9 * box_size
+        rotation = 0.5 * pi - atan2(-kp02_y, kp02_x)
+        rotation = normalize_radians(rotation)
+        sqn_rr_center_x = box_x + 0.5 * box_size * sin(rotation)
+        sqn_rr_center_y = box_y - 0.5 * box_size * cos(rotation)
+        hands.append([sqn_rr_size, rotation, sqn_rr_center_x, sqn_rr_center_y])
+    """
+    return [0]
 
 
 while True:
     # noinspection PyUnresolvedReferences
     body = node.io['body_nn_data'].get().getLayerFp16("Identity")
     # noinspection PyUnresolvedReferences
-    frame = node.io['body_nn_frame'].get()
-    ###${_TRACE_DUMP}(f"${_NAME}: processing frame {frame.getSequenceNum()}") # noqa
+    frame: ImgFrame = node.io['body_nn_frame'].get()
+    ###${_TRACE_DUMP}(f"${_NAME} processing frame {frame.getSequenceNum()}") # noqa
 
     # Extract body keypoints TODO many bodies
-    body_x, body_y, body_scores = movenet_postprocess(body)
+    body_x, body_y, body_scores = centernet_postprocess(body)
 
-    ###${_TRACE_DUMP}(f"${_NAME}: got body keypoints") # noqa
+    ###${_TRACE_DUMP}(f"${_NAME} got body keypoints") # noqa
 
     # Calculate pre focus zone
     zone, hand_label = get_focus_zone(body_x, body_y, body_scores)
 
-    ###${_TRACE_DUMP}(f"${_NAME}: focus zone calculation complete") # noqa
+    ###${_TRACE_DUMP}(f"${_NAME} focus zone calculation complete") # noqa
 
     if zone:
         # noinspection DuplicatedCode
@@ -216,20 +257,25 @@ while True:
         ###${_TRACE1}(f"Body pre focusing zone: ({x_min}, {y_min}), ({x_max}, {y_max})") # noqa
         # noinspection DuplicatedCode
         points = [
-            [x_min, y_min],
-            [x_max, y_min],
-            [x_max, y_max],
-            [x_min, y_max]]
-        point2fList = []
-        for p in points:
-            pt = Point2f()
-            pt.x, pt.y = p[0], p[1]
-            point2fList.append(pt)
+            Point2f(x_min, y_min),
+            Point2f(x_max, y_min),
+            Point2f(x_max, y_max),
+            Point2f(x_min, y_max)
+        ]
         cfg_pre_pd = ImageManipConfig()
-        cfg_pre_pd.setWarpTransformFourPoints(point2fList, False)
+        cfg_pre_pd.setWarpTransformFourPoints(points, False)
         cfg_pre_pd.setResize(128, 128)
         # noinspection PyUnresolvedReferences
         node.io['pre_pd_manip_cfg'].send(cfg_pre_pd)
+
+        # noinspection PyUnresolvedReferences
+        nn_data: NNData = node.io['pd_data'].get()
+        # TODO may need to set seqNumber from the frame above if the NN node doesn't
+        # pd_detections = nn_data.getLayerFp16("result")
+        normalized_palms = normalize_results(nn_data.getLayerFp16("result"), zone)
+        nn_data.setLayer("result_processed", normalized_palms)
+        # noinspection PyUnresolvedReferences
+        node.io['processed_pd'].send(nn_data)
     else:
         ###${_TRACE1}(f"Body pre focusing zone: None") # noqa
         # noinspection PyUnresolvedReferences

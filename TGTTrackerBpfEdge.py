@@ -30,8 +30,8 @@ MOVENET_LIGHTNING_MODEL = str(
 MOVENET_THUNDER_MODEL = str(
     SCRIPT_DIR / "models/movenet_singlepose_thunder_U8_transpose.blob"
 )
-SCRIPT_BODY_CONF = str(SCRIPT_DIR / "pipeline_scripts" / "multi_bfp" / "build_pd_config.py")
-SCRIPT_HAND_LM_CONF = str(SCRIPT_DIR / "pipeline_scripts" / "multi_bfp" / "build_lm_config.py")
+SCRIPT_BODY_CONF = str(SCRIPT_DIR / "pipeline_scripts" / "multi_bfp" / "pd_manager.py")
+SCRIPT_HAND_LM_CONF = str(SCRIPT_DIR / "pipeline_scripts" / "multi_bfp" / "hand_lm_manager.py")
 SCRIPT_RESULTS = str(SCRIPT_DIR / "pipeline_scripts" / "multi_bfp" / "result_out.py")
 
 
@@ -342,7 +342,6 @@ class TGTTracker:
             -self.pad_h + self.frame_size,
             self.frame_size,
         )
-
         # Define and start pipeline
         pipeline = self.create_pipeline()
         self.device.startPipeline(pipeline)
@@ -403,7 +402,7 @@ class TGTTracker:
                 cam.setVideoSize(self.img_w, self.img_h)
                 cam.setPreviewSize(self.img_w, self.img_h)
 
-        # Define manager script node
+        # Define manager script nodes
         pd_script = self.build_manager_script(SCRIPT_BODY_CONF, pipeline)
         hand_lm_script = self.build_manager_script(SCRIPT_HAND_LM_CONF, pipeline)
 
@@ -414,7 +413,10 @@ class TGTTracker:
         results_script.inputs["early_out_lm"].setQueueSize(4)
 
         pd_script.outputs["early_out_pd"].link(results_script.inputs["early_out_pd"])
+        pd_script.outputs["processed_pd"].link(results_script.inputs["hand_lm_script"])
+
         hand_lm_script.outputs["early_out_lm"].link(results_script.inputs["early_out_lm"])
+        hand_lm_script.outputs["processed_hands"].link(results_script.inputs["processed_hands"])
 
         if self.xyz:
             spatial_location_calculator = pipeline.createSpatialLocationCalculator()
@@ -568,8 +570,8 @@ class TGTTracker:
         post_pd_nn = pipeline.create(n.NeuralNetwork)
         post_pd_nn.setBlobPath(Path(self.pp_model))
         pd_nn.out.link(post_pd_nn.input)
-        post_pd_nn.out.link(hand_lm_script.inputs["pd_data"])
-        post_pd_nn.passthrough.link(hand_lm_script.inputs["pd_frame"])
+        post_pd_nn.out.link(pd_script.inputs["pd_data"])
+        post_pd_nn.passthrough.link(pd_script.inputs["pd_frame"])
 
         # Define link to send result to host
         manager_out = pipeline.create(n.XLinkOut)
@@ -601,8 +603,8 @@ class TGTTracker:
         lm_nn.setBlobPath(Path(self.lm_model))
         lm_nn.setNumInferenceThreads(self.lm_nb_threads)
         pre_lm_manip.out.link(lm_nn.input)
-        lm_nn.out.link(results_script.inputs["lm_nn_data"])
-        lm_nn.passthrough.link(results_script.inputs["lm_nn_frame"])
+        lm_nn.out.link(hand_lm_script.inputs["lm_nn_data"])
+        lm_nn.passthrough.link(hand_lm_script.inputs["lm_nn_frame"])
 
         print("Pipeline created.")
         return pipeline
@@ -623,7 +625,7 @@ class TGTTracker:
             name = file.name.split("/")[-1].split(".")[0]
             if len(name) > 15:
                 raise NameError("make the script name shorter or edit the padding code below this error")
-            name += (" "*(15-len(name)))
+            name += (" "*(15-len(name)))+":"
 
             subs = {
                 "_STUB_IMPORTS": '"""',
@@ -631,7 +633,7 @@ class TGTTracker:
                 "_TRACE1": "node.warn" if self.trace & 1 else "#",
                 "_TRACE2": "node.warn" if self.trace & 2 else "#",
                 "_TRACE_DUMP": "node.warn" if self.trace & 16 else "#",
-                "_frame_queue_size": 4,
+                "_frame_queue_size": 3,
                 "_fps": self.internal_fps,
                 "_pd_score_thresh": self.pd_score_thresh,
                 "_lm_score_thresh": self.lm_score_thresh,

@@ -22,7 +22,7 @@ class FrameQueue:
             # noinspection PyArgumentList
             send_message(*message)
         else:
-            ###${_TRACE2}(f"dropping frame: {self.frame_no}") # noqa
+            ###${_TRACE_DUMP}(f"${_NAME} dropping frame: {self.frame_no}") # noqa
             del message
         self.queue.append(None)
         self.frame_no += 1
@@ -31,7 +31,7 @@ class FrameQueue:
     def push(self, seq_no, data):
         before = str(self.queue)
         insert_frame_no = seq_no
-        node.warn(f"inserting {insert_frame_no}")
+        ###${_TRACE_DUMP}(f"${_NAME} inserting {insert_frame_no}")
         idx_diff = insert_frame_no - self.frame_no
         if idx_diff > len(self.queue) - 1:
             for i in range(idx_diff - len(self.queue) - 1):
@@ -39,7 +39,7 @@ class FrameQueue:
             self.queue[-1] = data
         else:
             self.queue[idx_diff] = data
-        node.warn(f"before: {before} after: {self.queue}")
+        ###${_TRACE_DUMP}(f"${_NAME} before: {before} after: {self.queue}")
 
     def send_all_in_sequence(self):
         while self.queue[0] is not None:
@@ -66,20 +66,7 @@ early_output_queue_values = {
 time.sleep(1 / fps)
 
 while True:
-    ###${_TRACE_DUMP}("${_NAME}: waking") # noqa
-    # noinspection PyUnresolvedReferences
-    hand_lms = node.io["lm_nn_data"].tryGet()
-    if hand_lms:
-        # Docs guarantee you can do this using passthrough(out<->passthrough are 1 to 1)
-        # noinspection PyUnresolvedReferences
-        hand_frame = node.io["lm_nn_frame"].get()
-    ###${_TRACE2}("${_NAME}: received result from lm nn") # noqa
-    lm_score = hand_lms.getLayerFp16("Identity_1")[0]
-    if lm_score > lm_score_thresh:
-        # noinspection DuplicatedCode
-        handedness = hand_lms.getLayerFp16("Identity_2")[0]
-        rrn_lms = hand_lms.getLayerFp16("Identity_dense/BiasAdd/Add")
-        world_lms = 0  # ${_IF_USE_WORLD_LANDMARKS}##hand_lms.getLayerFp16("Identity_3_dense/BiasAdd/Add")${_IF_USE_WORLD_LANDMARKS} # noqa
+    ###${_TRACE_DUMP}(f"${_NAME} waking") # noqa
 
     # noinspection PyUnresolvedReferences
     new_frames = {q: node.io[q].tryGet() for q in early_output_queue_values}
@@ -95,5 +82,5 @@ while True:
     if frame_queue is not None:
         frame_queue.send_all_in_sequence()
     # sleep for one third of a frame
-    ###${_TRACE_DUMP}(f"${_NAME}: finished processing {len([val for val in new_frames.values() if val is not None])} frames") # noqa
+    ###${_TRACE_DUMP}(f"${_NAME} finished processing {len([val for val in new_frames.values() if val is not None])} frames") # noqa
     time.sleep(.33 / fps)
