@@ -1,11 +1,20 @@
-import time
-
 ###${_STUB_IMPORTS} # noqa
-from depthai import *
-
+from ..import_stub import *
+from ..import_stub import node, IOOutput, IOInput
+from typing import Dict, Literal, Union
+proto: Dict[Literal[
+    "processed_pd",
+    "pre_lm_manip_cfg",
+    "lm_nn_data",
+    "hand_trace4_output_left",
+    "hand_trace4_output_right",
+    "early_out_lm",
+], Union[IOOutput, IOInput]] = {}
+node.io = proto
 ###${_STUB_IMPORTS} # noqa
 
-fps = 0.0  ###${_fps}# noqa
+script_name = ""  ###${_NAME} # noqa
+fps = 0.0  ###${_fps} # noqa
 
 pad_h = 0  ###${_pad_h} # noqa
 img_h = 0  ###${_img_h} # noqa
@@ -19,7 +28,6 @@ init_crop_region = {'x_min': 0, 'y_min': -pad_h, 'x_max': frame_size, 'y_max': -
 crop_region = init_crop_region
 
 body_score_thresh = 0.0  ###${_body_score_thresh}# noqa
-hands_up_only = False  ###${_hands_up_only}# noqa
 
 pd_score_thresh = 0.0  ###${_pd_score_thresh}# noqa
 lm_score_thresh = 0.0  ###${_lm_score_thresh}# noqa
@@ -49,35 +57,34 @@ BODY_KP = {
 torso_joints = [BODY_KP["left_hip"], BODY_KP["right_hip"], BODY_KP["left_shoulder"], BODY_KP["right_shoulder"]]
 
 while True:
-    # noinspection PyUnresolvedReferences
     pd_detections: NNData = node.io['processed_pd'].get()
+    palm_results = pd_detections.getLayerInt32('palm_results_processed')
 
-    if pd_detections.hasLayer('result_processed'):
+    if len(palm_results) > 0:
         cfg: ImageManipConfig = ImageManipConfig()
         # TODO read pd_detections to determine cfg
-        # noinspection PyUnresolvedReferences
         node.io['pre_lm_manip_cfg'].send(cfg)
 
         hand_lms: NNData = node.io['lm_nn_data'].get()
         """
         hand_lms = node.io["lm_nn_data"].tryGet()
         if hand_lms:
-            # Docs guarantee you can do this using passthrough(out<->passthrough are 1 to 1)
-            # noinspection PyUnresolvedReferences
             hand_frame = node.io["lm_nn_frame"].get()
-        ###${_TRACE2}(f"${_NAME} received result from lm nn") # noqa
+        ###${_TRACE2}node.warn(f"{script_name} received result from lm nn")${_TRACE2} # noqa
         lm_score = hand_lms.getLayerFp16("Identity_1")[0]
         if lm_score > lm_score_thresh:
             # noinspection DuplicatedCode
             handedness = hand_lms.getLayerFp16("Identity_2")[0]
             rrn_lms = hand_lms.getLayerFp16("Identity_dense/BiasAdd/Add")
-            world_lms = 0  # ${_IF_USE_WORLD_LANDMARKS}##hand_lms.getLayerFp16("Identity_3_dense/BiasAdd/Add")${_IF_USE_WORLD_LANDMARKS} # noqa
+            world_lms = hand_lms.getLayerFp16("Identity_3_dense/BiasAdd/Add")
         """
-    else:
-        # noinspection PyUnresolvedReferences
-        node.io['early_out_lm'].send(frame)
+        ###${_TRACE4} # noqa
 
-    # noinspection PyUnresolvedReferences
-    node.io['early_out_lm'].send(frame)
+        # TODO
+        node.io['hand_trace4_output_left'].send()
+        node.io['hand_trace4_output_right'].send()
+        ###${_TRACE4} # noqa
+    else:
+        node.io['early_out_lm'].send(pd_detections)
 
     nb_hands_in_previous_frame = 0

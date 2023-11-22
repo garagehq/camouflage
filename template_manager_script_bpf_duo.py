@@ -448,6 +448,7 @@ while True:
                 sqn_rr_center_x = box_x + 0.5*box_size*sin(rotation)
                 sqn_rr_center_y = box_y - 0.5*box_size*cos(rotation)
                 hands.append([sqn_rr_size, rotation, sqn_rr_center_x, sqn_rr_center_y])
+
         
         ${_TRACE1}(f"Palm detection - nb hands detected: {len(hands)}")
         # If list is empty, meaning no hand is detected

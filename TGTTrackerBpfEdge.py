@@ -11,9 +11,10 @@ import cv2
 import depthai.node as n
 import numpy as np
 from depthai import Pipeline, CameraBoardSocket, Device, CameraSensorType, MonoCameraProperties, \
-    ColorCameraProperties, OpenVINO, ImgFrame, Point2f, ImageManipConfig
+    ColorCameraProperties, OpenVINO, ImgFrame, Point2f, ImageManipConfig, Buffer, NNData
 import mediapipe_utils as mpu
 from FPS import FPS
+import depthai as dai
 
 # noinspection DuplicatedCode
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -24,11 +25,11 @@ LANDMARK_MODEL_SPARSE = str(SCRIPT_DIR / "models/hand_landmark_sparse_sh4.blob")
 DETECTION_POSTPROCESSING_MODEL = str(
     SCRIPT_DIR / "custom_models/PDPostProcessing_top2_sh1.blob"
 )
-MOVENET_LIGHTNING_MODEL = str(
-    SCRIPT_DIR / "models/movenet_singlepose_lightning_U8_transpose.blob"
+CENTERNET_MODEL = str(
+    SCRIPT_DIR / "models" / "movenet_singlepose_lightning_U8_transpose.blob"
 )
-MOVENET_THUNDER_MODEL = str(
-    SCRIPT_DIR / "models/movenet_singlepose_thunder_U8_transpose.blob"
+MOVENET_MULTI_MODEL = str(
+    SCRIPT_DIR / "custom_models" / "movenet_multipose_lightning_384x640_p20_nopost_myriad_barracuda.blob"
 )
 SCRIPT_BODY_CONF = str(SCRIPT_DIR / "pipeline_scripts" / "multi_bfp" / "pd_manager.py")
 SCRIPT_HAND_LM_CONF = str(SCRIPT_DIR / "pipeline_scripts" / "multi_bfp" / "hand_lm_manager.py")
@@ -47,7 +48,7 @@ DisparityDepth = Literal[SRBase, MonoStereoPair]
 
 DeviceModel = Literal[TOF, RGBStereoPair, MonoStereoPair]
 
-MovenetModel = Literal["lightning", "thunder"]
+BodyModel = Literal["movenet", "movenet_multi"]
 
 RGBFullResolution = Literal["full"]
 RGBUltraResolution = Literal["ultra"]
@@ -143,8 +144,6 @@ class TGTTracker:
                     (ONE, TWO, THREE, FOUR, FIVE, OK, PEACE, FIST)
     - `body_model`: Movenet single pose model: `lightning` or `thunder`
     - `body_score_thresh`: Movenet score thresh
-    - `hands_up_only`: when using body_pre_focusing, if hands_up_only is True, consider only hands for which
-                    the wrist keypoint is above the elbow keypoint.
     - `single_hand_tolerance_thresh` (Duo mode only): In Duo mode, if there is only one hand in a frame,
                     in order to know when a second hand will appear, you need to run the palm detection
                     in the following frames. Because palm detection is slow, you may want to delay
@@ -178,13 +177,12 @@ class TGTTracker:
             max_bodies=4,
             crop=False,
             internal_fps=None,
-            resolution: ResolutionType = 'full',
+            resolution: ResolutionType = "full",
             internal_frame_height: int = 640,
             use_gesture=True,
             # TODO swap to Centernet trained from https://github.com/xingyizhou/CenterNet.git
-            body_model: MovenetModel = "thunder",
+            body_model: BodyModel = "movenet_multi",
             body_score_thresh=0.15,
-            hands_up_only=False,
             single_hand_tolerance_thresh: int = 10,
             use_same_image=True,
             lm_nb_threads: int = 2,
@@ -214,18 +212,20 @@ class TGTTracker:
 
         self.body_score_thresh = body_score_thresh
         self.body_input_length = 256
-        self.hands_up_only = hands_up_only
-        if body_model == "lightning":
-            self.body_model = MOVENET_LIGHTNING_MODEL
-            self.body_input_length = 192
-        else:
-            self.body_model = MOVENET_THUNDER_MODEL
+        self.body_input_width = 256
+        if body_model == "movenet":
+            self.body_model = CENTERNET_MODEL
+            self.body_input_length = 512
+            self.body_input_width = 512
+        if body_model == "movenet_multi":
+            self.body_model = MOVENET_MULTI_MODEL
+            self.body_input_length = 384
+            self.body_input_width = 640
         print(f"Body pose blob          : {self.body_model}")
 
         assert lm_nb_threads in [1, 2]
         self.lm_nb_threads = lm_nb_threads
 
-        print("body_pre_focusing is forced to 'group'")
         self.body_pre_focusing = "group"
 
         self.pd_score_thresh = pd_score_thresh
@@ -239,14 +239,13 @@ class TGTTracker:
         self.trace = trace
         self.use_gesture = use_gesture
         self.single_hand_tolerance_thresh = single_hand_tolerance_thresh
-        self.use_same_image = use_same_image
 
         self.device = Device()
 
         if input_src in get_args(DeviceModel):
             self.input_device = input_src
             # Camera frames are not sent to the host
-            self.laconic = laconic
+            self.laconic = laconic and not (self.trace & 4)
 
             if input_src in get_args(RGBStereoPair):
                 if resolution != 'full':
@@ -353,18 +352,18 @@ class TGTTracker:
                 name="cam_out", maxSize=1, blocking=False
             )
         self.q_manager_out = self.device.getOutputQueue(
-            name="manager_out", maxSize=1, blocking=False
+            name="results_out", maxSize=1, blocking=False
         )
         # For showing outputs of ImageManip nodes (debugging)
         if self.trace & 4:
-            self.q_pre_body_manip_out = self.device.getOutputQueue(
-                name="pre_body_manip_out", maxSize=1, blocking=False
+            self.q_pd_manager_out = self.device.getOutputQueue(
+                name="pd_manager_out", maxSize=1, blocking=False
             )
-            self.q_pre_pd_manip_out = self.device.getOutputQueue(
-                name="pre_pd_manip_out", maxSize=1, blocking=False
+            self.q_hand_lm_manager_out_left = self.device.getOutputQueue(
+                name="hand_lm_manager_out_left", maxSize=1, blocking=False
             )
-            self.q_pre_lm_manip_out = self.device.getOutputQueue(
-                name="pre_lm_manip_out", maxSize=1, blocking=False
+            self.q_hand_lm_manager_out_right = self.device.getOutputQueue(
+                name="hand_lm_manager_out_right", maxSize=1, blocking=False
             )
 
         self.fps = FPS()
@@ -413,7 +412,7 @@ class TGTTracker:
         results_script.inputs["early_out_lm"].setQueueSize(4)
 
         pd_script.outputs["early_out_pd"].link(results_script.inputs["early_out_pd"])
-        pd_script.outputs["processed_pd"].link(results_script.inputs["hand_lm_script"])
+        pd_script.outputs["processed_pd"].link(hand_lm_script.inputs["processed_pd"])
 
         hand_lm_script.outputs["early_out_lm"].link(results_script.inputs["early_out_lm"])
         hand_lm_script.outputs["processed_hands"].link(results_script.inputs["processed_hands"])
@@ -502,7 +501,7 @@ class TGTTracker:
         pre_body_manip = pipeline.create(n.ImageManip)
 
         pre_body_manip.setMaxOutputFrameSize(
-            self.body_input_length * self.body_input_length * 3
+            self.body_input_length * self.body_input_width * 3
         )
         pre_body_manip.inputImage.setQueueSize(1)
         pre_body_manip.inputImage.setBlocking(False)
@@ -520,17 +519,10 @@ class TGTTracker:
             pt.x, pt.y = p[0], p[1]
             point2fList.append(pt)
         pre_body_manip.initialConfig.setWarpTransformFourPoints(point2fList, False)
-        pre_body_manip.initialConfig.setResize(self.body_input_length, self.body_input_length)
+        pre_body_manip.initialConfig.setResize(self.body_input_width, self.body_input_length)
         pre_body_manip.initialConfig.setFrameType(ImgFrame.Type.RGB888p)
 
         cam.preview.link(pre_body_manip.inputImage)
-
-        # manager_script.outputs["pre_body_manip_cfg"].link(pre_body_manip.inputConfig)
-        # # For debugging
-        # if self.trace & 4:
-        #     pre_body_manip_out = pipeline.createXLinkOut()
-        #     pre_body_manip_out.setStreamName("pre_body_manip_out")
-        #     pre_body_manip.out.link(pre_body_manip_out.input)
 
         # Define landmark model
         print("Creating Body Pose Detection Neural Network...")
@@ -539,7 +531,12 @@ class TGTTracker:
         # body_nn.setNumInferenceThreads(2)
         pre_body_manip.out.link(body_nn.input)
         body_nn.out.link(pd_script.inputs["body_nn_data"])
-        body_nn.passthrough.link(pd_script.inputs["body_nn_frame"])
+        if self.trace & 4:
+            body_nn.passthrough.link(pd_script.inputs["body_nn_frame"])
+            debug_out_palm_link = pipeline.createXLinkOut()
+            debug_out_palm_link.setStreamName("pd_manager_out")
+            pd_script.outputs['palm_trace4_output'].link(debug_out_palm_link.input)
+
 
         # # Define palm detection pre-processing: resize preview to (self.pd_input_length, self.pd_input_length)
         print("Creating Palm Detection pre processing image manip...")
@@ -553,12 +550,6 @@ class TGTTracker:
         cam.preview.link(pre_pd_manip.inputImage)
         pd_script.outputs["pre_pd_manip_cfg"].link(pre_pd_manip.inputConfig)
 
-        # # For debugging
-        # if self.trace & 4:
-        #     pre_pd_manip_out = pipeline.createXLinkOut()
-        #     pre_pd_manip_out.setStreamName("pre_pd_manip_out")
-        #     pre_pd_manip.out.link(pre_pd_manip_out.input)
-
         # Define palm detection model
         print("Creating Palm Detection Neural Network...")
         pd_nn = pipeline.create(n.NeuralNetwork)
@@ -571,12 +562,11 @@ class TGTTracker:
         post_pd_nn.setBlobPath(Path(self.pp_model))
         pd_nn.out.link(post_pd_nn.input)
         post_pd_nn.out.link(pd_script.inputs["pd_data"])
-        post_pd_nn.passthrough.link(pd_script.inputs["pd_frame"])
 
         # Define link to send result to host
-        manager_out = pipeline.create(n.XLinkOut)
-        manager_out.setStreamName("manager_out")
-        results_script.outputs["host"].link(manager_out.input)
+        manager_out = pipeline.createXLinkOut()
+        manager_out.setStreamName("results_out")
+        results_script.outputs["results_out"].link(manager_out.input)
 
         # Define landmark pre-processing image manip
         print("Creating Hand Landmark pre-processing image manip...")
@@ -588,14 +578,17 @@ class TGTTracker:
         pre_lm_manip.inputImage.setQueueSize(1)
         pre_lm_manip.inputImage.setBlocking(False)
         cam.preview.link(pre_lm_manip.inputImage)
-
-        # # For debugging
-        # if self.trace & 4:
-        #     pre_lm_manip_out = pipeline.createXLinkOut()
-        #     pre_lm_manip_out.setStreamName("pre_lm_manip_out")
-        #     pre_lm_manip.out.link(pre_lm_manip_out.input)
-
         hand_lm_script.outputs["pre_lm_manip_cfg"].link(pre_lm_manip.inputConfig)
+
+        # For debugging
+        if self.trace & 4:
+            debug_out_hand_link_left = pipeline.createXLinkOut()
+            debug_out_hand_link_left.setStreamName('hand_lm_manager_out_left')
+            hand_lm_script.outputs['hand_trace4_output_left'].link(debug_out_hand_link_left.input)
+            debug_out_hand_link_right = pipeline.createXLinkOut()
+            debug_out_hand_link_right.setStreamName('hand_lm_manager_out_right')
+            hand_lm_script.outputs['hand_trace4_output_right'].link(debug_out_hand_link_right.input)
+
 
         # Define landmark model
         print(f"Creating Hand Landmark Neural Network ({self.lm_nb_threads} threads)...")
@@ -604,7 +597,8 @@ class TGTTracker:
         lm_nn.setNumInferenceThreads(self.lm_nb_threads)
         pre_lm_manip.out.link(lm_nn.input)
         lm_nn.out.link(hand_lm_script.inputs["lm_nn_data"])
-        lm_nn.passthrough.link(hand_lm_script.inputs["lm_nn_frame"])
+        if self.trace & 4:
+            lm_nn.passthrough.link(hand_lm_script.inputs["lm_nn_frame"])
 
         print("Pipeline created.")
         return pipeline
@@ -623,16 +617,17 @@ class TGTTracker:
         with open(script_path, "r") as file:
             template = Template(file.read())
             name = file.name.split("/")[-1].split(".")[0]
-            if len(name) > 15:
-                raise NameError("make the script name shorter or edit the padding code below this error")
-            name += (" "*(15-len(name)))+":"
+            if len(name) > 17:
+                raise ValueError(f"make the script name shorter or edit the padding code below this error: {name}")
+            name_val = f"\"{name}{(' ' * (17 - len(name)))}:\""
 
             subs = {
                 "_STUB_IMPORTS": '"""',
-                "_NAME": name,
-                "_TRACE1": "node.warn" if self.trace & 1 else "#",
-                "_TRACE2": "node.warn" if self.trace & 2 else "#",
-                "_TRACE_DUMP": "node.warn" if self.trace & 16 else "#",
+                "_NAME": name_val,
+                "_TRACE1": "" if self.trace & 1 else '"""',
+                "_TRACE2": "" if self.trace & 2 else '"""',
+                "_TRACE4": "" if self.trace & 4 else '"""',
+                "_TRACE_INFO": "" if self.trace & 16 else '"""',
                 "_frame_queue_size": 3,
                 "_fps": self.internal_fps,
                 "_pd_score_thresh": self.pd_score_thresh,
@@ -642,14 +637,9 @@ class TGTTracker:
                 "_img_w": self.img_w,
                 "_frame_size": self.frame_size,
                 "_crop_w": self.crop_w,
-                "_IF_XYZ": "" if self.xyz else '"""',
-                "_body_pre_focusing": self.body_pre_focusing,
                 "_body_score_thresh": self.body_score_thresh,
                 "_body_input_length": self.body_input_length,
-                "_hands_up_only": self.hands_up_only,
                 "_single_hand_tolerance_thresh": self.single_hand_tolerance_thresh,
-                "_IF_USE_SAME_IMAGE": "" if self.use_same_image else '"""',
-                "_IF_USE_WORLD_LANDMARKS": "" if self.use_world_landmarks else '"""'
             }
             # Perform the substitution
             code = template.substitute(**subs)
@@ -665,7 +655,7 @@ class TGTTracker:
             code = re.sub('\n\s*\n', "\n", code)
             # For debugging
             if self.trace & 8:
-                with open("tmp_code.py", "w") as file:
+                with open(f"{script_path[:script_path.rindex('/')]}/{name}_DEBUG_OUT.py", "w") as file:
                     file.write(code)
 
             manager_script.setScript(code)
@@ -727,21 +717,35 @@ class TGTTracker:
 
             # For debugging
         if self.trace & 4:
-            pre_body_manip: ImgFrame = cast(ImgFrame, self.q_pre_body_manip_out.tryGet())
-            if pre_body_manip:
-                pre_pd_manip = pre_body_manip.getCvFrame()
-                cv2.imshow("pre_body_manip", pre_pd_manip)
-            pre_pd_manip: ImgFrame = cast(ImgFrame, self.q_pre_pd_manip_out.tryGet())
+            pre_pd_manip: Buffer = cast(Buffer, self.q_pd_manager_out.tryGet())
             if pre_pd_manip:
-                pre_pd_manip = pre_pd_manip.getCvFrame()
-                cv2.imshow("pre_pd_manip", pre_pd_manip)
-            pre_lm_manip: ImgFrame = cast(ImgFrame, self.q_pre_lm_manip_out.tryGet())
-            if pre_lm_manip:
-                pre_lm_manip = pre_lm_manip.getCvFrame()
-                cv2.imshow("pre_lm_manip", pre_lm_manip)
+                pd_results: dict = marshal.loads(pre_pd_manip.getData())
+                colors = [(0, 0, 255), (0, 127, 255), (0, 255, 255), (0, 255, 127), (0, 255, 0), (127, 255, 0),
+                          (255, 255, 0),
+                          (255, 127, 0), (255, 0, 0), (255, 0, 127)]
+                for idx, box in enumerate(pd_results.get("body_boxes", [])):
+                    color = colors[idx % len(colors)]
+                    cv2.rectangle(video_frame, (box[0], box[1]), (box[2], box[3]), color, 2)
+                    cv2.putText(video_frame, f"p{idx}:{round(box[4], 2)}", (box[0], box[1]), cv2.FONT_HERSHEY_SIMPLEX, 1, color)
+
+                for palm_search_zone in pd_results.get("palm_search_zones", []):
+                    rect = cv2.RotatedRect(**palm_search_zone)
+                    # center: cv2.typing.Point2f, size: cv2.typing.Size2f, angle: float
+                    box = cv2.boxPoints(rect)
+                    box = np.intp(box)
+                    cv2.drawContours(video_frame, [box], 0, (100, 100, 100), 2)
+
+            hand_lm_manager_out_left: ImgFrame = cast(ImgFrame, self.q_hand_lm_manager_out_left.tryGet())
+            if hand_lm_manager_out_left:
+                hand_lm_manager_out_left_cv = hand_lm_manager_out_left.getCvFrame()
+                cv2.imshow("left", hand_lm_manager_out_left_cv)
+            hand_lm_manager_out_right: ImgFrame = cast(ImgFrame, self.q_hand_lm_manager_out_right.tryGet())
+            if hand_lm_manager_out_right:
+                hand_lm_manager_out_right_cv = hand_lm_manager_out_right.getCvFrame()
+                cv2.imshow("right", hand_lm_manager_out_right_cv)
 
         # Get result from device
-        res = marshal.loads(cast(ImgFrame, self.q_manager_out.get()).getData())
+        res = cast(NNData, self.q_manager_out.get())
         hands = []
         # for i in range(len(res.get("lm_score", []))):
         #     hand = self.extract_hand_data(res, i)

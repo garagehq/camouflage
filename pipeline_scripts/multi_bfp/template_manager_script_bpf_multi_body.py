@@ -20,7 +20,7 @@ img_w = 0  ###${_img_w} # noqa
 frame_size = 0  ###${_frame_size} # noqa
 crop_w = 0  ###${_crop_w} # noqa
 
-###${_TRACE1}("Starting manager script node") # noqa
+###${_TRACE1}node.warn("Starting manager script node")${_TRACE1} # noqa
 
 single_hand_count = 0
 
@@ -346,7 +346,7 @@ class BufferMgr:
             buf = self._bufs[size]
         except KeyError:
             buf = self._bufs[size] = Buffer(size)
-            ###${_TRACE2}(f"New buffer allocated: {size}") # noqa
+            ###${_TRACE2}node.warn(f"New buffer allocated: {size}")${_TRACE2} # noqa
         return buf
 
 
@@ -358,7 +358,7 @@ def send_result(result):
     buffer = buffer_mgr(len(result_serial))
     buffer.getData()[:] = result_serial
     node.io['host'].send(buffer)
-    ###${_TRACE2}("Manager sent result to host") # noqa
+    ###${_TRACE2}node.warn("Manager sent result to host")${_TRACE2} # noqa
 
 
 def send_result_no_hand(bd_pd_inf, nb_lm_inf):
@@ -442,7 +442,7 @@ while True:
         cfg_pre_body.setResize(body_input_length, body_input_length)
         cfg_pre_body.setFrameType(ImgFrame.Type.RGB888p)
         node.io['pre_body_manip_cfg'].send(cfg_pre_body)
-        ###${_TRACE2}("Manager sent thumbnail config to pre_body manip") # noqa
+        ###${_TRACE2}node.warn("Manager sent thumbnail config to pre_body manip")${_TRACE2} # noqa
         # Wait for the body detection result 
         body = node.io['from_body_nn'].get().getLayerFp16("Identity")
         ###${_TRACE2}("Manager received result from body_nn")
@@ -453,13 +453,13 @@ while True:
         # Calculate pre focus zone
         zone, hand_label = get_focus_zone("${_body_pre_focusing}")
         if not zone:
-            ###${_TRACE1}(f"Body pre focusing zone: None") # noqa
+            ###${_TRACE1}node.warn(f"Body pre focusing zone: None")${_TRACE1} # noqa
             send_result_no_hand(1, 0)
             nb_hands_in_previous_frame = 0
             continue
 
         x_min, y_min, x_max, y_max = zone
-        ###${_TRACE1}(f"Body pre focusing zone: ({x_min}, {y_min}), ({x_max}, {y_max})") # noqa
+        ###${_TRACE1}node.warn(f"Body pre focusing zone: ({x_min}, {y_min}), ({x_max}, {y_max})")${_TRACE1} # noqa
         # noinspection DuplicatedCode
         points = [
             [x_min, y_min],
@@ -479,10 +479,10 @@ while True:
     if send_new_frame_to_branch == 1:  # Routing frame to pd branch
         hands = []
         node.io['pre_pd_manip_cfg'].send(cfg_pre_pd)
-        ###${_TRACE2}("Manager sent thumbnail config to pre_pd manip") # noqa
+        ###${_TRACE2}node.warn("Manager sent thumbnail config to pre_pd manip")${_TRACE2} # noqa
         # Wait for pd post-processing result
         detection = node.io['from_post_pd_nn'].get().getLayerFp16("result")
-        ###${_TRACE2}("Manager received pd result (len={len(detection)}) : "+str(detection)) # noqa
+        ###${_TRACE2}node.warn("Manager received pd result (len={len(detection)}) : "+str(detection))${_TRACE2} # noqa
         # detection is a list of 2x8 float
         # Looping the detection twice to obtain data for 2 hands
         out = []
@@ -524,7 +524,7 @@ while True:
 
         # node.warn(f"{out}")
 
-        ###${_TRACE1}(f"Palm detection - nb hands detected: {len(hands)}") # noqa
+        ###${_TRACE1}node.warn(f"Palm detection - nb hands detected: {len(hands)}")${_TRACE1} # noqa
         # Check if the list is empty, meaning no hand is detected
         if len(hands) == 0:
             send_result_no_hand(2, 0)
@@ -536,7 +536,7 @@ while True:
             detected_hands = hands
         else:
             # otherwise detected_hands come from the last frame
-            ###${_TRACE1}(f"Keep previous landmarks") # noqa
+            ###${_TRACE1}node.warn(f"Keep previous landmarks")${_TRACE1} # noqa
             pass
 
     # Constructing input data for landmark inference, the input data of both hands are sent for inference without 
@@ -564,7 +564,7 @@ while True:
         ###${_IF_USE_SAME_IMAGE} # noqa
         node.io['pre_lm_manip_cfg'].send(cfg)
         nb_lm_inf += 1
-        ###${_TRACE2}(f"Manager sent config to pre_lm manip (reuse previous frame = {reuse_prev_image})") # noqa
+        ###${_TRACE2}node.warn(f"Manager sent config to pre_lm manip (reuse previous frame = {reuse_prev_image})")${_TRACE2} # noqa
 
     hand_landmarks = dict([("lm_score", []), ("handedness", []), ("rotation", []),
                            ("rect_center_x", []), ("rect_center_y", []), ("rect_size", []), ("rrn_lms", []),
@@ -578,7 +578,7 @@ while True:
         sqn_rr_size, rotation, sqn_rr_center_x, sqn_rr_center_y = hand
         # Wait for lm's result
         lm_result = node.io['from_lm_nn'].get()
-        ###${_TRACE2}("Manager received result from lm nn") # noqa
+        ###${_TRACE2}node.warn("Manager received result from lm nn")${_TRACE2} # noqa
         lm_score = lm_result.getLayerFp16("Identity_1")[0]
         if lm_score > lm_score_thresh:
             # noinspection DuplicatedCode
@@ -614,10 +614,10 @@ while True:
             cfg = SpatialLocationCalculatorConfig()
             cfg.addROI(conf_data)
             node.io['spatial_location_config'].send(cfg)
-            ###${_TRACE2}("Manager sent ROI to spatial_location_config") # noqa
+            ###${_TRACE2}node.warn("Manager sent ROI to spatial_location_config")${_TRACE2} # noqa
             # Wait xyz response
             xyz_data = node.io['spatial_data'].get().getSpatialLocations()
-            ###${_TRACE2}("Manager received spatial_location") # noqa
+            ###${_TRACE2}node.warn("Manager received spatial_location")${_TRACE2} # noqa
             coords = xyz_data[0].spatialCoordinates
             xyz = [coords.x, coords.y, coords.z]
             roi = xyz_data[0].config.roi
@@ -689,11 +689,11 @@ while True:
 
             last_detected_hands_id = ih
 
-        ###${_TRACE2}(f"compared lm score {lm_score} with theshhold { ${_lm_score_thresh} }") # noqa
+        ###${_TRACE2}node.warn(f"compared lm score {lm_score} with theshhold { ${_lm_score_thresh} }")${_TRACE2} # noqa
 
     detected_hands = updated_detect_hands
 
-    ###${_TRACE1}(f"Landmarks - nb hands confirmed : {len(detected_hands)}") # noqa
+    ###${_TRACE1}node.warn(f"Landmarks - nb hands confirmed : {len(detected_hands)}")${_TRACE1} # noqa
 
     # Check that 2 detected hands do not correspond to the same hand in the image
     # That may happen when one hand in the image cross another one
@@ -710,7 +710,7 @@ while True:
             for k in hand_landmarks:
                 hand_landmarks[k].pop(pop_i)
             detected_hands.pop(pop_i)
-            ###${_TRACE1}("!!! Removing one hand because too close to the other one") # noqa
+            ###${_TRACE1}node.warn("!!! Removing one hand because too close to the other one")${_TRACE1} # noqa
 
     nb_hands = len(detected_hands)
 

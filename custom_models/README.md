@@ -19,7 +19,7 @@ To generate the Post Processing model, some python packages are needed: torch, o
 *Note the restriction on torch version in requirements.txt. A newer version of torch (1.10) generates an [error](https://github.com/geaxgx/depthai_hand_tracker/issues/8) when converting the ONNX model to Openvino IR (2021.4).*
 
 ## Build the ONNX model
-
+    
 The post processing model:
 * takes the 2 outputs of the Palm Detection model (scores: 1x896x1 and detections: 1x896x18),
 * arranges a bit the datas before applying to them the Non Maximum Suppression (NMS) algorithm and yields the 2 best detections (2 corresponds to the number of hands max we want to detect). 
