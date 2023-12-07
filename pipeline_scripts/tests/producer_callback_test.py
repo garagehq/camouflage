@@ -20,7 +20,6 @@ while True:
 
     test = ImgFrame(i)
     test.setSequenceNum(i)
-
     test_nn: NNData = NNData(1234)
     test_nn.setLayer("test", [1, 3, 4])
     node.warn(f"{test_nn.getAllLayerNames()}")

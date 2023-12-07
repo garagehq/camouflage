@@ -3,3 +3,4 @@ depthai>=2.13
 numpy~=1.24.3
 depthai
 tensorflow~=2.13.0
+blobconverter
