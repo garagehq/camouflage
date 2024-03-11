@@ -27,16 +27,18 @@ class HandTrackerRenderer:
         self.image = None
         self.image_position = None
         self.fist_start_time = None
-        self.fist_duration = 1.0  # Duration in seconds to hold the fist gesture
+        self.fist_duration = 1  # Duration in seconds to hold the fist gesture
         self.hide_extras = hide_extras
         self.draw_mode = draw_mode
+        self.draw_now = False
+        self.prev_peace_distance = None
         self.draw_points = []
         self.peace_gesture_start_time = None
         self.peace_gesture_duration = 0.5
         self.index_finger_start_time = None
         self.index_finger_duration = 0.1  # Duration in seconds to hold the index finger before starting to draw
         self.line_color = (0, 0, 255)  # Red color for drawing
-        self.line_thickness = 2  # Line thickness
+        self.line_thickness = 3  # Line thickness
         # Rendering flags
         if self.tracker.use_lm:
             self.show_pd_box = False
@@ -190,62 +192,187 @@ class HandTrackerRenderer:
                 cv2.rectangle(self.frame, tuple(focus_zone[0:2]), tuple(focus_zone[2:4]), (0,255,0),2)
 
     def draw(self, frame, hands, bag={}):
+        # self.frame = cv2.flip(frame, 1)
         self.frame = frame
         if bag:
             self.draw_bag(bag)
-        peace_gesture_detected = False
-        index_finger_detected = False
-        for hand in hands:
-            if hand.gesture == "ONE":
-                index_finger_detected = True
-                index_finger_tip = hand.landmarks[8]  # Index finger tip landmark
-                if self.index_finger_start_time is None:
-                    self.index_finger_start_time = time.time()
-                elif time.time() - self.index_finger_start_time >= self.index_finger_duration:
-                    if not self.draw_mode:
-                        self.draw_mode = True
-                        self.draw_points.append([index_finger_tip])  # Start a new line
-                    else:
-                        self.draw_points[-1].append(index_finger_tip)  # Add point to the current line
-                # Draw a red filled circle around the index finger tip
-                cv2.circle(frame, tuple(index_finger_tip), 25, (0, 0, 255), -1)
-            elif hand.gesture == "PEACE":
-                peace_gesture_detected = True
-            elif hand.gesture == "FOUR":
-                index_finger_tip = hand.landmarks[8]  # Index finger tip landmark
-                pinky_finger_tip = hand.landmarks[20]  # Pinky finger tip landmark
+        if(self.draw_mode):
+            peace_gesture_detected = False
+            index_finger_detected = False
+            for hand in hands:
+                if hand.gesture == "ONE":
+                    index_finger_detected = True
+                    index_finger_tip = hand.landmarks[8]  # Index finger tip landmark
+                    if self.index_finger_start_time is None:
+                        self.index_finger_start_time = time.time()
+                    elif time.time() - self.index_finger_start_time >= self.index_finger_duration:
+                        if not self.draw_now:
+                            self.draw_now = True
+                            self.draw_points.append([index_finger_tip])  # Start a new line
+                        else:
+                            self.draw_points[-1].append(index_finger_tip)  # Add point to the current line
+                    # Draw a red filled circle around the index finger tip
+                    cv2.circle(frame, tuple(index_finger_tip), 30, (0, 0, 255), -1)
+                elif hand.gesture == "PEACE":
+                    peace_gesture_detected = True
+                elif hand.gesture == "FOUR":
+                    index_finger_tip = hand.landmarks[8]  # Index finger tip landmark
+                    pinky_finger_tip = hand.landmarks[20]  # Pinky finger tip landmark
 
-                # Draw a white rectangle from index finger tip to pinky finger tip
-                cv2.rectangle(frame, tuple(index_finger_tip), tuple(pinky_finger_tip), (255, 255, 255), -1)
-                eraser_point = index_finger_tip  # Index finger tip landmark
-    
-                # Erase lines within a certain radius of the eraser point
-                erase_radius = 30  # Adjust the radius as needed
-                self.draw_points = [line_points for line_points in self.draw_points if not any(np.linalg.norm(np.array(point) - np.array(eraser_point)) <= erase_radius for point in line_points)]
-    
-            if not self.hide_extras:
-                self.draw_hand(hand)
-    
-        if not index_finger_detected:
-            self.index_finger_start_time = None
-            self.draw_mode = False
-    
-        # Check if the "PEACE" gesture is being held for the specified duration
-        if peace_gesture_detected:
-            if self.peace_gesture_start_time is None:
-                self.peace_gesture_start_time = time.time()
-            elif time.time() - self.peace_gesture_start_time >= self.peace_gesture_duration:
-                self.draw_points = []  # Clear the drawn lines
+                    # Draw a white rectangle from index finger tip to pinky finger tip
+                    cv2.rectangle(frame, tuple(index_finger_tip), tuple(pinky_finger_tip), (255, 255, 255), -1)
+                    eraser_point = index_finger_tip  # Index finger tip landmark
+        
+                    # Erase lines within a certain radius of the eraser point
+                    erase_radius = 30  # Adjust the radius as needed
+                    self.draw_points = [line_points for line_points in self.draw_points if not any(np.linalg.norm(np.array(point) - np.array(eraser_point)) <= erase_radius for point in line_points)]
+        
+                if not self.hide_extras:
+                    self.draw_hand(hand)
+        
+            if not index_finger_detected:
+                self.index_finger_start_time = None
+                self.draw_now = False
+        
+            # Check if the "PEACE" gesture is being held for the specified duration
+            if peace_gesture_detected:
+                if self.peace_gesture_start_time is None:
+                    self.peace_gesture_start_time = time.time()
+                elif time.time() - self.peace_gesture_start_time >= self.peace_gesture_duration:
+                    self.draw_points = []  # Clear the drawn lines
+                    self.peace_gesture_start_time = None
+            else:
                 self.peace_gesture_start_time = None
+        
+            # Draw the persistent lines
+            for line_points in self.draw_points:
+                for i in range(1, len(line_points)):
+                    cv2.line(frame, tuple(line_points[i-1]), tuple(line_points[i]), self.line_color, int(self.line_thickness * 1.1))
+            
+        elif(self.interact_2d):
+            fist_detected = False
+            palm_detected = False
+            peace_detected = False
+            index_finger_tip = None
+            peace_positions = []
+            
+            for hand in hands:
+                if hand.gesture == "ONE":
+                    index_finger_tip = hand.landmarks[8]  # Index finger tip landmark
+                    if self.image is not None and self.image_position is not None:
+                        # Check if the index finger is on the image
+                        if self.is_finger_on_image(index_finger_tip, self.image_position):
+                            # Update the image position based on the index finger movement
+                            self.image_position = (index_finger_tip[0] - self.image.shape[1] // 2, index_finger_tip[1] - self.image.shape[0] // 2)
+                elif hand.gesture == "FIST":
+                    fist_detected = True
+                    if self.fist_start_time is None:
+                        self.fist_start_time = time.time()
+                    elif time.time() - self.fist_start_time >= self.fist_duration:
+                        if self.image is None:
+                            # Load the image and set its initial position
+                            self.image = cv2.imread("img/test1.jpeg", cv2.IMREAD_UNCHANGED)
+                            fist_size = (hand.landmarks[5][0] - hand.landmarks[17][0], hand.landmarks[5][1] - hand.landmarks[0][1])
+                            self.image, self.image_position = self.resize_image(self.image, fist_size, hand.landmarks[9])
+                            frame = self.overlay_image(frame, self.image, self.image_position)
+                        else:
+                            self.image = None
+                            self.image_position = None
+                        self.fist_start_time = None
+                elif hand.gesture == "PALM":
+                    palm_detected = True
+                elif hand.gesture == "PEACE":
+                    peace_detected = True
+                    peace_positions.append(hand.landmarks[8])  # Index finger tip landmark
+            
+                if not self.hide_extras:
+                    self.draw_hand(hand)
+            
+            if peace_detected and len(peace_positions) == 2:
+                # Calculate the distance between the two "PEACE" gestures
+                distance = np.linalg.norm(np.array(peace_positions[0]) - np.array(peace_positions[1]))
+                
+                if self.prev_peace_distance is not None:
+                    # Calculate the change in distance
+                    distance_change = distance - self.prev_peace_distance
+                    
+                    # Scale the image based on the change in distance
+                    if distance_change > 0:
+                        # Increase the image size
+                        self.image = self.scale_image(self.image, 1.1)
+                    elif distance_change < 0:
+                        # Decrease the image size
+                        self.image = self.scale_image(self.image, 0.9)
+                
+                self.prev_peace_distance = distance
+            else:
+                self.prev_peace_distance = None
+            
+            if not fist_detected:
+                self.fist_start_time = None
+            
+            if palm_detected and self.image is not None:
+                self.image = None
+                self.image_position = None
+            
+            if self.interact_2d and self.image is not None:
+                # Overlay the image on the frame at the current position
+                frame = self.overlay_image(frame, self.image, self.image_position)
+    
         else:
-            self.peace_gesture_start_time = None
-    
-        # Draw the persistent lines
-        for line_points in self.draw_points:
-            for i in range(1, len(line_points)):
-                cv2.line(frame, tuple(line_points[i-1]), tuple(line_points[i]), self.line_color, int(self.line_thickness * 1.1))
-    
+            for hand in hands:        
+                if not self.hide_extras:
+                    self.draw_hand(hand)
         return self.frame
+
+    def is_finger_on_image(self, finger_tip, image_position):
+        x, y = finger_tip
+        ix, iy = image_position
+        iw, ih = self.image.shape[1], self.image.shape[0]
+        return ix <= x <= ix + iw and iy <= y <= iy + ih
+
+    def scale_image(self, image, scale_factor):
+        h, w = image.shape[:2]
+        new_size = (int(w * scale_factor), int(h * scale_factor))
+        return cv2.resize(image, new_size)
+    
+    def resize_image(self, image, fist_size, fist_position):
+        h, w = image.shape[:2]
+        
+        # Calculate the scaling factor based on the size of the FIST
+        scale = min(fist_size[0] / w, fist_size[1] / h)
+        
+        # Set a minimum scaling factor to prevent errors
+        min_scale = 0.1
+        scale = max(scale, min_scale)
+        
+        # Resize the image based on the scaling factor
+        resized_image = cv2.resize(image, (int(w * scale), int(h * scale)))
+        
+        # Calculate the position to place the image
+        x = fist_position[0] - resized_image.shape[1] // 2
+        y = fist_position[1] - resized_image.shape[0] // 2
+        
+        return resized_image, (x, y)
+    
+    def overlay_image(self, frame, image, position):
+        x, y = position
+        h, w = image.shape[:2]
+        
+        # Ensure the image fits within the frame boundaries
+        x = max(0, min(x, frame.shape[1] - w))
+        y = max(0, min(y, frame.shape[0] - h))
+        
+        if image.shape[2] == 4:
+            alpha = image[:, :, 3] / 255.0
+            overlay = image[:, :, :3]
+            background = frame[y:y+h, x:x+w]
+            blended = (overlay * alpha[:, :, np.newaxis] + background * (1 - alpha[:, :, np.newaxis])).astype(np.uint8)
+            frame[y:y+h, x:x+w] = blended
+        else:
+            frame[y:y+h, x:x+w] = image
+        
+        return frame
 
     def exit(self):
         if self.output:
