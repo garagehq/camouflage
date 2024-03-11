@@ -17,9 +17,18 @@ class HandTrackerRenderer:
     def __init__(self, 
                 tracker,
                 output=None,
-                draw_mode=False):
+                draw_mode=False,
+                hide_extras=False,
+                interact_2d=False,
+                interact_3d=False):
 
         self.tracker = tracker
+        self.interact_2d = interact_2d
+        self.image = None
+        self.image_position = None
+        self.fist_start_time = None
+        self.fist_duration = 1.0  # Duration in seconds to hold the fist gesture
+        self.hide_extras = hide_extras
         self.draw_mode = draw_mode
         self.draw_points = []
         self.peace_gesture_start_time = None
@@ -135,19 +144,20 @@ class HandTrackerRenderer:
                 cv2.putText(self.frame, f"Palm score: {hand.pd_score:.2f}", 
                         (x, y), 
                         cv2.FONT_HERSHEY_PLAIN, 2, (255,255,0), 2)
-            
-        if self.show_xyz:
-            if self.tracker.use_lm:
-                x0, y0 = info_ref_x - 40, info_ref_y + 40
-            else:
-                x0, y0 = box_tl[0], box_br[1]+20
-            cv2.rectangle(self.frame, (x0,y0), (x0+100, y0+85), (220,220,240), -1)
-            cv2.putText(self.frame, f"X:{hand.xyz[0]/10:3.0f} cm", (x0+10, y0+20), cv2.FONT_HERSHEY_PLAIN, 1, (20,180,0), 2)
-            cv2.putText(self.frame, f"Y:{hand.xyz[1]/10:3.0f} cm", (x0+10, y0+45), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0), 2)
-            cv2.putText(self.frame, f"Z:{hand.xyz[2]/10:3.0f} cm", (x0+10, y0+70), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,255), 2)
-        if self.show_xyz_zone:
-            # Show zone on which the spatial data were calculated
-            cv2.rectangle(self.frame, tuple(hand.xyz_zone[0:2]), tuple(hand.xyz_zone[2:4]), (180,0,180), 2)
+        
+        if not self.hide_extras: 
+            if self.show_xyz:
+                if self.tracker.use_lm:
+                    x0, y0 = info_ref_x - 40, info_ref_y + 40
+                else:
+                    x0, y0 = box_tl[0], box_br[1]+20
+                cv2.rectangle(self.frame, (x0,y0), (x0+100, y0+85), (220,220,240), -1)
+                cv2.putText(self.frame, f"X:{hand.xyz[0]/10:3.0f} cm", (x0+10, y0+20), cv2.FONT_HERSHEY_PLAIN, 1, (20,180,0), 2)
+                cv2.putText(self.frame, f"Y:{hand.xyz[1]/10:3.0f} cm", (x0+10, y0+45), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0), 2)
+                cv2.putText(self.frame, f"Z:{hand.xyz[2]/10:3.0f} cm", (x0+10, y0+70), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,255), 2)
+            if self.show_xyz_zone:
+                # Show zone on which the spatial data were calculated
+                cv2.rectangle(self.frame, tuple(hand.xyz_zone[0:2]), tuple(hand.xyz_zone[2:4]), (180,0,180), 2)
 
     def draw_body(self, body):
         lines = [np.array([body.keypoints[point] for point in line]) for line in LINES_BODY if body.scores[line[0]] > self.tracker.body_score_thresh and body.scores[line[1]] > self.tracker.body_score_thresh]
@@ -213,7 +223,8 @@ class HandTrackerRenderer:
                 erase_radius = 30  # Adjust the radius as needed
                 self.draw_points = [line_points for line_points in self.draw_points if not any(np.linalg.norm(np.array(point) - np.array(eraser_point)) <= erase_radius for point in line_points)]
     
-            self.draw_hand(hand)
+            if not self.hide_extras:
+                self.draw_hand(hand)
     
         if not index_finger_detected:
             self.index_finger_start_time = None
