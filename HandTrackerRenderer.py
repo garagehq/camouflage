@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-
+import time
 LINES_HAND = [[0,1],[1,2],[2,3],[3,4], 
             [0,5],[5,6],[6,7],[7,8],
             [5,9],[9,10],[10,11],[11,12],
@@ -16,10 +16,18 @@ LINES_BODY = [[4,2],[2,0],[0,1],[1,3],
 class HandTrackerRenderer:
     def __init__(self, 
                 tracker,
-                output=None):
+                output=None,
+                draw_mode=False):
 
         self.tracker = tracker
-
+        self.draw_mode = draw_mode
+        self.draw_points = []
+        self.peace_gesture_start_time = None
+        self.peace_gesture_duration = 2.0
+        self.index_finger_start_time = None
+        self.index_finger_duration = 0.5  # Duration in seconds to hold the index finger before starting to draw
+        self.line_color = (0, 0, 255)  # Red color for drawing
+        self.line_thickness = 2  # Line thickness
         # Rendering flags
         if self.tracker.use_lm:
             self.show_pd_box = False
@@ -175,8 +183,50 @@ class HandTrackerRenderer:
         self.frame = frame
         if bag:
             self.draw_bag(bag)
+        peace_gesture_detected = False
+        index_finger_detected = False
         for hand in hands:
+            if hand.gesture == "ONE":
+                index_finger_detected = True
+                index_finger_tip = hand.landmarks[8]  # Index finger tip landmark
+                if self.index_finger_start_time is None:
+                    self.index_finger_start_time = time.time()
+                elif time.time() - self.index_finger_start_time >= self.index_finger_duration:
+                    if not self.draw_mode:
+                        self.draw_mode = True
+                        self.draw_points.append([index_finger_tip])  # Start a new line
+                    else:
+                        self.draw_points[-1].append(index_finger_tip)  # Add point to the current line
+            elif hand.gesture == "PEACE":
+                peace_gesture_detected = True
+            elif hand.gesture == "FOUR":
+                eraser_point = hand.landmarks[8]  # Index finger tip landmark
+    
+                # Erase lines within a certain radius of the eraser point
+                erase_radius = 25  # Adjust the radius as needed
+                self.draw_points = [line_points for line_points in self.draw_points if not any(np.linalg.norm(np.array(point) - np.array(eraser_point)) <= erase_radius for point in line_points)]
+    
             self.draw_hand(hand)
+    
+        if not index_finger_detected:
+            self.index_finger_start_time = None
+            self.draw_mode = False
+    
+        # Check if the "PEACE" gesture is being held for the specified duration
+        if peace_gesture_detected:
+            if self.peace_gesture_start_time is None:
+                self.peace_gesture_start_time = time.time()
+            elif time.time() - self.peace_gesture_start_time >= self.peace_gesture_duration:
+                self.draw_points = []  # Clear the drawn lines
+                self.peace_gesture_start_time = None
+        else:
+            self.peace_gesture_start_time = None
+    
+        # Draw the persistent lines
+        for line_points in self.draw_points:
+            for i in range(1, len(line_points)):
+                cv2.line(frame, tuple(line_points[i-1]), tuple(line_points[i]), self.line_color, int(self.line_thickness * 1.1))
+    
         return self.frame
 
     def exit(self):

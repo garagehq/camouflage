@@ -45,6 +45,8 @@ parser_tracker.add_argument('-t', '--trace', type=int, nargs="?", const=1, defau
 parser_renderer = parser.add_argument_group("Renderer arguments")
 parser_renderer.add_argument('-o', '--output', 
                     help="Path to output video file")
+parser_renderer.add_argument('-d', '--draw', action="store_true", help="Enable drawing with index finger")
+
 args = parser.parse_args()
 dargs = vars(args)
 tracker_args = {a:dargs[a] for a in ['pd_model', 'lm_model', 'internal_fps', 'internal_frame_height'] if dargs[a] is not None}
@@ -75,7 +77,8 @@ tracker = HandTracker(
 
 renderer = HandTrackerRenderer(
         tracker=tracker,
-        output=args.output)
+        output=args.output,
+        draw_mode=args.draw)
 
 while True:
     # Run hand tracker on next frame
