@@ -23,9 +23,9 @@ class HandTrackerRenderer:
         self.draw_mode = draw_mode
         self.draw_points = []
         self.peace_gesture_start_time = None
-        self.peace_gesture_duration = 2.0
+        self.peace_gesture_duration = 0.5
         self.index_finger_start_time = None
-        self.index_finger_duration = 0.5  # Duration in seconds to hold the index finger before starting to draw
+        self.index_finger_duration = 0.1  # Duration in seconds to hold the index finger before starting to draw
         self.line_color = (0, 0, 255)  # Red color for drawing
         self.line_thickness = 2  # Line thickness
         # Rendering flags
@@ -197,13 +197,20 @@ class HandTrackerRenderer:
                         self.draw_points.append([index_finger_tip])  # Start a new line
                     else:
                         self.draw_points[-1].append(index_finger_tip)  # Add point to the current line
+                # Draw a red filled circle around the index finger tip
+                cv2.circle(frame, tuple(index_finger_tip), 25, (0, 0, 255), -1)
             elif hand.gesture == "PEACE":
                 peace_gesture_detected = True
             elif hand.gesture == "FOUR":
-                eraser_point = hand.landmarks[8]  # Index finger tip landmark
+                index_finger_tip = hand.landmarks[8]  # Index finger tip landmark
+                pinky_finger_tip = hand.landmarks[20]  # Pinky finger tip landmark
+
+                # Draw a white rectangle from index finger tip to pinky finger tip
+                cv2.rectangle(frame, tuple(index_finger_tip), tuple(pinky_finger_tip), (255, 255, 255), -1)
+                eraser_point = index_finger_tip  # Index finger tip landmark
     
                 # Erase lines within a certain radius of the eraser point
-                erase_radius = 25  # Adjust the radius as needed
+                erase_radius = 30  # Adjust the radius as needed
                 self.draw_points = [line_points for line_points in self.draw_points if not any(np.linalg.norm(np.array(point) - np.array(eraser_point)) <= erase_radius for point in line_points)]
     
             self.draw_hand(hand)
