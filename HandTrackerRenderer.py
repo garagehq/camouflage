@@ -271,8 +271,8 @@ class HandTrackerRenderer:
                     elif time.time() - self.fist_start_time >= self.fist_duration:
                         if self.image is None:
                             # Load the image and set its initial position
-                            self.image = cv2.imread("img/test1.jpeg", cv2.IMREAD_UNCHANGED)
-                            fist_size = (hand.landmarks[5][0] - hand.landmarks[17][0], hand.landmarks[5][1] - hand.landmarks[0][1])
+                            self.image = cv2.imread("img/test.png", cv2.IMREAD_UNCHANGED)
+                            fist_size = (2*(hand.landmarks[5][0] - hand.landmarks[17][0]), 2*(hand.landmarks[5][1] - hand.landmarks[0][1]))
                             self.image, self.image_position = self.resize_image(self.image, fist_size, hand.landmarks[9])
                             frame = self.overlay_image(frame, self.image, self.image_position)
                         else:
@@ -288,7 +288,7 @@ class HandTrackerRenderer:
                 if not self.hide_extras:
                     self.draw_hand(hand)
             
-            if peace_detected and len(peace_positions) == 2:
+            if peace_detected and len(peace_positions) == 2 and self.image is not None:
                 # Calculate the distance between the two "PEACE" gestures
                 distance = np.linalg.norm(np.array(peace_positions[0]) - np.array(peace_positions[1]))
                 
@@ -299,11 +299,17 @@ class HandTrackerRenderer:
                     # Scale the image based on the change in distance
                     if distance_change > 0:
                         # Increase the image size
-                        self.image = self.scale_image(self.image, 1.1)
+                        scale_factor  = 1.05
+                        new_size = (int(self.image.shape[1] * scale_factor), int(self.image.shape[0] * scale_factor))
+                        # Load the original image and resize it to the new size
+                        self.image = cv2.imread("img/test.png", cv2.IMREAD_UNCHANGED)
+                        self.image = cv2.resize(self.image, new_size, interpolation=cv2.INTER_LANCZOS4)
+                        # Update the image position based on the new size
+                        self.image_position = (self.image_position[0] - (new_size[0] - self.image.shape[1]) // 2,
+                                                self.image_position[1] - (new_size[1] - self.image.shape[0]) // 2)
                     elif distance_change < 0:
                         # Decrease the image size
-                        self.image = self.scale_image(self.image, 0.9)
-                
+                        self.image = self.scale_image(self.image, 0.975)
                 self.prev_peace_distance = distance
             else:
                 self.prev_peace_distance = None
@@ -334,8 +340,8 @@ class HandTrackerRenderer:
     def scale_image(self, image, scale_factor):
         h, w = image.shape[:2]
         new_size = (int(w * scale_factor), int(h * scale_factor))
-        return cv2.resize(image, new_size)
-    
+        return cv2.resize(image, new_size, interpolation=cv2.INTER_LANCZOS4 )
+
     def resize_image(self, image, fist_size, fist_position):
         h, w = image.shape[:2]
         
@@ -347,7 +353,7 @@ class HandTrackerRenderer:
         scale = max(scale, min_scale)
         
         # Resize the image based on the scaling factor
-        resized_image = cv2.resize(image, (int(w * scale), int(h * scale)))
+        resized_image = cv2.resize(image, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_LANCZOS4)
         
         # Calculate the position to place the image
         x = fist_position[0] - resized_image.shape[1] // 2
@@ -366,9 +372,19 @@ class HandTrackerRenderer:
         if image.shape[2] == 4:
             alpha = image[:, :, 3] / 255.0
             overlay = image[:, :, :3]
-            background = frame[y:y+h, x:x+w]
+            
+            # Extract the background region from the frame
+            background = frame[y:y+h, x:x+w, :3]
+            
+            # Resize the overlay to match the background dimensions
+            overlay = cv2.resize(overlay, (background.shape[1], background.shape[0]))
+            alpha = cv2.resize(alpha, (background.shape[1], background.shape[0]))
+            
+            # Perform the blending operation
             blended = (overlay * alpha[:, :, np.newaxis] + background * (1 - alpha[:, :, np.newaxis])).astype(np.uint8)
-            frame[y:y+h, x:x+w] = blended
+            
+            # Update the corresponding region in the frame with the blended result
+            frame[y:y+h, x:x+w, :3] = blended
         else:
             frame[y:y+h, x:x+w] = image
         
