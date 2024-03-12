@@ -48,9 +48,11 @@ parser_renderer.add_argument('-o', '--output',
 parser_renderer.add_argument('-d', '--draw', action="store_true", help="Enable drawing with index finger")
 parser_renderer.add_argument('-sh', '--hide', action="store_true", help="Hide XYZ coordinates, hand skeletons, and gesture recognition text")
 parser_renderer.add_argument(
-    '-i2D', '--interact2D', action="store_true", help="Enable 2D object interaction")
+    '--interact2D', action="store_true", help="Enable 2D object interaction")
 parser_renderer.add_argument(
-    '-i3D', '--interact3D', action="store_true", help="Enable 3D object interaction")
+    '--interact3D', action="store_true", help="Enable 3D object interaction")
+parser_renderer.add_argument("--fullscreen", action="store_true", help="Enable fullscreen mode")
+
 args = parser.parse_args()
 dargs = vars(args)
 tracker_args = {a:dargs[a] for a in ['pd_model', 'lm_model', 'internal_fps', 'internal_frame_height'] if dargs[a] is not None}
@@ -85,7 +87,8 @@ renderer = HandTrackerRenderer(
         draw_mode=args.draw,
         hide_extras=args.hide,
         interact_2d=args.interact2D,
-        interact_3d=args.interact3D)
+        interact_3d=args.interact3D,
+        fullscreen=args.fullscreen)
 
 while True:
     # Run hand tracker on next frame

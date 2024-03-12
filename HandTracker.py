@@ -273,6 +273,8 @@ class HandTracker:
                 cam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
             else:
                 cam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_4_K)
+            # Enable continuous autofocus
+            cam.initialControl.setAutoFocusMode(dai.CameraControl.AutoFocusMode.CONTINUOUS_VIDEO)
             cam.setBoardSocket(dai.CameraBoardSocket.RGB)
             cam.setInterleaved(False)
             cam.setIspScale(self.scale_nd[0], self.scale_nd[1])

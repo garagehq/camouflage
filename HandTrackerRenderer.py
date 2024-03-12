@@ -20,10 +20,13 @@ class HandTrackerRenderer:
                 draw_mode=False,
                 hide_extras=False,
                 interact_2d=False,
-                interact_3d=False):
+                interact_3d=False,
+                fullscreen=False):
 
         self.tracker = tracker
         self.interact_2d = interact_2d
+        self.interact_3d = interact_3d
+        self.fullscreen = fullscreen
         self.image = None
         self.image_position = None
         self.fist_start_time = None
@@ -398,6 +401,11 @@ class HandTrackerRenderer:
     def waitKey(self, delay=1):
         if self.show_fps:
                 self.tracker.fps.draw(self.frame, orig=(50,50), size=1, color=(240,180,100))
+        if self.fullscreen:
+                cv2.namedWindow("Hand tracking", cv2.WINDOW_NORMAL)
+                cv2.setWindowProperty("Hand tracking", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+        else:
+            cv2.namedWindow("Hand tracking", cv2.WINDOW_NORMAL)
         cv2.imshow("Hand tracking", self.frame)
         if self.output:
             self.output.write(self.frame)
