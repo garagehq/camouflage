@@ -58,8 +58,15 @@ convert_model () {
 		-o ${model_name}_sh4.blob
 }
 
-convert_model palm_detection "[127.5,127.5,127.5]"  "[127.5,127.5,127.5]" "u8"
-convert_model hand_landmark_full "" "[255.0,255.0,255.0]" "u8"
-convert_model hand_landmark_lite "" "[255.0,255.0,255.0]" "u8"
-convert_model hand_landmark_sparse "" "[255.0,255.0,255.0]" "u8"
-convert_model hand_landmark_080 "" "[255.0,255.0,255.0]" "u8"
+# convert_model palm_detection "[127.5,127.5,127.5]"  "[127.5,127.5,127.5]" "u8"
+# convert_model hand_landmark_full "" "[255.0,255.0,255.0]" "u8"
+# convert_model hand_landmark_lite "" "[255.0,255.0,255.0]" "u8"
+# convert_model hand_landmark_sparse "" "[255.0,255.0,255.0]" "u8"
+# convert_model hand_landmark_080 "" "[255.0,255.0,255.0]" "u8"
+# convert_model hand_landmark_full_1 "" "[255.0,255.0,255.0]" "u8"
+# convert_model hand_landmark_full_2 "" "[255.0,255.0,255.0]" "u8"
+
+convert_model palm_detection_full-2022-09-09 "[127.5,127.5,127.5]"  "[127.5,127.5,127.5]" "u8"
+convert_model palm_detection_lite-2022-08-30 "[127.5,127.5,127.5]"  "[127.5,127.5,127.5]" "u8"
+convert_model hand_landmark_lite-2022-11-12 "" "[255.0,255.0,255.0]" "u8"
+convert_model hand_landmark-2022-10-19 "" "[255.0,255.0,255.0]" "u8"
