@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 import time
+import pyvirtualcam
+
 LINES_HAND = [[0,1],[1,2],[2,3],[3,4], 
             [0,5],[5,6],[6,7],[7,8],
             [5,9],[9,10],[10,11],[11,12],
@@ -21,11 +23,13 @@ class HandTrackerRenderer:
                 hide_extras=False,
                 interact_2d=False,
                 interact_3d=False,
-                fullscreen=False):
+                fullscreen=False,
+                virtual_cam=False):
 
         self.tracker = tracker
         self.interact_2d = interact_2d
         self.interact_3d = interact_3d
+        self.virtual_cam = virtual_cam
         self.fullscreen = fullscreen
         self.image = None
         self.image_position = None
@@ -66,7 +70,11 @@ class HandTrackerRenderer:
             self.output = None
         else:
             fourcc = cv2.VideoWriter_fourcc(*"MJPG")
-            self.output = cv2.VideoWriter(output,fourcc,self.tracker.video_fps,(self.tracker.img_w, self.tracker.img_h)) 
+            self.output = cv2.VideoWriter(output,fourcc,self.tracker.video_fps,(self.tracker.img_w, self.tracker.img_h))
+        
+        if self.virtual_cam:
+            # Initialize the virtual camera
+            self.virtual_cam_output = pyvirtualcam.Camera(width=self.tracker.img_w, height=self.tracker.img_h, fps=self.tracker.video_fps)
 
     def norm2abs(self, x_y):
         x = int(x_y[0] * self.tracker.frame_size - self.tracker.pad_w)
@@ -401,12 +409,17 @@ class HandTrackerRenderer:
     def waitKey(self, delay=1):
         if self.show_fps:
                 self.tracker.fps.draw(self.frame, orig=(50,50), size=1, color=(240,180,100))
-        if self.fullscreen:
+        if self.virtual_cam:
+                # Send the frame to the virtual camera
+                self.virtual_cam_output.send(cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB))
+        else:
+            if self.fullscreen:
                 cv2.namedWindow("Hand tracking", cv2.WINDOW_NORMAL)
                 cv2.setWindowProperty("Hand tracking", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-        else:
-            cv2.namedWindow("Hand tracking", cv2.WINDOW_NORMAL)
-        cv2.imshow("Hand tracking", self.frame)
+            else:
+                cv2.namedWindow("Hand tracking", cv2.WINDOW_NORMAL)
+            
+            cv2.imshow("Hand tracking", self.frame)
         if self.output:
             self.output.write(self.frame)
         key = cv2.waitKey(delay) 

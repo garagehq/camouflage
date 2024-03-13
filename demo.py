@@ -52,6 +52,7 @@ parser_renderer.add_argument(
 parser_renderer.add_argument(
     '--interact3D', action="store_true", help="Enable 3D object interaction")
 parser_renderer.add_argument("--fullscreen", action="store_true", help="Enable fullscreen mode")
+parser_renderer.add_argument("--virtual_cam", action="store_true", help="Send frames to virtual camera instead of displaying in the video window")
 
 args = parser.parse_args()
 dargs = vars(args)
@@ -88,7 +89,8 @@ renderer = HandTrackerRenderer(
         hide_extras=args.hide,
         interact_2d=args.interact2D,
         interact_3d=args.interact3D,
-        fullscreen=args.fullscreen)
+        fullscreen=args.fullscreen,
+        virtual_cam=args.virtual_cam)
 
 while True:
     # Run hand tracker on next frame
