@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import time
 import pyvirtualcam
+import trimesh
+import pyrender
 
 LINES_HAND = [[0,1],[1,2],[2,3],[3,4], 
             [0,5],[5,6],[6,7],[7,8],
@@ -15,10 +17,103 @@ LINES_BODY = [[4,2],[2,0],[0,1],[1,3],
             [6,12],[12,11],[11,5],
             [12,14],[14,16],[11,13],[13,15]]
 
+def stl_to_pyrender_and_trimesh_mesh(stl_file, color=(0, 0, 255)):
+    # Load the STL file as a trimesh mesh for bounding box calculation
+    trimesh_mesh = trimesh.load_mesh(stl_file)
+
+    # Create a pyrender mesh from the trimesh mesh
+    material = pyrender.MetallicRoughnessMaterial(baseColorFactor=color)
+    pyrender_mesh = pyrender.Mesh.from_trimesh(trimesh_mesh, material=material)
+
+    return pyrender_mesh, trimesh_mesh
+
+def display_mesh(mesh_file, rotation_y_angle=0, rotation_x_angle=0, rotation_z_angle=0, scale=1):
+    pyrender_mesh, trimesh_mesh = stl_to_pyrender_and_trimesh_mesh(mesh_file)
+    rotation_y = np.radians(rotation_y_angle)
+    rotation_x = np.radians(rotation_x_angle)
+    rotation_z = np.radians(rotation_z_angle)
+    # Create a scene
+    scene = pyrender.Scene(
+        bg_color=[0, 0, 0, 0], ambient_light=[0.45, 0.45, 0.45])
+
+    centroid = trimesh_mesh.centroid
+    translation_to_origin = trimesh.transformations.translation_matrix(-centroid)
+    translation_back = trimesh.transformations.translation_matrix(centroid)
+    
+    rotation_matrix = trimesh.transformations.euler_matrix(rotation_x, rotation_y, rotation_z)
+    
+    # Combine transformations: move to origin, rotate, move back
+    combined_transform = translation_back @ rotation_matrix @ translation_to_origin
+
+    mesh_node = pyrender.Node(mesh=pyrender_mesh, matrix=combined_transform)
+    scene.add_node(mesh_node)
+
+    bbox = trimesh_mesh.bounding_box_oriented
+    max_extent = max(bbox.extents)
+    distance =  max_extent *1.25 # Adjust this factor as needed
+    fov = np.pi / 3.0  # Adjust this value to change the field of view
+
+    # # Create the camera pose
+    camera_pose = np.eye(4)
+    camera_pose[:3, 3] = [centroid[0], centroid[1], centroid[2] + distance]
+    
+    # Create the camera
+    camera = pyrender.PerspectiveCamera(yfov=fov, aspectRatio=1.0)
+    scene.add(camera, pose=camera_pose)
+
+def render_mesh_to_image(mesh_file, rotation_y_angle=0, rotation_x_angle=0, rotation_z_angle=0, scale=1):
+    pyrender_mesh, trimesh_mesh = stl_to_pyrender_and_trimesh_mesh(mesh_file)
+    rotation_y = np.radians(rotation_y_angle)
+    rotation_x = np.radians(rotation_x_angle)
+    rotation_z = np.radians(rotation_z_angle)
+    # Create a scene
+    scene = pyrender.Scene(
+        bg_color=[0, 0, 0, 0], ambient_light=[0.45, 0.45, 0.45])
+
+    centroid = trimesh_mesh.centroid
+    translation_to_origin = trimesh.transformations.translation_matrix(-centroid)
+    translation_back = trimesh.transformations.translation_matrix(centroid)
+    
+    rotation_matrix = trimesh.transformations.euler_matrix(rotation_x, rotation_y, rotation_z)
+    
+    # Combine transformations: move to origin, rotate, move back
+    combined_transform = translation_back @ rotation_matrix @ translation_to_origin
+
+    mesh_node = pyrender.Node(mesh=pyrender_mesh, matrix=combined_transform)
+    scene.add_node(mesh_node)
+
+    bbox = trimesh_mesh.bounding_box_oriented
+    max_extent = max(bbox.extents)
+    distance =  max_extent *1.25 # Adjust this factor as needed
+    fov = np.pi / 3.0  # Adjust this value to change the field of view
+
+    # # Create the camera pose
+    camera_pose = np.eye(4)
+    camera_pose[:3, 3] = [centroid[0], centroid[1], centroid[2] + distance]
+    
+    # Create the camera
+    camera = pyrender.PerspectiveCamera(yfov=fov, aspectRatio=1.0)
+    scene.add(camera, pose=camera_pose)
+    
+    viewport_width = int(320 * scale)
+    viewport_height = int(240 * scale)
+    
+    renderer = pyrender.OffscreenRenderer(viewport_width=viewport_width, viewport_height=viewport_height)
+    color, depth = renderer.render(scene)
+    
+    # Convert the color image to BGR format
+    color = color.astype(np.uint8)
+    color_bgr = cv2.cvtColor(color, cv2.COLOR_RGBA2BGRA)
+
+    # Save the rendered image as a PNG file
+    cv2.imwrite('mesh.png', color_bgr)
+    return color_bgr
+
 class HandTrackerRenderer:
     def __init__(self, 
                 tracker,
                 output=None,
+                model_path="img/test.stl",
                 draw_mode=False,
                 hide_extras=False,
                 interact_2d=False,
@@ -29,6 +124,18 @@ class HandTrackerRenderer:
         self.tracker = tracker
         self.interact_2d = interact_2d
         self.interact_3d = interact_3d
+        if(self.interact_3d):
+            self.rotation_angle = 0
+            self.model_path = model_path
+            self.mesh = None
+            self.mesh_image = None
+            self.fist_detected_prev = False
+            self.peace_detected_prev = False
+            self.three_detected_prev = False
+            self.mesh_scale = 1.0
+            self.mesh_dirty = True
+            self.prev_peace_distance = 0
+            self.mesh_visible = False
         self.virtual_cam = virtual_cam
         self.fullscreen = fullscreen
         self.image = None
@@ -335,6 +442,61 @@ class HandTrackerRenderer:
                 # Overlay the image on the frame at the current position
                 frame = self.overlay_image(frame, self.image, self.image_position)
     
+        elif self.interact_3d:
+            fist_detected = False
+            peace_detected = False
+            three_detected = False
+            index_finger_tip = None
+            peace_distance = 0
+            three_direction = 0
+    
+            for hand in hands:
+                if hand.gesture == "FIST":
+                    fist_detected = True
+                elif hand.gesture == "PEACE":
+                    peace_detected = True
+                    peace_distance = np.linalg.norm(hand.landmarks[8] - hand.landmarks[12])
+                elif hand.gesture == "THREE":
+                    three_detected = True
+                    three_direction = 1 if hand.label == "left" else -1
+                
+                if not self.hide_extras:
+                    self.draw_hand(hand)
+    
+            # Toggle mesh visibility on fist gesture change
+            if fist_detected and not self.fist_detected_prev:
+                self.mesh_visible = not self.mesh_visible
+                if self.mesh is None:
+                    self.mesh = True
+            self.fist_detected_prev = fist_detected
+    
+            # Update mesh scale on peace gesture change
+            if peace_detected and not self.peace_detected_prev:
+                if self.mesh is not None:
+                    if self.prev_peace_distance != 0:
+                        scale_factor = peace_distance / self.prev_peace_distance
+                        self.mesh_scale *= scale_factor
+                    self.prev_peace_distance = peace_distance
+            self.peace_detected_prev = peace_detected
+    
+            # Update mesh rotation on three gesture change
+            if three_detected and not self.three_detected_prev:
+                self.rotation_angle += 5 * three_direction
+            self.three_detected_prev = three_detected
+    
+            # Render mesh to image if necessary
+            if self.mesh is not None and (self.mesh_dirty and self.mesh_image is None):
+                self.mesh_image = render_mesh_to_image(self.model_path, scale=self.mesh_scale)
+                self.mesh_dirty = False
+
+            # Overlay the rendered image on the frame
+            if self.mesh_image is not None and self.mesh_visible:
+                overlay = self.mesh_image[:, :, :3]
+                mask = self.mesh_image[:, :, 3] > 0
+                background = frame[100:100+self.mesh_image.shape[0], 100:100+self.mesh_image.shape[1]]
+                background[mask] = overlay[mask]
+                frame[100:100+self.mesh_image.shape[0], 100:100+self.mesh_image.shape[1]] = background
+        
         else:
             for hand in hands:        
                 if not self.hide_extras:

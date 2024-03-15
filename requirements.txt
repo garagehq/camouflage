@@ -4,3 +4,4 @@ numpy~=1.24.3
 tensorflow~=2.13.0
 blobconverter
 pyvirtualcam # on Linux, you have to manually install this from source git clone https://github.com/letmaik/pyvirtualcam.git && cd pyvirtualcam && python3 -m pip install .
+pyrender
