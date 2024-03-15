@@ -340,8 +340,9 @@ class HandTrackerRenderer:
                 if not self.hide_extras:
                     self.draw_hand(hand)
                     
-        # Flip the Frames to stop the mirrored effect
-        self.frame = cv2.flip(frame, 1)
+        # Flip the Frames to stop the mirrored effect (only without virtual_cam)
+        if not self.virtual_cam:
+            self.frame = cv2.flip(frame, 1)
         return self.frame
 
     def is_finger_on_image(self, finger_tip, image_position):
@@ -409,8 +410,9 @@ class HandTrackerRenderer:
         cv2.destroyAllWindows()
 
     def waitKey(self, delay=1):
-        if self.show_fps:
-                self.tracker.fps.draw(self.frame, orig=(50,50), size=1, color=(240,180,100))
+        if not self.virtual_cam:
+            if self.show_fps:
+                    self.tracker.fps.draw(self.frame, orig=(50,50), size=1, color=(240,180,100))
         if self.virtual_cam:
                 # Send the frame to the virtual camera
                 self.virtual_cam_output.send(cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB))
