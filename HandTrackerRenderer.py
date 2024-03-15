@@ -339,6 +339,8 @@ class HandTrackerRenderer:
             for hand in hands:        
                 if not self.hide_extras:
                     self.draw_hand(hand)
+                    
+        # Flip the Frames to stop the mirrored effect
         self.frame = cv2.flip(frame, 1)
         return self.frame
 
