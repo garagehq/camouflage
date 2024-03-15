@@ -1,0 +1,3771 @@
+<?xml version="1.0"?>
+<mapping>
+	<map>
+		<framework name="input" output_port_id="input:0" />
+		<IR name="input" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="input" output_port_id="input:0" />
+		<IR name="input" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D/filter" output_port_id="Conv2D/filter:0" />
+		<IR name="Conv2D/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D/filter" output_port_id="Conv2D/filter:0" />
+		<IR name="Conv2D/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D" output_port_id="Conv2D:0" />
+		<IR name="Conv2D" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D" output_port_id="Conv2D:0" />
+		<IR name="Conv2D" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_1/y" output_port_id="conv2d_1/y:0" />
+		<IR name="conv2d_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_1/y" output_port_id="conv2d_1/y:0" />
+		<IR name="conv2d_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_1" output_port_id="conv2d_1:0" />
+		<IR name="conv2d_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_1" output_port_id="conv2d_1:0" />
+		<IR name="conv2d_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_prelu/Relu" output_port_id="conv2d_prelu/Relu:0" />
+		<IR name="conv2d_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="conv2d_prelu/Relu" output_port_id="conv2d_prelu/Relu:0" />
+		<IR name="conv2d_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="conv2d_prelu/Neg/mul_" output_port_id="conv2d_prelu/Neg:0" />
+		<IR name="conv2d_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_prelu/Neg" output_port_id="conv2d_prelu/Neg:0" />
+		<IR name="conv2d_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_prelu/Neg_1/mul_/Negate" output_port_id="conv2d_prelu/Neg_1:0" />
+		<IR name="conv2d_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="conv2d_prelu/Neg_1" output_port_id="conv2d_prelu/Neg_1:0" />
+		<IR name="conv2d_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="conv2d_prelu/Relu_1" output_port_id="conv2d_prelu/Relu_1:0" />
+		<IR name="conv2d_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="conv2d_prelu/Relu_1" output_port_id="conv2d_prelu/Relu_1:0" />
+		<IR name="conv2d_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="conv2d_prelu/mul" output_port_id="conv2d_prelu/mul:0" />
+		<IR name="conv2d_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_prelu/mul" output_port_id="conv2d_prelu/mul:0" />
+		<IR name="conv2d_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_prelu/add" output_port_id="conv2d_prelu/add:0" />
+		<IR name="conv2d_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_prelu/add" output_port_id="conv2d_prelu/add:0" />
+		<IR name="conv2d_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_2" output_port_id="conv2d_prelu/add:0" />
+		<IR name="conv2d_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_prelu/add" output_port_id="conv2d_2:0" />
+		<IR name="conv2d_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_prelu/add" output_port_id="conv2d_2:0" />
+		<IR name="conv2d_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_2" output_port_id="conv2d_2:0" />
+		<IR name="conv2d_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise/filter_in" output_port_id="depthwise/filter_in:0" />
+		<IR name="depthwise/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise/filter_in" output_port_id="depthwise/filter_in:0" />
+		<IR name="depthwise/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise" output_port_id="depthwise:0" />
+		<IR name="depthwise" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise" output_port_id="depthwise:0" />
+		<IR name="depthwise" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d/y" output_port_id="depthwise_conv2d/y:0" />
+		<IR name="depthwise_conv2d/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d/y" output_port_id="depthwise_conv2d/y:0" />
+		<IR name="depthwise_conv2d/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d" output_port_id="depthwise_conv2d:0" />
+		<IR name="depthwise_conv2d" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d" output_port_id="depthwise_conv2d:0" />
+		<IR name="depthwise_conv2d" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_3/filter" output_port_id="Conv2D_3/filter:0" />
+		<IR name="Conv2D_3/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_3/filter" output_port_id="Conv2D_3/filter:0" />
+		<IR name="Conv2D_3/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_3" output_port_id="Conv2D_3:0" />
+		<IR name="Conv2D_3" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_3" output_port_id="Conv2D_3:0" />
+		<IR name="Conv2D_3" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_1_1/y" output_port_id="conv2d_1_1/y:0" />
+		<IR name="conv2d_1_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_1_1/y" output_port_id="conv2d_1_1/y:0" />
+		<IR name="conv2d_1_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_1_1" output_port_id="conv2d_1_1:0" />
+		<IR name="conv2d_1_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_1_1" output_port_id="conv2d_1_1:0" />
+		<IR name="conv2d_1_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add__xeno_compat__1" output_port_id="add__xeno_compat__1:0" />
+		<IR name="add__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add__xeno_compat__1" output_port_id="add__xeno_compat__1:0" />
+		<IR name="add__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add__xeno_compat__1_prelu/Relu" output_port_id="add__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add__xeno_compat__1_prelu/Relu" output_port_id="add__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add__xeno_compat__1_prelu/Neg/mul_" output_port_id="add__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add__xeno_compat__1_prelu/Neg" output_port_id="add__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add__xeno_compat__1_prelu/Neg_1" output_port_id="add__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add__xeno_compat__1_prelu/Relu_1" output_port_id="add__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add__xeno_compat__1_prelu/Relu_1" output_port_id="add__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add__xeno_compat__1_prelu/mul" output_port_id="add__xeno_compat__1_prelu/mul:0" />
+		<IR name="add__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add__xeno_compat__1_prelu/mul" output_port_id="add__xeno_compat__1_prelu/mul:0" />
+		<IR name="add__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add__xeno_compat__1_prelu/add" output_port_id="add__xeno_compat__1_prelu/add:0" />
+		<IR name="add__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add__xeno_compat__1_prelu/add" output_port_id="add__xeno_compat__1_prelu/add:0" />
+		<IR name="add__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add__xeno_compat__1_1" output_port_id="add__xeno_compat__1_prelu/add:0" />
+		<IR name="add__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add__xeno_compat__1_prelu/add" output_port_id="add__xeno_compat__1_1:0" />
+		<IR name="add__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add__xeno_compat__1_prelu/add" output_port_id="add__xeno_compat__1_1:0" />
+		<IR name="add__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add__xeno_compat__1_1" output_port_id="add__xeno_compat__1_1:0" />
+		<IR name="add__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_1/filter_in" output_port_id="depthwise_1/filter_in:0" />
+		<IR name="depthwise_1/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_1/filter_in" output_port_id="depthwise_1/filter_in:0" />
+		<IR name="depthwise_1/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_1" output_port_id="depthwise_1:0" />
+		<IR name="depthwise_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_1" output_port_id="depthwise_1:0" />
+		<IR name="depthwise_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_1/y" output_port_id="depthwise_conv2d_1/y:0" />
+		<IR name="depthwise_conv2d_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_1/y" output_port_id="depthwise_conv2d_1/y:0" />
+		<IR name="depthwise_conv2d_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_1" output_port_id="depthwise_conv2d_1:0" />
+		<IR name="depthwise_conv2d_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_1" output_port_id="depthwise_conv2d_1:0" />
+		<IR name="depthwise_conv2d_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_4/filter" output_port_id="Conv2D_4/filter:0" />
+		<IR name="Conv2D_4/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_4/filter" output_port_id="Conv2D_4/filter:0" />
+		<IR name="Conv2D_4/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_4" output_port_id="Conv2D_4:0" />
+		<IR name="Conv2D_4" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_4" output_port_id="Conv2D_4:0" />
+		<IR name="Conv2D_4" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_2_1/y" output_port_id="conv2d_2_1/y:0" />
+		<IR name="conv2d_2_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_2_1/y" output_port_id="conv2d_2_1/y:0" />
+		<IR name="conv2d_2_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_2_1" output_port_id="conv2d_2_1:0" />
+		<IR name="conv2d_2_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_2_1" output_port_id="conv2d_2_1:0" />
+		<IR name="conv2d_2_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_1__xeno_compat__1" output_port_id="add_1__xeno_compat__1:0" />
+		<IR name="add_1__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_1__xeno_compat__1" output_port_id="add_1__xeno_compat__1:0" />
+		<IR name="add_1__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_1__xeno_compat__1_prelu/Relu" output_port_id="add_1__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_1__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_1__xeno_compat__1_prelu/Relu" output_port_id="add_1__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_1__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_1__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_1__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_1__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_1__xeno_compat__1_prelu/Neg" output_port_id="add_1__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_1__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_1__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_1__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_1__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_1__xeno_compat__1_prelu/Neg_1" output_port_id="add_1__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_1__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_1__xeno_compat__1_prelu/Relu_1" output_port_id="add_1__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_1__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_1__xeno_compat__1_prelu/Relu_1" output_port_id="add_1__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_1__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_1__xeno_compat__1_prelu/mul" output_port_id="add_1__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_1__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_1__xeno_compat__1_prelu/mul" output_port_id="add_1__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_1__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_1__xeno_compat__1_prelu/add" output_port_id="add_1__xeno_compat__1_prelu/add:0" />
+		<IR name="add_1__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_1__xeno_compat__1_prelu/add" output_port_id="add_1__xeno_compat__1_prelu/add:0" />
+		<IR name="add_1__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_1__xeno_compat__1_1" output_port_id="add_1__xeno_compat__1_prelu/add:0" />
+		<IR name="add_1__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_1__xeno_compat__1_prelu/add" output_port_id="add_1__xeno_compat__1_1:0" />
+		<IR name="add_1__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_1__xeno_compat__1_prelu/add" output_port_id="add_1__xeno_compat__1_1:0" />
+		<IR name="add_1__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_1__xeno_compat__1_1" output_port_id="add_1__xeno_compat__1_1:0" />
+		<IR name="add_1__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_2/filter_in" output_port_id="depthwise_2/filter_in:0" />
+		<IR name="depthwise_2/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_2/filter_in" output_port_id="depthwise_2/filter_in:0" />
+		<IR name="depthwise_2/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_2" output_port_id="depthwise_2:0" />
+		<IR name="depthwise_2" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_2" output_port_id="depthwise_2:0" />
+		<IR name="depthwise_2" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_2/y" output_port_id="depthwise_conv2d_2/y:0" />
+		<IR name="depthwise_conv2d_2/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_2/y" output_port_id="depthwise_conv2d_2/y:0" />
+		<IR name="depthwise_conv2d_2/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_2" output_port_id="depthwise_conv2d_2:0" />
+		<IR name="depthwise_conv2d_2" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_2" output_port_id="depthwise_conv2d_2:0" />
+		<IR name="depthwise_conv2d_2" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_5/filter" output_port_id="Conv2D_5/filter:0" />
+		<IR name="Conv2D_5/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_5/filter" output_port_id="Conv2D_5/filter:0" />
+		<IR name="Conv2D_5/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_5" output_port_id="Conv2D_5:0" />
+		<IR name="Conv2D_5" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_5" output_port_id="Conv2D_5:0" />
+		<IR name="Conv2D_5" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_3_1/y" output_port_id="conv2d_3_1/y:0" />
+		<IR name="conv2d_3_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_3_1/y" output_port_id="conv2d_3_1/y:0" />
+		<IR name="conv2d_3_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_3_1" output_port_id="conv2d_3_1:0" />
+		<IR name="conv2d_3_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_3_1" output_port_id="conv2d_3_1:0" />
+		<IR name="conv2d_3_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_2__xeno_compat__1" output_port_id="add_2__xeno_compat__1:0" />
+		<IR name="add_2__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_2__xeno_compat__1" output_port_id="add_2__xeno_compat__1:0" />
+		<IR name="add_2__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_2__xeno_compat__1_prelu/Relu" output_port_id="add_2__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_2__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_2__xeno_compat__1_prelu/Relu" output_port_id="add_2__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_2__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_2__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_2__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_2__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_2__xeno_compat__1_prelu/Neg" output_port_id="add_2__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_2__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_2__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_2__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_2__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_2__xeno_compat__1_prelu/Neg_1" output_port_id="add_2__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_2__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_2__xeno_compat__1_prelu/Relu_1" output_port_id="add_2__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_2__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_2__xeno_compat__1_prelu/Relu_1" output_port_id="add_2__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_2__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_2__xeno_compat__1_prelu/mul" output_port_id="add_2__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_2__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_2__xeno_compat__1_prelu/mul" output_port_id="add_2__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_2__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_2__xeno_compat__1_prelu/add" output_port_id="add_2__xeno_compat__1_prelu/add:0" />
+		<IR name="add_2__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_2__xeno_compat__1_prelu/add" output_port_id="add_2__xeno_compat__1_prelu/add:0" />
+		<IR name="add_2__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_2__xeno_compat__1_1" output_port_id="add_2__xeno_compat__1_prelu/add:0" />
+		<IR name="add_2__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_2__xeno_compat__1_prelu/add" output_port_id="add_2__xeno_compat__1_1:0" />
+		<IR name="add_2__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_2__xeno_compat__1_prelu/add" output_port_id="add_2__xeno_compat__1_1:0" />
+		<IR name="add_2__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_2__xeno_compat__1_1" output_port_id="add_2__xeno_compat__1_1:0" />
+		<IR name="add_2__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="max_pooling2d" output_port_id="max_pooling2d:0" />
+		<IR name="max_pooling2d" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="max_pooling2d" output_port_id="max_pooling2d:0" />
+		<IR name="max_pooling2d" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="channel_padding" output_port_id="channel_padding:0" />
+		<IR name="channel_padding" output_port_id="4" />
+	</map>
+	<map>
+		<framework name="channel_padding" output_port_id="channel_padding:0" />
+		<IR name="channel_padding" output_port_id="4" />
+	</map>
+	<map>
+		<framework name="depthwise_3/filter_in" output_port_id="depthwise_3/filter_in:0" />
+		<IR name="depthwise_3/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_3/filter_in" output_port_id="depthwise_3/filter_in:0" />
+		<IR name="depthwise_3/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_3" output_port_id="depthwise_3:0" />
+		<IR name="depthwise_3" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_3" output_port_id="depthwise_3:0" />
+		<IR name="depthwise_3" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_3/y" output_port_id="depthwise_conv2d_3/y:0" />
+		<IR name="depthwise_conv2d_3/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_3/y" output_port_id="depthwise_conv2d_3/y:0" />
+		<IR name="depthwise_conv2d_3/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_3" output_port_id="depthwise_conv2d_3:0" />
+		<IR name="depthwise_conv2d_3" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_3" output_port_id="depthwise_conv2d_3:0" />
+		<IR name="depthwise_conv2d_3" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_6/filter" output_port_id="Conv2D_6/filter:0" />
+		<IR name="Conv2D_6/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_6/filter" output_port_id="Conv2D_6/filter:0" />
+		<IR name="Conv2D_6/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_6" output_port_id="Conv2D_6:0" />
+		<IR name="Conv2D_6" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_6" output_port_id="Conv2D_6:0" />
+		<IR name="Conv2D_6" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_4_1/y" output_port_id="conv2d_4_1/y:0" />
+		<IR name="conv2d_4_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_4_1/y" output_port_id="conv2d_4_1/y:0" />
+		<IR name="conv2d_4_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_4_1" output_port_id="conv2d_4_1:0" />
+		<IR name="conv2d_4_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_4_1" output_port_id="conv2d_4_1:0" />
+		<IR name="conv2d_4_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_3__xeno_compat__1" output_port_id="add_3__xeno_compat__1:0" />
+		<IR name="add_3__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_3__xeno_compat__1" output_port_id="add_3__xeno_compat__1:0" />
+		<IR name="add_3__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_3__xeno_compat__1_prelu/Relu" output_port_id="add_3__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_3__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_3__xeno_compat__1_prelu/Relu" output_port_id="add_3__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_3__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_3__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_3__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_3__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_3__xeno_compat__1_prelu/Neg" output_port_id="add_3__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_3__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_3__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_3__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_3__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_3__xeno_compat__1_prelu/Neg_1" output_port_id="add_3__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_3__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_3__xeno_compat__1_prelu/Relu_1" output_port_id="add_3__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_3__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_3__xeno_compat__1_prelu/Relu_1" output_port_id="add_3__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_3__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_3__xeno_compat__1_prelu/mul" output_port_id="add_3__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_3__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_3__xeno_compat__1_prelu/mul" output_port_id="add_3__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_3__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_3__xeno_compat__1_prelu/add" output_port_id="add_3__xeno_compat__1_prelu/add:0" />
+		<IR name="add_3__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_3__xeno_compat__1_prelu/add" output_port_id="add_3__xeno_compat__1_prelu/add:0" />
+		<IR name="add_3__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_3__xeno_compat__1_1" output_port_id="add_3__xeno_compat__1_prelu/add:0" />
+		<IR name="add_3__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_3__xeno_compat__1_prelu/add" output_port_id="add_3__xeno_compat__1_1:0" />
+		<IR name="add_3__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_3__xeno_compat__1_prelu/add" output_port_id="add_3__xeno_compat__1_1:0" />
+		<IR name="add_3__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_3__xeno_compat__1_1" output_port_id="add_3__xeno_compat__1_1:0" />
+		<IR name="add_3__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_4/filter_in" output_port_id="depthwise_4/filter_in:0" />
+		<IR name="depthwise_4/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_4/filter_in" output_port_id="depthwise_4/filter_in:0" />
+		<IR name="depthwise_4/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_4" output_port_id="depthwise_4:0" />
+		<IR name="depthwise_4" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_4" output_port_id="depthwise_4:0" />
+		<IR name="depthwise_4" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_4/y" output_port_id="depthwise_conv2d_4/y:0" />
+		<IR name="depthwise_conv2d_4/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_4/y" output_port_id="depthwise_conv2d_4/y:0" />
+		<IR name="depthwise_conv2d_4/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_4" output_port_id="depthwise_conv2d_4:0" />
+		<IR name="depthwise_conv2d_4" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_4" output_port_id="depthwise_conv2d_4:0" />
+		<IR name="depthwise_conv2d_4" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_7/filter" output_port_id="Conv2D_7/filter:0" />
+		<IR name="Conv2D_7/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_7/filter" output_port_id="Conv2D_7/filter:0" />
+		<IR name="Conv2D_7/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_7" output_port_id="Conv2D_7:0" />
+		<IR name="Conv2D_7" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_7" output_port_id="Conv2D_7:0" />
+		<IR name="Conv2D_7" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_5_1/y" output_port_id="conv2d_5_1/y:0" />
+		<IR name="conv2d_5_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_5_1/y" output_port_id="conv2d_5_1/y:0" />
+		<IR name="conv2d_5_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_5_1" output_port_id="conv2d_5_1:0" />
+		<IR name="conv2d_5_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_5_1" output_port_id="conv2d_5_1:0" />
+		<IR name="conv2d_5_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_4__xeno_compat__1" output_port_id="add_4__xeno_compat__1:0" />
+		<IR name="add_4__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_4__xeno_compat__1" output_port_id="add_4__xeno_compat__1:0" />
+		<IR name="add_4__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_4__xeno_compat__1_prelu/Relu" output_port_id="add_4__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_4__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_4__xeno_compat__1_prelu/Relu" output_port_id="add_4__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_4__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_4__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_4__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_4__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_4__xeno_compat__1_prelu/Neg" output_port_id="add_4__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_4__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_4__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_4__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_4__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_4__xeno_compat__1_prelu/Neg_1" output_port_id="add_4__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_4__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_4__xeno_compat__1_prelu/Relu_1" output_port_id="add_4__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_4__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_4__xeno_compat__1_prelu/Relu_1" output_port_id="add_4__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_4__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_4__xeno_compat__1_prelu/mul" output_port_id="add_4__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_4__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_4__xeno_compat__1_prelu/mul" output_port_id="add_4__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_4__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_4__xeno_compat__1_prelu/add" output_port_id="add_4__xeno_compat__1_prelu/add:0" />
+		<IR name="add_4__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_4__xeno_compat__1_prelu/add" output_port_id="add_4__xeno_compat__1_prelu/add:0" />
+		<IR name="add_4__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_4__xeno_compat__1_1" output_port_id="add_4__xeno_compat__1_prelu/add:0" />
+		<IR name="add_4__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_4__xeno_compat__1_prelu/add" output_port_id="add_4__xeno_compat__1_1:0" />
+		<IR name="add_4__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_4__xeno_compat__1_prelu/add" output_port_id="add_4__xeno_compat__1_1:0" />
+		<IR name="add_4__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_4__xeno_compat__1_1" output_port_id="add_4__xeno_compat__1_1:0" />
+		<IR name="add_4__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_5/filter_in" output_port_id="depthwise_5/filter_in:0" />
+		<IR name="depthwise_5/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_5/filter_in" output_port_id="depthwise_5/filter_in:0" />
+		<IR name="depthwise_5/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_5" output_port_id="depthwise_5:0" />
+		<IR name="depthwise_5" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_5" output_port_id="depthwise_5:0" />
+		<IR name="depthwise_5" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_5/y" output_port_id="depthwise_conv2d_5/y:0" />
+		<IR name="depthwise_conv2d_5/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_5/y" output_port_id="depthwise_conv2d_5/y:0" />
+		<IR name="depthwise_conv2d_5/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_5" output_port_id="depthwise_conv2d_5:0" />
+		<IR name="depthwise_conv2d_5" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_5" output_port_id="depthwise_conv2d_5:0" />
+		<IR name="depthwise_conv2d_5" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_8/filter" output_port_id="Conv2D_8/filter:0" />
+		<IR name="Conv2D_8/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_8/filter" output_port_id="Conv2D_8/filter:0" />
+		<IR name="Conv2D_8/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_8" output_port_id="Conv2D_8:0" />
+		<IR name="Conv2D_8" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_8" output_port_id="Conv2D_8:0" />
+		<IR name="Conv2D_8" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_6_1/y" output_port_id="conv2d_6_1/y:0" />
+		<IR name="conv2d_6_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_6_1/y" output_port_id="conv2d_6_1/y:0" />
+		<IR name="conv2d_6_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_6_1" output_port_id="conv2d_6_1:0" />
+		<IR name="conv2d_6_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_6_1" output_port_id="conv2d_6_1:0" />
+		<IR name="conv2d_6_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_5__xeno_compat__1" output_port_id="add_5__xeno_compat__1:0" />
+		<IR name="add_5__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_5__xeno_compat__1" output_port_id="add_5__xeno_compat__1:0" />
+		<IR name="add_5__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_5__xeno_compat__1_prelu/Relu" output_port_id="add_5__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_5__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_5__xeno_compat__1_prelu/Relu" output_port_id="add_5__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_5__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_5__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_5__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_5__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_5__xeno_compat__1_prelu/Neg" output_port_id="add_5__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_5__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_5__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_5__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_5__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_5__xeno_compat__1_prelu/Neg_1" output_port_id="add_5__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_5__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_5__xeno_compat__1_prelu/Relu_1" output_port_id="add_5__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_5__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_5__xeno_compat__1_prelu/Relu_1" output_port_id="add_5__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_5__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_5__xeno_compat__1_prelu/mul" output_port_id="add_5__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_5__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_5__xeno_compat__1_prelu/mul" output_port_id="add_5__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_5__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_5__xeno_compat__1_prelu/add" output_port_id="add_5__xeno_compat__1_prelu/add:0" />
+		<IR name="add_5__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_5__xeno_compat__1_prelu/add" output_port_id="add_5__xeno_compat__1_prelu/add:0" />
+		<IR name="add_5__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_5__xeno_compat__1_1" output_port_id="add_5__xeno_compat__1_prelu/add:0" />
+		<IR name="add_5__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_5__xeno_compat__1_prelu/add" output_port_id="add_5__xeno_compat__1_1:0" />
+		<IR name="add_5__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_5__xeno_compat__1_prelu/add" output_port_id="add_5__xeno_compat__1_1:0" />
+		<IR name="add_5__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_5__xeno_compat__1_1" output_port_id="add_5__xeno_compat__1_1:0" />
+		<IR name="add_5__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_6/filter_in" output_port_id="depthwise_6/filter_in:0" />
+		<IR name="depthwise_6/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_6/filter_in" output_port_id="depthwise_6/filter_in:0" />
+		<IR name="depthwise_6/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_6" output_port_id="depthwise_6:0" />
+		<IR name="depthwise_6" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_6" output_port_id="depthwise_6:0" />
+		<IR name="depthwise_6" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_6/y" output_port_id="depthwise_conv2d_6/y:0" />
+		<IR name="depthwise_conv2d_6/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_6/y" output_port_id="depthwise_conv2d_6/y:0" />
+		<IR name="depthwise_conv2d_6/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_6" output_port_id="depthwise_conv2d_6:0" />
+		<IR name="depthwise_conv2d_6" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_6" output_port_id="depthwise_conv2d_6:0" />
+		<IR name="depthwise_conv2d_6" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_9/filter" output_port_id="Conv2D_9/filter:0" />
+		<IR name="Conv2D_9/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_9/filter" output_port_id="Conv2D_9/filter:0" />
+		<IR name="Conv2D_9/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_9" output_port_id="Conv2D_9:0" />
+		<IR name="Conv2D_9" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_9" output_port_id="Conv2D_9:0" />
+		<IR name="Conv2D_9" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_7_1/y" output_port_id="conv2d_7_1/y:0" />
+		<IR name="conv2d_7_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_7_1/y" output_port_id="conv2d_7_1/y:0" />
+		<IR name="conv2d_7_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_7_1" output_port_id="conv2d_7_1:0" />
+		<IR name="conv2d_7_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_7_1" output_port_id="conv2d_7_1:0" />
+		<IR name="conv2d_7_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_6__xeno_compat__1" output_port_id="add_6__xeno_compat__1:0" />
+		<IR name="add_6__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_6__xeno_compat__1" output_port_id="add_6__xeno_compat__1:0" />
+		<IR name="add_6__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_6__xeno_compat__1_prelu/Relu" output_port_id="add_6__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_6__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_6__xeno_compat__1_prelu/Relu" output_port_id="add_6__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_6__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_6__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_6__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_6__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_6__xeno_compat__1_prelu/Neg" output_port_id="add_6__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_6__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_6__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_6__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_6__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_6__xeno_compat__1_prelu/Neg_1" output_port_id="add_6__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_6__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_6__xeno_compat__1_prelu/Relu_1" output_port_id="add_6__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_6__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_6__xeno_compat__1_prelu/Relu_1" output_port_id="add_6__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_6__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_6__xeno_compat__1_prelu/mul" output_port_id="add_6__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_6__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_6__xeno_compat__1_prelu/mul" output_port_id="add_6__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_6__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_6__xeno_compat__1_prelu/add" output_port_id="add_6__xeno_compat__1_prelu/add:0" />
+		<IR name="add_6__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_6__xeno_compat__1_prelu/add" output_port_id="add_6__xeno_compat__1_prelu/add:0" />
+		<IR name="add_6__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_6__xeno_compat__1_1" output_port_id="add_6__xeno_compat__1_prelu/add:0" />
+		<IR name="add_6__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_6__xeno_compat__1_prelu/add" output_port_id="add_6__xeno_compat__1_1:0" />
+		<IR name="add_6__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_6__xeno_compat__1_prelu/add" output_port_id="add_6__xeno_compat__1_1:0" />
+		<IR name="add_6__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_6__xeno_compat__1_1" output_port_id="add_6__xeno_compat__1_1:0" />
+		<IR name="add_6__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="max_pooling2d_1" output_port_id="max_pooling2d_1:0" />
+		<IR name="max_pooling2d_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="max_pooling2d_1" output_port_id="max_pooling2d_1:0" />
+		<IR name="max_pooling2d_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="channel_padding_1" output_port_id="channel_padding_1:0" />
+		<IR name="channel_padding_1" output_port_id="4" />
+	</map>
+	<map>
+		<framework name="channel_padding_1" output_port_id="channel_padding_1:0" />
+		<IR name="channel_padding_1" output_port_id="4" />
+	</map>
+	<map>
+		<framework name="depthwise_7/filter_in" output_port_id="depthwise_7/filter_in:0" />
+		<IR name="depthwise_7/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_7/filter_in" output_port_id="depthwise_7/filter_in:0" />
+		<IR name="depthwise_7/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_7" output_port_id="depthwise_7:0" />
+		<IR name="depthwise_7" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_7" output_port_id="depthwise_7:0" />
+		<IR name="depthwise_7" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_7/y" output_port_id="depthwise_conv2d_7/y:0" />
+		<IR name="depthwise_conv2d_7/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_7/y" output_port_id="depthwise_conv2d_7/y:0" />
+		<IR name="depthwise_conv2d_7/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_7" output_port_id="depthwise_conv2d_7:0" />
+		<IR name="depthwise_conv2d_7" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_7" output_port_id="depthwise_conv2d_7:0" />
+		<IR name="depthwise_conv2d_7" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_10/filter" output_port_id="Conv2D_10/filter:0" />
+		<IR name="Conv2D_10/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_10/filter" output_port_id="Conv2D_10/filter:0" />
+		<IR name="Conv2D_10/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_10" output_port_id="Conv2D_10:0" />
+		<IR name="Conv2D_10" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_10" output_port_id="Conv2D_10:0" />
+		<IR name="Conv2D_10" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_8_1/y" output_port_id="conv2d_8_1/y:0" />
+		<IR name="conv2d_8_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_8_1/y" output_port_id="conv2d_8_1/y:0" />
+		<IR name="conv2d_8_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_8_1" output_port_id="conv2d_8_1:0" />
+		<IR name="conv2d_8_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_8_1" output_port_id="conv2d_8_1:0" />
+		<IR name="conv2d_8_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_7__xeno_compat__1" output_port_id="add_7__xeno_compat__1:0" />
+		<IR name="add_7__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_7__xeno_compat__1" output_port_id="add_7__xeno_compat__1:0" />
+		<IR name="add_7__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_7__xeno_compat__1_prelu/Relu" output_port_id="add_7__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_7__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_7__xeno_compat__1_prelu/Relu" output_port_id="add_7__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_7__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_7__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_7__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_7__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_7__xeno_compat__1_prelu/Neg" output_port_id="add_7__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_7__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_7__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_7__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_7__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_7__xeno_compat__1_prelu/Neg_1" output_port_id="add_7__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_7__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_7__xeno_compat__1_prelu/Relu_1" output_port_id="add_7__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_7__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_7__xeno_compat__1_prelu/Relu_1" output_port_id="add_7__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_7__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_7__xeno_compat__1_prelu/mul" output_port_id="add_7__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_7__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_7__xeno_compat__1_prelu/mul" output_port_id="add_7__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_7__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_7__xeno_compat__1_prelu/add" output_port_id="add_7__xeno_compat__1_prelu/add:0" />
+		<IR name="add_7__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_7__xeno_compat__1_prelu/add" output_port_id="add_7__xeno_compat__1_prelu/add:0" />
+		<IR name="add_7__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_7__xeno_compat__1_1" output_port_id="add_7__xeno_compat__1_prelu/add:0" />
+		<IR name="add_7__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_7__xeno_compat__1_prelu/add" output_port_id="add_7__xeno_compat__1_1:0" />
+		<IR name="add_7__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_7__xeno_compat__1_prelu/add" output_port_id="add_7__xeno_compat__1_1:0" />
+		<IR name="add_7__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_7__xeno_compat__1_1" output_port_id="add_7__xeno_compat__1_1:0" />
+		<IR name="add_7__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_8/filter_in" output_port_id="depthwise_8/filter_in:0" />
+		<IR name="depthwise_8/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_8/filter_in" output_port_id="depthwise_8/filter_in:0" />
+		<IR name="depthwise_8/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_8" output_port_id="depthwise_8:0" />
+		<IR name="depthwise_8" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_8" output_port_id="depthwise_8:0" />
+		<IR name="depthwise_8" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_8/y" output_port_id="depthwise_conv2d_8/y:0" />
+		<IR name="depthwise_conv2d_8/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_8/y" output_port_id="depthwise_conv2d_8/y:0" />
+		<IR name="depthwise_conv2d_8/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_8" output_port_id="depthwise_conv2d_8:0" />
+		<IR name="depthwise_conv2d_8" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_8" output_port_id="depthwise_conv2d_8:0" />
+		<IR name="depthwise_conv2d_8" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_11/filter" output_port_id="Conv2D_11/filter:0" />
+		<IR name="Conv2D_11/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_11/filter" output_port_id="Conv2D_11/filter:0" />
+		<IR name="Conv2D_11/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_11" output_port_id="Conv2D_11:0" />
+		<IR name="Conv2D_11" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_11" output_port_id="Conv2D_11:0" />
+		<IR name="Conv2D_11" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_9_1/y" output_port_id="conv2d_9_1/y:0" />
+		<IR name="conv2d_9_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_9_1/y" output_port_id="conv2d_9_1/y:0" />
+		<IR name="conv2d_9_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_9_1" output_port_id="conv2d_9_1:0" />
+		<IR name="conv2d_9_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_9_1" output_port_id="conv2d_9_1:0" />
+		<IR name="conv2d_9_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_8__xeno_compat__1" output_port_id="add_8__xeno_compat__1:0" />
+		<IR name="add_8__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_8__xeno_compat__1" output_port_id="add_8__xeno_compat__1:0" />
+		<IR name="add_8__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_8__xeno_compat__1_prelu/Relu" output_port_id="add_8__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_8__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_8__xeno_compat__1_prelu/Relu" output_port_id="add_8__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_8__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_8__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_8__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_8__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_8__xeno_compat__1_prelu/Neg" output_port_id="add_8__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_8__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_8__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_8__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_8__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_8__xeno_compat__1_prelu/Neg_1" output_port_id="add_8__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_8__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_8__xeno_compat__1_prelu/Relu_1" output_port_id="add_8__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_8__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_8__xeno_compat__1_prelu/Relu_1" output_port_id="add_8__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_8__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_8__xeno_compat__1_prelu/mul" output_port_id="add_8__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_8__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_8__xeno_compat__1_prelu/mul" output_port_id="add_8__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_8__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_8__xeno_compat__1_prelu/add" output_port_id="add_8__xeno_compat__1_prelu/add:0" />
+		<IR name="add_8__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_8__xeno_compat__1_prelu/add" output_port_id="add_8__xeno_compat__1_prelu/add:0" />
+		<IR name="add_8__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_8__xeno_compat__1_1" output_port_id="add_8__xeno_compat__1_prelu/add:0" />
+		<IR name="add_8__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_8__xeno_compat__1_prelu/add" output_port_id="add_8__xeno_compat__1_1:0" />
+		<IR name="add_8__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_8__xeno_compat__1_prelu/add" output_port_id="add_8__xeno_compat__1_1:0" />
+		<IR name="add_8__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_8__xeno_compat__1_1" output_port_id="add_8__xeno_compat__1_1:0" />
+		<IR name="add_8__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_9/filter_in" output_port_id="depthwise_9/filter_in:0" />
+		<IR name="depthwise_9/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_9/filter_in" output_port_id="depthwise_9/filter_in:0" />
+		<IR name="depthwise_9/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_9" output_port_id="depthwise_9:0" />
+		<IR name="depthwise_9" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_9" output_port_id="depthwise_9:0" />
+		<IR name="depthwise_9" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_9/y" output_port_id="depthwise_conv2d_9/y:0" />
+		<IR name="depthwise_conv2d_9/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_9/y" output_port_id="depthwise_conv2d_9/y:0" />
+		<IR name="depthwise_conv2d_9/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_9" output_port_id="depthwise_conv2d_9:0" />
+		<IR name="depthwise_conv2d_9" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_9" output_port_id="depthwise_conv2d_9:0" />
+		<IR name="depthwise_conv2d_9" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_12/filter" output_port_id="Conv2D_12/filter:0" />
+		<IR name="Conv2D_12/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_12/filter" output_port_id="Conv2D_12/filter:0" />
+		<IR name="Conv2D_12/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_12" output_port_id="Conv2D_12:0" />
+		<IR name="Conv2D_12" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_12" output_port_id="Conv2D_12:0" />
+		<IR name="Conv2D_12" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_10_1/y" output_port_id="conv2d_10_1/y:0" />
+		<IR name="conv2d_10_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_10_1/y" output_port_id="conv2d_10_1/y:0" />
+		<IR name="conv2d_10_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_10_1" output_port_id="conv2d_10_1:0" />
+		<IR name="conv2d_10_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_10_1" output_port_id="conv2d_10_1:0" />
+		<IR name="conv2d_10_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_9__xeno_compat__1" output_port_id="add_9__xeno_compat__1:0" />
+		<IR name="add_9__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_9__xeno_compat__1" output_port_id="add_9__xeno_compat__1:0" />
+		<IR name="add_9__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_9__xeno_compat__1_prelu/Relu" output_port_id="add_9__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_9__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_9__xeno_compat__1_prelu/Relu" output_port_id="add_9__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_9__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_9__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_9__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_9__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_9__xeno_compat__1_prelu/Neg" output_port_id="add_9__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_9__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_9__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_9__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_9__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_9__xeno_compat__1_prelu/Neg_1" output_port_id="add_9__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_9__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_9__xeno_compat__1_prelu/Relu_1" output_port_id="add_9__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_9__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_9__xeno_compat__1_prelu/Relu_1" output_port_id="add_9__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_9__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_9__xeno_compat__1_prelu/mul" output_port_id="add_9__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_9__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_9__xeno_compat__1_prelu/mul" output_port_id="add_9__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_9__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_9__xeno_compat__1_prelu/add" output_port_id="add_9__xeno_compat__1_prelu/add:0" />
+		<IR name="add_9__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_9__xeno_compat__1_prelu/add" output_port_id="add_9__xeno_compat__1_prelu/add:0" />
+		<IR name="add_9__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_9__xeno_compat__1_1" output_port_id="add_9__xeno_compat__1_prelu/add:0" />
+		<IR name="add_9__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_9__xeno_compat__1_prelu/add" output_port_id="add_9__xeno_compat__1_1:0" />
+		<IR name="add_9__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_9__xeno_compat__1_prelu/add" output_port_id="add_9__xeno_compat__1_1:0" />
+		<IR name="add_9__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_9__xeno_compat__1_1" output_port_id="add_9__xeno_compat__1_1:0" />
+		<IR name="add_9__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_10/filter_in" output_port_id="depthwise_10/filter_in:0" />
+		<IR name="depthwise_10/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_10/filter_in" output_port_id="depthwise_10/filter_in:0" />
+		<IR name="depthwise_10/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_10" output_port_id="depthwise_10:0" />
+		<IR name="depthwise_10" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_10" output_port_id="depthwise_10:0" />
+		<IR name="depthwise_10" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_10/y" output_port_id="depthwise_conv2d_10/y:0" />
+		<IR name="depthwise_conv2d_10/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_10/y" output_port_id="depthwise_conv2d_10/y:0" />
+		<IR name="depthwise_conv2d_10/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_10" output_port_id="depthwise_conv2d_10:0" />
+		<IR name="depthwise_conv2d_10" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_10" output_port_id="depthwise_conv2d_10:0" />
+		<IR name="depthwise_conv2d_10" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_13/filter" output_port_id="Conv2D_13/filter:0" />
+		<IR name="Conv2D_13/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_13/filter" output_port_id="Conv2D_13/filter:0" />
+		<IR name="Conv2D_13/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_13" output_port_id="Conv2D_13:0" />
+		<IR name="Conv2D_13" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_13" output_port_id="Conv2D_13:0" />
+		<IR name="Conv2D_13" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_11_1/y" output_port_id="conv2d_11_1/y:0" />
+		<IR name="conv2d_11_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_11_1/y" output_port_id="conv2d_11_1/y:0" />
+		<IR name="conv2d_11_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_11_1" output_port_id="conv2d_11_1:0" />
+		<IR name="conv2d_11_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_11_1" output_port_id="conv2d_11_1:0" />
+		<IR name="conv2d_11_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_10__xeno_compat__1" output_port_id="add_10__xeno_compat__1:0" />
+		<IR name="add_10__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_10__xeno_compat__1" output_port_id="add_10__xeno_compat__1:0" />
+		<IR name="add_10__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_10__xeno_compat__1_prelu/Relu" output_port_id="add_10__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_10__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_10__xeno_compat__1_prelu/Relu" output_port_id="add_10__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_10__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_10__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_10__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_10__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_10__xeno_compat__1_prelu/Neg" output_port_id="add_10__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_10__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_10__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_10__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_10__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_10__xeno_compat__1_prelu/Neg_1" output_port_id="add_10__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_10__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_10__xeno_compat__1_prelu/Relu_1" output_port_id="add_10__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_10__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_10__xeno_compat__1_prelu/Relu_1" output_port_id="add_10__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_10__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_10__xeno_compat__1_prelu/mul" output_port_id="add_10__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_10__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_10__xeno_compat__1_prelu/mul" output_port_id="add_10__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_10__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_10__xeno_compat__1_prelu/add" output_port_id="add_10__xeno_compat__1_prelu/add:0" />
+		<IR name="add_10__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_10__xeno_compat__1_prelu/add" output_port_id="add_10__xeno_compat__1_prelu/add:0" />
+		<IR name="add_10__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_10__xeno_compat__1_1" output_port_id="add_10__xeno_compat__1_prelu/add:0" />
+		<IR name="add_10__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_10__xeno_compat__1_prelu/add" output_port_id="add_10__xeno_compat__1_1:0" />
+		<IR name="add_10__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_10__xeno_compat__1_prelu/add" output_port_id="add_10__xeno_compat__1_1:0" />
+		<IR name="add_10__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_10__xeno_compat__1_1" output_port_id="add_10__xeno_compat__1_1:0" />
+		<IR name="add_10__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="max_pooling2d_2" output_port_id="max_pooling2d_2:0" />
+		<IR name="max_pooling2d_2" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="max_pooling2d_2" output_port_id="max_pooling2d_2:0" />
+		<IR name="max_pooling2d_2" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="channel_padding_2" output_port_id="channel_padding_2:0" />
+		<IR name="channel_padding_2" output_port_id="4" />
+	</map>
+	<map>
+		<framework name="channel_padding_2" output_port_id="channel_padding_2:0" />
+		<IR name="channel_padding_2" output_port_id="4" />
+	</map>
+	<map>
+		<framework name="depthwise_11/filter_in" output_port_id="depthwise_11/filter_in:0" />
+		<IR name="depthwise_11/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_11/filter_in" output_port_id="depthwise_11/filter_in:0" />
+		<IR name="depthwise_11/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_11" output_port_id="depthwise_11:0" />
+		<IR name="depthwise_11" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_11" output_port_id="depthwise_11:0" />
+		<IR name="depthwise_11" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_11/y" output_port_id="depthwise_conv2d_11/y:0" />
+		<IR name="depthwise_conv2d_11/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_11/y" output_port_id="depthwise_conv2d_11/y:0" />
+		<IR name="depthwise_conv2d_11/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_11" output_port_id="depthwise_conv2d_11:0" />
+		<IR name="depthwise_conv2d_11" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_11" output_port_id="depthwise_conv2d_11:0" />
+		<IR name="depthwise_conv2d_11" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_14/filter" output_port_id="Conv2D_14/filter:0" />
+		<IR name="Conv2D_14/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_14/filter" output_port_id="Conv2D_14/filter:0" />
+		<IR name="Conv2D_14/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_14" output_port_id="Conv2D_14:0" />
+		<IR name="Conv2D_14" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_14" output_port_id="Conv2D_14:0" />
+		<IR name="Conv2D_14" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_12_1/y" output_port_id="conv2d_12_1/y:0" />
+		<IR name="conv2d_12_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_12_1/y" output_port_id="conv2d_12_1/y:0" />
+		<IR name="conv2d_12_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_12_1" output_port_id="conv2d_12_1:0" />
+		<IR name="conv2d_12_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_12_1" output_port_id="conv2d_12_1:0" />
+		<IR name="conv2d_12_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_11__xeno_compat__1" output_port_id="add_11__xeno_compat__1:0" />
+		<IR name="add_11__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_11__xeno_compat__1" output_port_id="add_11__xeno_compat__1:0" />
+		<IR name="add_11__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_11__xeno_compat__1_prelu/Relu" output_port_id="add_11__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_11__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_11__xeno_compat__1_prelu/Relu" output_port_id="add_11__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_11__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_11__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_11__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_11__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_11__xeno_compat__1_prelu/Neg" output_port_id="add_11__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_11__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_11__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_11__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_11__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_11__xeno_compat__1_prelu/Neg_1" output_port_id="add_11__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_11__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_11__xeno_compat__1_prelu/Relu_1" output_port_id="add_11__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_11__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_11__xeno_compat__1_prelu/Relu_1" output_port_id="add_11__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_11__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_11__xeno_compat__1_prelu/mul" output_port_id="add_11__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_11__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_11__xeno_compat__1_prelu/mul" output_port_id="add_11__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_11__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_11__xeno_compat__1_prelu/add" output_port_id="add_11__xeno_compat__1_prelu/add:0" />
+		<IR name="add_11__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_11__xeno_compat__1_prelu/add" output_port_id="add_11__xeno_compat__1_prelu/add:0" />
+		<IR name="add_11__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_11__xeno_compat__1_1" output_port_id="add_11__xeno_compat__1_prelu/add:0" />
+		<IR name="add_11__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_11__xeno_compat__1_prelu/add" output_port_id="add_11__xeno_compat__1_1:0" />
+		<IR name="add_11__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_11__xeno_compat__1_prelu/add" output_port_id="add_11__xeno_compat__1_1:0" />
+		<IR name="add_11__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_11__xeno_compat__1_1" output_port_id="add_11__xeno_compat__1_1:0" />
+		<IR name="add_11__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_12/filter_in" output_port_id="depthwise_12/filter_in:0" />
+		<IR name="depthwise_12/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_12/filter_in" output_port_id="depthwise_12/filter_in:0" />
+		<IR name="depthwise_12/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_12" output_port_id="depthwise_12:0" />
+		<IR name="depthwise_12" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_12" output_port_id="depthwise_12:0" />
+		<IR name="depthwise_12" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_12/y" output_port_id="depthwise_conv2d_12/y:0" />
+		<IR name="depthwise_conv2d_12/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_12/y" output_port_id="depthwise_conv2d_12/y:0" />
+		<IR name="depthwise_conv2d_12/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_12" output_port_id="depthwise_conv2d_12:0" />
+		<IR name="depthwise_conv2d_12" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_12" output_port_id="depthwise_conv2d_12:0" />
+		<IR name="depthwise_conv2d_12" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_15/filter" output_port_id="Conv2D_15/filter:0" />
+		<IR name="Conv2D_15/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_15/filter" output_port_id="Conv2D_15/filter:0" />
+		<IR name="Conv2D_15/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_15" output_port_id="Conv2D_15:0" />
+		<IR name="Conv2D_15" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_15" output_port_id="Conv2D_15:0" />
+		<IR name="Conv2D_15" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_13_1/y" output_port_id="conv2d_13_1/y:0" />
+		<IR name="conv2d_13_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_13_1/y" output_port_id="conv2d_13_1/y:0" />
+		<IR name="conv2d_13_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_13_1" output_port_id="conv2d_13_1:0" />
+		<IR name="conv2d_13_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_13_1" output_port_id="conv2d_13_1:0" />
+		<IR name="conv2d_13_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_12__xeno_compat__1" output_port_id="add_12__xeno_compat__1:0" />
+		<IR name="add_12__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_12__xeno_compat__1" output_port_id="add_12__xeno_compat__1:0" />
+		<IR name="add_12__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_12__xeno_compat__1_prelu/Relu" output_port_id="add_12__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_12__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_12__xeno_compat__1_prelu/Relu" output_port_id="add_12__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_12__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_12__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_12__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_12__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_12__xeno_compat__1_prelu/Neg" output_port_id="add_12__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_12__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_12__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_12__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_12__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_12__xeno_compat__1_prelu/Neg_1" output_port_id="add_12__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_12__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_12__xeno_compat__1_prelu/Relu_1" output_port_id="add_12__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_12__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_12__xeno_compat__1_prelu/Relu_1" output_port_id="add_12__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_12__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_12__xeno_compat__1_prelu/mul" output_port_id="add_12__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_12__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_12__xeno_compat__1_prelu/mul" output_port_id="add_12__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_12__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_12__xeno_compat__1_prelu/add" output_port_id="add_12__xeno_compat__1_prelu/add:0" />
+		<IR name="add_12__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_12__xeno_compat__1_prelu/add" output_port_id="add_12__xeno_compat__1_prelu/add:0" />
+		<IR name="add_12__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_12__xeno_compat__1_1" output_port_id="add_12__xeno_compat__1_prelu/add:0" />
+		<IR name="add_12__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_12__xeno_compat__1_prelu/add" output_port_id="add_12__xeno_compat__1_1:0" />
+		<IR name="add_12__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_12__xeno_compat__1_prelu/add" output_port_id="add_12__xeno_compat__1_1:0" />
+		<IR name="add_12__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_12__xeno_compat__1_1" output_port_id="add_12__xeno_compat__1_1:0" />
+		<IR name="add_12__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_13/filter_in" output_port_id="depthwise_13/filter_in:0" />
+		<IR name="depthwise_13/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_13/filter_in" output_port_id="depthwise_13/filter_in:0" />
+		<IR name="depthwise_13/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_13" output_port_id="depthwise_13:0" />
+		<IR name="depthwise_13" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_13" output_port_id="depthwise_13:0" />
+		<IR name="depthwise_13" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_13/y" output_port_id="depthwise_conv2d_13/y:0" />
+		<IR name="depthwise_conv2d_13/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_13/y" output_port_id="depthwise_conv2d_13/y:0" />
+		<IR name="depthwise_conv2d_13/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_13" output_port_id="depthwise_conv2d_13:0" />
+		<IR name="depthwise_conv2d_13" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_13" output_port_id="depthwise_conv2d_13:0" />
+		<IR name="depthwise_conv2d_13" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_16/filter" output_port_id="Conv2D_16/filter:0" />
+		<IR name="Conv2D_16/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_16/filter" output_port_id="Conv2D_16/filter:0" />
+		<IR name="Conv2D_16/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_16" output_port_id="Conv2D_16:0" />
+		<IR name="Conv2D_16" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_16" output_port_id="Conv2D_16:0" />
+		<IR name="Conv2D_16" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_14_1/y" output_port_id="conv2d_14_1/y:0" />
+		<IR name="conv2d_14_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_14_1/y" output_port_id="conv2d_14_1/y:0" />
+		<IR name="conv2d_14_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_14_1" output_port_id="conv2d_14_1:0" />
+		<IR name="conv2d_14_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_14_1" output_port_id="conv2d_14_1:0" />
+		<IR name="conv2d_14_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_13__xeno_compat__1" output_port_id="add_13__xeno_compat__1:0" />
+		<IR name="add_13__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_13__xeno_compat__1" output_port_id="add_13__xeno_compat__1:0" />
+		<IR name="add_13__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_13__xeno_compat__1_prelu/Relu" output_port_id="add_13__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_13__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_13__xeno_compat__1_prelu/Relu" output_port_id="add_13__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_13__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_13__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_13__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_13__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_13__xeno_compat__1_prelu/Neg" output_port_id="add_13__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_13__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_13__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_13__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_13__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_13__xeno_compat__1_prelu/Neg_1" output_port_id="add_13__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_13__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_13__xeno_compat__1_prelu/Relu_1" output_port_id="add_13__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_13__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_13__xeno_compat__1_prelu/Relu_1" output_port_id="add_13__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_13__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_13__xeno_compat__1_prelu/mul" output_port_id="add_13__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_13__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_13__xeno_compat__1_prelu/mul" output_port_id="add_13__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_13__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_13__xeno_compat__1_prelu/add" output_port_id="add_13__xeno_compat__1_prelu/add:0" />
+		<IR name="add_13__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_13__xeno_compat__1_prelu/add" output_port_id="add_13__xeno_compat__1_prelu/add:0" />
+		<IR name="add_13__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_13__xeno_compat__1_1" output_port_id="add_13__xeno_compat__1_prelu/add:0" />
+		<IR name="add_13__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_13__xeno_compat__1_prelu/add" output_port_id="add_13__xeno_compat__1_1:0" />
+		<IR name="add_13__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_13__xeno_compat__1_prelu/add" output_port_id="add_13__xeno_compat__1_1:0" />
+		<IR name="add_13__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_13__xeno_compat__1_1" output_port_id="add_13__xeno_compat__1_1:0" />
+		<IR name="add_13__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_14/filter_in" output_port_id="depthwise_14/filter_in:0" />
+		<IR name="depthwise_14/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_14/filter_in" output_port_id="depthwise_14/filter_in:0" />
+		<IR name="depthwise_14/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_14" output_port_id="depthwise_14:0" />
+		<IR name="depthwise_14" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_14" output_port_id="depthwise_14:0" />
+		<IR name="depthwise_14" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_14/y" output_port_id="depthwise_conv2d_14/y:0" />
+		<IR name="depthwise_conv2d_14/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_14/y" output_port_id="depthwise_conv2d_14/y:0" />
+		<IR name="depthwise_conv2d_14/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_14" output_port_id="depthwise_conv2d_14:0" />
+		<IR name="depthwise_conv2d_14" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_14" output_port_id="depthwise_conv2d_14:0" />
+		<IR name="depthwise_conv2d_14" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_17/filter" output_port_id="Conv2D_17/filter:0" />
+		<IR name="Conv2D_17/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_17/filter" output_port_id="Conv2D_17/filter:0" />
+		<IR name="Conv2D_17/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_17" output_port_id="Conv2D_17:0" />
+		<IR name="Conv2D_17" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_17" output_port_id="Conv2D_17:0" />
+		<IR name="Conv2D_17" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_15_1/y" output_port_id="conv2d_15_1/y:0" />
+		<IR name="conv2d_15_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_15_1/y" output_port_id="conv2d_15_1/y:0" />
+		<IR name="conv2d_15_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_15_1" output_port_id="conv2d_15_1:0" />
+		<IR name="conv2d_15_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_15_1" output_port_id="conv2d_15_1:0" />
+		<IR name="conv2d_15_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_14__xeno_compat__1" output_port_id="add_14__xeno_compat__1:0" />
+		<IR name="add_14__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_14__xeno_compat__1" output_port_id="add_14__xeno_compat__1:0" />
+		<IR name="add_14__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_14__xeno_compat__1_prelu/Relu" output_port_id="add_14__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_14__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_14__xeno_compat__1_prelu/Relu" output_port_id="add_14__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_14__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_14__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_14__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_14__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_14__xeno_compat__1_prelu/Neg" output_port_id="add_14__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_14__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_14__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_14__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_14__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_14__xeno_compat__1_prelu/Neg_1" output_port_id="add_14__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_14__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_14__xeno_compat__1_prelu/Relu_1" output_port_id="add_14__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_14__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_14__xeno_compat__1_prelu/Relu_1" output_port_id="add_14__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_14__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_14__xeno_compat__1_prelu/mul" output_port_id="add_14__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_14__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_14__xeno_compat__1_prelu/mul" output_port_id="add_14__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_14__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_14__xeno_compat__1_prelu/add" output_port_id="add_14__xeno_compat__1_prelu/add:0" />
+		<IR name="add_14__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_14__xeno_compat__1_prelu/add" output_port_id="add_14__xeno_compat__1_prelu/add:0" />
+		<IR name="add_14__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_14__xeno_compat__1_1" output_port_id="add_14__xeno_compat__1_prelu/add:0" />
+		<IR name="add_14__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_14__xeno_compat__1_prelu/add" output_port_id="add_14__xeno_compat__1_1:0" />
+		<IR name="add_14__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_14__xeno_compat__1_prelu/add" output_port_id="add_14__xeno_compat__1_1:0" />
+		<IR name="add_14__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_14__xeno_compat__1_1" output_port_id="add_14__xeno_compat__1_1:0" />
+		<IR name="add_14__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="max_pooling2d_3" output_port_id="max_pooling2d_3:0" />
+		<IR name="max_pooling2d_3" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="max_pooling2d_3" output_port_id="max_pooling2d_3:0" />
+		<IR name="max_pooling2d_3" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="depthwise_15/filter_in" output_port_id="depthwise_15/filter_in:0" />
+		<IR name="depthwise_15/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_15/filter_in" output_port_id="depthwise_15/filter_in:0" />
+		<IR name="depthwise_15/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_15" output_port_id="depthwise_15:0" />
+		<IR name="depthwise_15" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_15" output_port_id="depthwise_15:0" />
+		<IR name="depthwise_15" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_15/y" output_port_id="depthwise_conv2d_15/y:0" />
+		<IR name="depthwise_conv2d_15/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_15/y" output_port_id="depthwise_conv2d_15/y:0" />
+		<IR name="depthwise_conv2d_15/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_15" output_port_id="depthwise_conv2d_15:0" />
+		<IR name="depthwise_conv2d_15" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_15" output_port_id="depthwise_conv2d_15:0" />
+		<IR name="depthwise_conv2d_15" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_18/filter" output_port_id="Conv2D_18/filter:0" />
+		<IR name="Conv2D_18/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_18/filter" output_port_id="Conv2D_18/filter:0" />
+		<IR name="Conv2D_18/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_18" output_port_id="Conv2D_18:0" />
+		<IR name="Conv2D_18" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_18" output_port_id="Conv2D_18:0" />
+		<IR name="Conv2D_18" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_16_1/y" output_port_id="conv2d_16_1/y:0" />
+		<IR name="conv2d_16_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_16_1/y" output_port_id="conv2d_16_1/y:0" />
+		<IR name="conv2d_16_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_16_1" output_port_id="conv2d_16_1:0" />
+		<IR name="conv2d_16_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_16_1" output_port_id="conv2d_16_1:0" />
+		<IR name="conv2d_16_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_15__xeno_compat__1" output_port_id="add_15__xeno_compat__1:0" />
+		<IR name="add_15__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_15__xeno_compat__1" output_port_id="add_15__xeno_compat__1:0" />
+		<IR name="add_15__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_15__xeno_compat__1_prelu/Relu" output_port_id="add_15__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_15__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_15__xeno_compat__1_prelu/Relu" output_port_id="add_15__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_15__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_15__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_15__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_15__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_15__xeno_compat__1_prelu/Neg" output_port_id="add_15__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_15__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_15__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_15__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_15__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_15__xeno_compat__1_prelu/Neg_1" output_port_id="add_15__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_15__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_15__xeno_compat__1_prelu/Relu_1" output_port_id="add_15__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_15__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_15__xeno_compat__1_prelu/Relu_1" output_port_id="add_15__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_15__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_15__xeno_compat__1_prelu/mul" output_port_id="add_15__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_15__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_15__xeno_compat__1_prelu/mul" output_port_id="add_15__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_15__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_15__xeno_compat__1_prelu/add" output_port_id="add_15__xeno_compat__1_prelu/add:0" />
+		<IR name="add_15__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_15__xeno_compat__1_prelu/add" output_port_id="add_15__xeno_compat__1_prelu/add:0" />
+		<IR name="add_15__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_15__xeno_compat__1_1" output_port_id="add_15__xeno_compat__1_prelu/add:0" />
+		<IR name="add_15__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_15__xeno_compat__1_prelu/add" output_port_id="add_15__xeno_compat__1_1:0" />
+		<IR name="add_15__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_15__xeno_compat__1_prelu/add" output_port_id="add_15__xeno_compat__1_1:0" />
+		<IR name="add_15__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_15__xeno_compat__1_1" output_port_id="add_15__xeno_compat__1_1:0" />
+		<IR name="add_15__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_16/filter_in" output_port_id="depthwise_16/filter_in:0" />
+		<IR name="depthwise_16/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_16/filter_in" output_port_id="depthwise_16/filter_in:0" />
+		<IR name="depthwise_16/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_16" output_port_id="depthwise_16:0" />
+		<IR name="depthwise_16" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_16" output_port_id="depthwise_16:0" />
+		<IR name="depthwise_16" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_16/y" output_port_id="depthwise_conv2d_16/y:0" />
+		<IR name="depthwise_conv2d_16/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_16/y" output_port_id="depthwise_conv2d_16/y:0" />
+		<IR name="depthwise_conv2d_16/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_16" output_port_id="depthwise_conv2d_16:0" />
+		<IR name="depthwise_conv2d_16" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_16" output_port_id="depthwise_conv2d_16:0" />
+		<IR name="depthwise_conv2d_16" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_19/filter" output_port_id="Conv2D_19/filter:0" />
+		<IR name="Conv2D_19/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_19/filter" output_port_id="Conv2D_19/filter:0" />
+		<IR name="Conv2D_19/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_19" output_port_id="Conv2D_19:0" />
+		<IR name="Conv2D_19" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_19" output_port_id="Conv2D_19:0" />
+		<IR name="Conv2D_19" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_17_1/y" output_port_id="conv2d_17_1/y:0" />
+		<IR name="conv2d_17_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_17_1/y" output_port_id="conv2d_17_1/y:0" />
+		<IR name="conv2d_17_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_17_1" output_port_id="conv2d_17_1:0" />
+		<IR name="conv2d_17_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_17_1" output_port_id="conv2d_17_1:0" />
+		<IR name="conv2d_17_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_16__xeno_compat__1" output_port_id="add_16__xeno_compat__1:0" />
+		<IR name="add_16__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_16__xeno_compat__1" output_port_id="add_16__xeno_compat__1:0" />
+		<IR name="add_16__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_16__xeno_compat__1_prelu/Relu" output_port_id="add_16__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_16__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_16__xeno_compat__1_prelu/Relu" output_port_id="add_16__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_16__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_16__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_16__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_16__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_16__xeno_compat__1_prelu/Neg" output_port_id="add_16__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_16__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_16__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_16__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_16__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_16__xeno_compat__1_prelu/Neg_1" output_port_id="add_16__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_16__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_16__xeno_compat__1_prelu/Relu_1" output_port_id="add_16__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_16__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_16__xeno_compat__1_prelu/Relu_1" output_port_id="add_16__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_16__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_16__xeno_compat__1_prelu/mul" output_port_id="add_16__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_16__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_16__xeno_compat__1_prelu/mul" output_port_id="add_16__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_16__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_16__xeno_compat__1_prelu/add" output_port_id="add_16__xeno_compat__1_prelu/add:0" />
+		<IR name="add_16__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_16__xeno_compat__1_prelu/add" output_port_id="add_16__xeno_compat__1_prelu/add:0" />
+		<IR name="add_16__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_16__xeno_compat__1_1" output_port_id="add_16__xeno_compat__1_prelu/add:0" />
+		<IR name="add_16__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_16__xeno_compat__1_prelu/add" output_port_id="add_16__xeno_compat__1_1:0" />
+		<IR name="add_16__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_16__xeno_compat__1_prelu/add" output_port_id="add_16__xeno_compat__1_1:0" />
+		<IR name="add_16__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_16__xeno_compat__1_1" output_port_id="add_16__xeno_compat__1_1:0" />
+		<IR name="add_16__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_17/filter_in" output_port_id="depthwise_17/filter_in:0" />
+		<IR name="depthwise_17/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_17/filter_in" output_port_id="depthwise_17/filter_in:0" />
+		<IR name="depthwise_17/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_17" output_port_id="depthwise_17:0" />
+		<IR name="depthwise_17" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_17" output_port_id="depthwise_17:0" />
+		<IR name="depthwise_17" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_17/y" output_port_id="depthwise_conv2d_17/y:0" />
+		<IR name="depthwise_conv2d_17/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_17/y" output_port_id="depthwise_conv2d_17/y:0" />
+		<IR name="depthwise_conv2d_17/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_17" output_port_id="depthwise_conv2d_17:0" />
+		<IR name="depthwise_conv2d_17" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_17" output_port_id="depthwise_conv2d_17:0" />
+		<IR name="depthwise_conv2d_17" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_20/filter" output_port_id="Conv2D_20/filter:0" />
+		<IR name="Conv2D_20/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_20/filter" output_port_id="Conv2D_20/filter:0" />
+		<IR name="Conv2D_20/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_20" output_port_id="Conv2D_20:0" />
+		<IR name="Conv2D_20" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_20" output_port_id="Conv2D_20:0" />
+		<IR name="Conv2D_20" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_18_1/y" output_port_id="conv2d_18_1/y:0" />
+		<IR name="conv2d_18_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_18_1/y" output_port_id="conv2d_18_1/y:0" />
+		<IR name="conv2d_18_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_18_1" output_port_id="conv2d_18_1:0" />
+		<IR name="conv2d_18_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_18_1" output_port_id="conv2d_18_1:0" />
+		<IR name="conv2d_18_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_17__xeno_compat__1" output_port_id="add_17__xeno_compat__1:0" />
+		<IR name="add_17__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_17__xeno_compat__1" output_port_id="add_17__xeno_compat__1:0" />
+		<IR name="add_17__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_17__xeno_compat__1_prelu/Relu" output_port_id="add_17__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_17__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_17__xeno_compat__1_prelu/Relu" output_port_id="add_17__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_17__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_17__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_17__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_17__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_17__xeno_compat__1_prelu/Neg" output_port_id="add_17__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_17__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_17__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_17__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_17__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_17__xeno_compat__1_prelu/Neg_1" output_port_id="add_17__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_17__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_17__xeno_compat__1_prelu/Relu_1" output_port_id="add_17__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_17__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_17__xeno_compat__1_prelu/Relu_1" output_port_id="add_17__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_17__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_17__xeno_compat__1_prelu/mul" output_port_id="add_17__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_17__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_17__xeno_compat__1_prelu/mul" output_port_id="add_17__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_17__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_17__xeno_compat__1_prelu/add" output_port_id="add_17__xeno_compat__1_prelu/add:0" />
+		<IR name="add_17__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_17__xeno_compat__1_prelu/add" output_port_id="add_17__xeno_compat__1_prelu/add:0" />
+		<IR name="add_17__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_17__xeno_compat__1_1" output_port_id="add_17__xeno_compat__1_prelu/add:0" />
+		<IR name="add_17__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_17__xeno_compat__1_prelu/add" output_port_id="add_17__xeno_compat__1_1:0" />
+		<IR name="add_17__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_17__xeno_compat__1_prelu/add" output_port_id="add_17__xeno_compat__1_1:0" />
+		<IR name="add_17__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_17__xeno_compat__1_1" output_port_id="add_17__xeno_compat__1_1:0" />
+		<IR name="add_17__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_18/filter_in" output_port_id="depthwise_18/filter_in:0" />
+		<IR name="depthwise_18/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_18/filter_in" output_port_id="depthwise_18/filter_in:0" />
+		<IR name="depthwise_18/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_18" output_port_id="depthwise_18:0" />
+		<IR name="depthwise_18" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_18" output_port_id="depthwise_18:0" />
+		<IR name="depthwise_18" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_18/y" output_port_id="depthwise_conv2d_18/y:0" />
+		<IR name="depthwise_conv2d_18/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_18/y" output_port_id="depthwise_conv2d_18/y:0" />
+		<IR name="depthwise_conv2d_18/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_18" output_port_id="depthwise_conv2d_18:0" />
+		<IR name="depthwise_conv2d_18" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_18" output_port_id="depthwise_conv2d_18:0" />
+		<IR name="depthwise_conv2d_18" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_21/filter" output_port_id="Conv2D_21/filter:0" />
+		<IR name="Conv2D_21/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_21/filter" output_port_id="Conv2D_21/filter:0" />
+		<IR name="Conv2D_21/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_21" output_port_id="Conv2D_21:0" />
+		<IR name="Conv2D_21" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_21" output_port_id="Conv2D_21:0" />
+		<IR name="Conv2D_21" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_19_1/y" output_port_id="conv2d_19_1/y:0" />
+		<IR name="conv2d_19_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_19_1/y" output_port_id="conv2d_19_1/y:0" />
+		<IR name="conv2d_19_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_19_1" output_port_id="conv2d_19_1:0" />
+		<IR name="conv2d_19_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_19_1" output_port_id="conv2d_19_1:0" />
+		<IR name="conv2d_19_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_18__xeno_compat__1" output_port_id="add_18__xeno_compat__1:0" />
+		<IR name="add_18__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_18__xeno_compat__1" output_port_id="add_18__xeno_compat__1:0" />
+		<IR name="add_18__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_18__xeno_compat__1_prelu/Relu" output_port_id="add_18__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_18__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_18__xeno_compat__1_prelu/Relu" output_port_id="add_18__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_18__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_18__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_18__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_18__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_18__xeno_compat__1_prelu/Neg" output_port_id="add_18__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_18__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_18__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_18__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_18__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_18__xeno_compat__1_prelu/Neg_1" output_port_id="add_18__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_18__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_18__xeno_compat__1_prelu/Relu_1" output_port_id="add_18__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_18__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_18__xeno_compat__1_prelu/Relu_1" output_port_id="add_18__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_18__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_18__xeno_compat__1_prelu/mul" output_port_id="add_18__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_18__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_18__xeno_compat__1_prelu/mul" output_port_id="add_18__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_18__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_18__xeno_compat__1_prelu/add" output_port_id="add_18__xeno_compat__1_prelu/add:0" />
+		<IR name="add_18__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_18__xeno_compat__1_prelu/add" output_port_id="add_18__xeno_compat__1_prelu/add:0" />
+		<IR name="add_18__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_18__xeno_compat__1_1" output_port_id="add_18__xeno_compat__1_prelu/add:0" />
+		<IR name="add_18__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_18__xeno_compat__1_prelu/add" output_port_id="add_18__xeno_compat__1_1:0" />
+		<IR name="add_18__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_18__xeno_compat__1_prelu/add" output_port_id="add_18__xeno_compat__1_1:0" />
+		<IR name="add_18__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_18__xeno_compat__1_1" output_port_id="add_18__xeno_compat__1_1:0" />
+		<IR name="add_18__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="up_sampling2d_lambda/ResizeBilinear/size" output_port_id="up_sampling2d_lambda/ResizeBilinear/size:0" />
+		<IR name="up_sampling2d_lambda/ResizeBilinear/size" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="up_sampling2d_lambda/ResizeBilinear/size" output_port_id="up_sampling2d_lambda/ResizeBilinear/size:0" />
+		<IR name="up_sampling2d_lambda/ResizeBilinear/size" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="up_sampling2d_lambda/ResizeBilinear" output_port_id="up_sampling2d_lambda/ResizeBilinear:0" />
+		<IR name="up_sampling2d_lambda/ResizeBilinear" output_port_id="4" />
+	</map>
+	<map>
+		<framework name="up_sampling2d_lambda/ResizeBilinear" output_port_id="up_sampling2d_lambda/ResizeBilinear:0" />
+		<IR name="up_sampling2d_lambda/ResizeBilinear" output_port_id="4" />
+	</map>
+	<map>
+		<framework name="up_sampling2d" output_port_id="up_sampling2d_lambda/ResizeBilinear:0" />
+		<IR name="up_sampling2d_lambda/ResizeBilinear" output_port_id="4" />
+	</map>
+	<map>
+		<framework name="up_sampling2d_lambda/ResizeBilinear" output_port_id="up_sampling2d:0" />
+		<IR name="up_sampling2d_lambda/ResizeBilinear" output_port_id="4" />
+	</map>
+	<map>
+		<framework name="up_sampling2d_lambda/ResizeBilinear" output_port_id="up_sampling2d:0" />
+		<IR name="up_sampling2d_lambda/ResizeBilinear" output_port_id="4" />
+	</map>
+	<map>
+		<framework name="up_sampling2d" output_port_id="up_sampling2d:0" />
+		<IR name="up_sampling2d_lambda/ResizeBilinear" output_port_id="4" />
+	</map>
+	<map>
+		<framework name="Conv2D_22/filter" output_port_id="Conv2D_22/filter:0" />
+		<IR name="Conv2D_22/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_22/filter" output_port_id="Conv2D_22/filter:0" />
+		<IR name="Conv2D_22/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_22" output_port_id="Conv2D_22:0" />
+		<IR name="Conv2D_22" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_22" output_port_id="Conv2D_22:0" />
+		<IR name="Conv2D_22" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_20_1/y" output_port_id="conv2d_20_1/y:0" />
+		<IR name="conv2d_20_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_20_1/y" output_port_id="conv2d_20_1/y:0" />
+		<IR name="conv2d_20_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_20_1" output_port_id="conv2d_20_1:0" />
+		<IR name="conv2d_20_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_20_1" output_port_id="conv2d_20_1:0" />
+		<IR name="conv2d_20_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_20_prelu/Relu" output_port_id="conv2d_20_prelu/Relu:0" />
+		<IR name="conv2d_20_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="conv2d_20_prelu/Relu" output_port_id="conv2d_20_prelu/Relu:0" />
+		<IR name="conv2d_20_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="conv2d_20_prelu/Neg/mul_" output_port_id="conv2d_20_prelu/Neg:0" />
+		<IR name="conv2d_20_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_20_prelu/Neg" output_port_id="conv2d_20_prelu/Neg:0" />
+		<IR name="conv2d_20_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_20_prelu/Neg_1/mul_/Negate" output_port_id="conv2d_20_prelu/Neg_1:0" />
+		<IR name="conv2d_20_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="conv2d_20_prelu/Neg_1" output_port_id="conv2d_20_prelu/Neg_1:0" />
+		<IR name="conv2d_20_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="conv2d_20_prelu/Relu_1" output_port_id="conv2d_20_prelu/Relu_1:0" />
+		<IR name="conv2d_20_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="conv2d_20_prelu/Relu_1" output_port_id="conv2d_20_prelu/Relu_1:0" />
+		<IR name="conv2d_20_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="conv2d_20_prelu/mul" output_port_id="conv2d_20_prelu/mul:0" />
+		<IR name="conv2d_20_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_20_prelu/mul" output_port_id="conv2d_20_prelu/mul:0" />
+		<IR name="conv2d_20_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_20_prelu/add" output_port_id="conv2d_20_prelu/add:0" />
+		<IR name="conv2d_20_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_20_prelu/add" output_port_id="conv2d_20_prelu/add:0" />
+		<IR name="conv2d_20_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_20_2" output_port_id="conv2d_20_prelu/add:0" />
+		<IR name="conv2d_20_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_20_prelu/add" output_port_id="conv2d_20_2:0" />
+		<IR name="conv2d_20_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_20_prelu/add" output_port_id="conv2d_20_2:0" />
+		<IR name="conv2d_20_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_20_2" output_port_id="conv2d_20_2:0" />
+		<IR name="conv2d_20_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_19__xeno_compat__1" output_port_id="add_19__xeno_compat__1:0" />
+		<IR name="add_19__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_19__xeno_compat__1" output_port_id="add_19__xeno_compat__1:0" />
+		<IR name="add_19__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_19/filter_in" output_port_id="depthwise_19/filter_in:0" />
+		<IR name="depthwise_19/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_19/filter_in" output_port_id="depthwise_19/filter_in:0" />
+		<IR name="depthwise_19/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_19" output_port_id="depthwise_19:0" />
+		<IR name="depthwise_19" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_19" output_port_id="depthwise_19:0" />
+		<IR name="depthwise_19" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_19/y" output_port_id="depthwise_conv2d_19/y:0" />
+		<IR name="depthwise_conv2d_19/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_19/y" output_port_id="depthwise_conv2d_19/y:0" />
+		<IR name="depthwise_conv2d_19/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_19" output_port_id="depthwise_conv2d_19:0" />
+		<IR name="depthwise_conv2d_19" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_19" output_port_id="depthwise_conv2d_19:0" />
+		<IR name="depthwise_conv2d_19" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_23/filter" output_port_id="Conv2D_23/filter:0" />
+		<IR name="Conv2D_23/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_23/filter" output_port_id="Conv2D_23/filter:0" />
+		<IR name="Conv2D_23/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_23" output_port_id="Conv2D_23:0" />
+		<IR name="Conv2D_23" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_23" output_port_id="Conv2D_23:0" />
+		<IR name="Conv2D_23" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_21_1/y" output_port_id="conv2d_21_1/y:0" />
+		<IR name="conv2d_21_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_21_1/y" output_port_id="conv2d_21_1/y:0" />
+		<IR name="conv2d_21_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_21_1" output_port_id="conv2d_21_1:0" />
+		<IR name="conv2d_21_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_21_1" output_port_id="conv2d_21_1:0" />
+		<IR name="conv2d_21_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_20__xeno_compat__1" output_port_id="add_20__xeno_compat__1:0" />
+		<IR name="add_20__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_20__xeno_compat__1" output_port_id="add_20__xeno_compat__1:0" />
+		<IR name="add_20__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_20__xeno_compat__1_prelu/Relu" output_port_id="add_20__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_20__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_20__xeno_compat__1_prelu/Relu" output_port_id="add_20__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_20__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_20__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_20__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_20__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_20__xeno_compat__1_prelu/Neg" output_port_id="add_20__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_20__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_20__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_20__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_20__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_20__xeno_compat__1_prelu/Neg_1" output_port_id="add_20__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_20__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_20__xeno_compat__1_prelu/Relu_1" output_port_id="add_20__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_20__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_20__xeno_compat__1_prelu/Relu_1" output_port_id="add_20__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_20__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_20__xeno_compat__1_prelu/mul" output_port_id="add_20__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_20__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_20__xeno_compat__1_prelu/mul" output_port_id="add_20__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_20__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_20__xeno_compat__1_prelu/add" output_port_id="add_20__xeno_compat__1_prelu/add:0" />
+		<IR name="add_20__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_20__xeno_compat__1_prelu/add" output_port_id="add_20__xeno_compat__1_prelu/add:0" />
+		<IR name="add_20__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_20__xeno_compat__1_1" output_port_id="add_20__xeno_compat__1_prelu/add:0" />
+		<IR name="add_20__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_20__xeno_compat__1_prelu/add" output_port_id="add_20__xeno_compat__1_1:0" />
+		<IR name="add_20__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_20__xeno_compat__1_prelu/add" output_port_id="add_20__xeno_compat__1_1:0" />
+		<IR name="add_20__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_20__xeno_compat__1_1" output_port_id="add_20__xeno_compat__1_1:0" />
+		<IR name="add_20__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_20/filter_in" output_port_id="depthwise_20/filter_in:0" />
+		<IR name="depthwise_20/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_20/filter_in" output_port_id="depthwise_20/filter_in:0" />
+		<IR name="depthwise_20/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_20" output_port_id="depthwise_20:0" />
+		<IR name="depthwise_20" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_20" output_port_id="depthwise_20:0" />
+		<IR name="depthwise_20" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_20/y" output_port_id="depthwise_conv2d_20/y:0" />
+		<IR name="depthwise_conv2d_20/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_20/y" output_port_id="depthwise_conv2d_20/y:0" />
+		<IR name="depthwise_conv2d_20/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_20" output_port_id="depthwise_conv2d_20:0" />
+		<IR name="depthwise_conv2d_20" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_20" output_port_id="depthwise_conv2d_20:0" />
+		<IR name="depthwise_conv2d_20" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_24/filter" output_port_id="Conv2D_24/filter:0" />
+		<IR name="Conv2D_24/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_24/filter" output_port_id="Conv2D_24/filter:0" />
+		<IR name="Conv2D_24/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_24" output_port_id="Conv2D_24:0" />
+		<IR name="Conv2D_24" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_24" output_port_id="Conv2D_24:0" />
+		<IR name="Conv2D_24" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_22_1/y" output_port_id="conv2d_22_1/y:0" />
+		<IR name="conv2d_22_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_22_1/y" output_port_id="conv2d_22_1/y:0" />
+		<IR name="conv2d_22_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_22_1" output_port_id="conv2d_22_1:0" />
+		<IR name="conv2d_22_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_22_1" output_port_id="conv2d_22_1:0" />
+		<IR name="conv2d_22_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_21__xeno_compat__1" output_port_id="add_21__xeno_compat__1:0" />
+		<IR name="add_21__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_21__xeno_compat__1" output_port_id="add_21__xeno_compat__1:0" />
+		<IR name="add_21__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_21__xeno_compat__1_prelu/Relu" output_port_id="add_21__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_21__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_21__xeno_compat__1_prelu/Relu" output_port_id="add_21__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_21__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_21__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_21__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_21__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_21__xeno_compat__1_prelu/Neg" output_port_id="add_21__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_21__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_21__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_21__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_21__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_21__xeno_compat__1_prelu/Neg_1" output_port_id="add_21__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_21__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_21__xeno_compat__1_prelu/Relu_1" output_port_id="add_21__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_21__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_21__xeno_compat__1_prelu/Relu_1" output_port_id="add_21__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_21__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_21__xeno_compat__1_prelu/mul" output_port_id="add_21__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_21__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_21__xeno_compat__1_prelu/mul" output_port_id="add_21__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_21__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_21__xeno_compat__1_prelu/add" output_port_id="add_21__xeno_compat__1_prelu/add:0" />
+		<IR name="add_21__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_21__xeno_compat__1_prelu/add" output_port_id="add_21__xeno_compat__1_prelu/add:0" />
+		<IR name="add_21__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_21__xeno_compat__1_1" output_port_id="add_21__xeno_compat__1_prelu/add:0" />
+		<IR name="add_21__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_21__xeno_compat__1_prelu/add" output_port_id="add_21__xeno_compat__1_1:0" />
+		<IR name="add_21__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_21__xeno_compat__1_prelu/add" output_port_id="add_21__xeno_compat__1_1:0" />
+		<IR name="add_21__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_21__xeno_compat__1_1" output_port_id="add_21__xeno_compat__1_1:0" />
+		<IR name="add_21__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="up_sampling2d_1_lambda/ResizeBilinear/size" output_port_id="up_sampling2d_1_lambda/ResizeBilinear/size:0" />
+		<IR name="up_sampling2d_1_lambda/ResizeBilinear/size" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="up_sampling2d_1_lambda/ResizeBilinear/size" output_port_id="up_sampling2d_1_lambda/ResizeBilinear/size:0" />
+		<IR name="up_sampling2d_1_lambda/ResizeBilinear/size" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="up_sampling2d_1_lambda/ResizeBilinear" output_port_id="up_sampling2d_1_lambda/ResizeBilinear:0" />
+		<IR name="up_sampling2d_1_lambda/ResizeBilinear" output_port_id="4" />
+	</map>
+	<map>
+		<framework name="up_sampling2d_1_lambda/ResizeBilinear" output_port_id="up_sampling2d_1_lambda/ResizeBilinear:0" />
+		<IR name="up_sampling2d_1_lambda/ResizeBilinear" output_port_id="4" />
+	</map>
+	<map>
+		<framework name="up_sampling2d_1" output_port_id="up_sampling2d_1_lambda/ResizeBilinear:0" />
+		<IR name="up_sampling2d_1_lambda/ResizeBilinear" output_port_id="4" />
+	</map>
+	<map>
+		<framework name="up_sampling2d_1_lambda/ResizeBilinear" output_port_id="up_sampling2d_1:0" />
+		<IR name="up_sampling2d_1_lambda/ResizeBilinear" output_port_id="4" />
+	</map>
+	<map>
+		<framework name="up_sampling2d_1_lambda/ResizeBilinear" output_port_id="up_sampling2d_1:0" />
+		<IR name="up_sampling2d_1_lambda/ResizeBilinear" output_port_id="4" />
+	</map>
+	<map>
+		<framework name="up_sampling2d_1" output_port_id="up_sampling2d_1:0" />
+		<IR name="up_sampling2d_1_lambda/ResizeBilinear" output_port_id="4" />
+	</map>
+	<map>
+		<framework name="Conv2D_25/filter" output_port_id="Conv2D_25/filter:0" />
+		<IR name="Conv2D_25/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_25/filter" output_port_id="Conv2D_25/filter:0" />
+		<IR name="Conv2D_25/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_25" output_port_id="Conv2D_25:0" />
+		<IR name="Conv2D_25" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_25" output_port_id="Conv2D_25:0" />
+		<IR name="Conv2D_25" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_23_1/y" output_port_id="conv2d_23_1/y:0" />
+		<IR name="conv2d_23_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_23_1/y" output_port_id="conv2d_23_1/y:0" />
+		<IR name="conv2d_23_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_23_1" output_port_id="conv2d_23_1:0" />
+		<IR name="conv2d_23_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_23_1" output_port_id="conv2d_23_1:0" />
+		<IR name="conv2d_23_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_23_prelu/Relu" output_port_id="conv2d_23_prelu/Relu:0" />
+		<IR name="conv2d_23_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="conv2d_23_prelu/Relu" output_port_id="conv2d_23_prelu/Relu:0" />
+		<IR name="conv2d_23_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="conv2d_23_prelu/Neg/mul_" output_port_id="conv2d_23_prelu/Neg:0" />
+		<IR name="conv2d_23_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_23_prelu/Neg" output_port_id="conv2d_23_prelu/Neg:0" />
+		<IR name="conv2d_23_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_23_prelu/Neg_1/mul_/Negate" output_port_id="conv2d_23_prelu/Neg_1:0" />
+		<IR name="conv2d_23_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="conv2d_23_prelu/Neg_1" output_port_id="conv2d_23_prelu/Neg_1:0" />
+		<IR name="conv2d_23_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="conv2d_23_prelu/Relu_1" output_port_id="conv2d_23_prelu/Relu_1:0" />
+		<IR name="conv2d_23_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="conv2d_23_prelu/Relu_1" output_port_id="conv2d_23_prelu/Relu_1:0" />
+		<IR name="conv2d_23_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="conv2d_23_prelu/mul" output_port_id="conv2d_23_prelu/mul:0" />
+		<IR name="conv2d_23_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_23_prelu/mul" output_port_id="conv2d_23_prelu/mul:0" />
+		<IR name="conv2d_23_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_23_prelu/add" output_port_id="conv2d_23_prelu/add:0" />
+		<IR name="conv2d_23_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_23_prelu/add" output_port_id="conv2d_23_prelu/add:0" />
+		<IR name="conv2d_23_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_23_2" output_port_id="conv2d_23_prelu/add:0" />
+		<IR name="conv2d_23_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_23_prelu/add" output_port_id="conv2d_23_2:0" />
+		<IR name="conv2d_23_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_23_prelu/add" output_port_id="conv2d_23_2:0" />
+		<IR name="conv2d_23_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_23_2" output_port_id="conv2d_23_2:0" />
+		<IR name="conv2d_23_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_22__xeno_compat__1" output_port_id="add_22__xeno_compat__1:0" />
+		<IR name="add_22__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_22__xeno_compat__1" output_port_id="add_22__xeno_compat__1:0" />
+		<IR name="add_22__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_21/filter_in" output_port_id="depthwise_21/filter_in:0" />
+		<IR name="depthwise_21/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_21/filter_in" output_port_id="depthwise_21/filter_in:0" />
+		<IR name="depthwise_21/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_21" output_port_id="depthwise_21:0" />
+		<IR name="depthwise_21" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_21" output_port_id="depthwise_21:0" />
+		<IR name="depthwise_21" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_21/y" output_port_id="depthwise_conv2d_21/y:0" />
+		<IR name="depthwise_conv2d_21/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_21/y" output_port_id="depthwise_conv2d_21/y:0" />
+		<IR name="depthwise_conv2d_21/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_21" output_port_id="depthwise_conv2d_21:0" />
+		<IR name="depthwise_conv2d_21" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_21" output_port_id="depthwise_conv2d_21:0" />
+		<IR name="depthwise_conv2d_21" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_26/filter" output_port_id="Conv2D_26/filter:0" />
+		<IR name="Conv2D_26/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_26/filter" output_port_id="Conv2D_26/filter:0" />
+		<IR name="Conv2D_26/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_26" output_port_id="Conv2D_26:0" />
+		<IR name="Conv2D_26" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_26" output_port_id="Conv2D_26:0" />
+		<IR name="Conv2D_26" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_24_1/y" output_port_id="conv2d_24_1/y:0" />
+		<IR name="conv2d_24_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_24_1/y" output_port_id="conv2d_24_1/y:0" />
+		<IR name="conv2d_24_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_24_1" output_port_id="conv2d_24_1:0" />
+		<IR name="conv2d_24_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_24_1" output_port_id="conv2d_24_1:0" />
+		<IR name="conv2d_24_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_23__xeno_compat__1" output_port_id="add_23__xeno_compat__1:0" />
+		<IR name="add_23__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_23__xeno_compat__1" output_port_id="add_23__xeno_compat__1:0" />
+		<IR name="add_23__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_23__xeno_compat__1_prelu/Relu" output_port_id="add_23__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_23__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_23__xeno_compat__1_prelu/Relu" output_port_id="add_23__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_23__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_23__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_23__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_23__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_23__xeno_compat__1_prelu/Neg" output_port_id="add_23__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_23__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_23__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_23__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_23__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_23__xeno_compat__1_prelu/Neg_1" output_port_id="add_23__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_23__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_23__xeno_compat__1_prelu/Relu_1" output_port_id="add_23__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_23__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_23__xeno_compat__1_prelu/Relu_1" output_port_id="add_23__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_23__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_23__xeno_compat__1_prelu/mul" output_port_id="add_23__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_23__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_23__xeno_compat__1_prelu/mul" output_port_id="add_23__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_23__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_23__xeno_compat__1_prelu/add" output_port_id="add_23__xeno_compat__1_prelu/add:0" />
+		<IR name="add_23__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_23__xeno_compat__1_prelu/add" output_port_id="add_23__xeno_compat__1_prelu/add:0" />
+		<IR name="add_23__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_23__xeno_compat__1_1" output_port_id="add_23__xeno_compat__1_prelu/add:0" />
+		<IR name="add_23__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_23__xeno_compat__1_prelu/add" output_port_id="add_23__xeno_compat__1_1:0" />
+		<IR name="add_23__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_23__xeno_compat__1_prelu/add" output_port_id="add_23__xeno_compat__1_1:0" />
+		<IR name="add_23__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_23__xeno_compat__1_1" output_port_id="add_23__xeno_compat__1_1:0" />
+		<IR name="add_23__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_22/filter_in" output_port_id="depthwise_22/filter_in:0" />
+		<IR name="depthwise_22/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_22/filter_in" output_port_id="depthwise_22/filter_in:0" />
+		<IR name="depthwise_22/filter_in" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_22" output_port_id="depthwise_22:0" />
+		<IR name="depthwise_22" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_22" output_port_id="depthwise_22:0" />
+		<IR name="depthwise_22" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_22/y" output_port_id="depthwise_conv2d_22/y:0" />
+		<IR name="depthwise_conv2d_22/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_22/y" output_port_id="depthwise_conv2d_22/y:0" />
+		<IR name="depthwise_conv2d_22/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_22" output_port_id="depthwise_conv2d_22:0" />
+		<IR name="depthwise_conv2d_22" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="depthwise_conv2d_22" output_port_id="depthwise_conv2d_22:0" />
+		<IR name="depthwise_conv2d_22" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_27/filter" output_port_id="Conv2D_27/filter:0" />
+		<IR name="Conv2D_27/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_27/filter" output_port_id="Conv2D_27/filter:0" />
+		<IR name="Conv2D_27/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_27" output_port_id="Conv2D_27:0" />
+		<IR name="Conv2D_27" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_27" output_port_id="Conv2D_27:0" />
+		<IR name="Conv2D_27" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_25_1/y" output_port_id="conv2d_25_1/y:0" />
+		<IR name="conv2d_25_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_25_1/y" output_port_id="conv2d_25_1/y:0" />
+		<IR name="conv2d_25_1/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="conv2d_25_1" output_port_id="conv2d_25_1:0" />
+		<IR name="conv2d_25_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="conv2d_25_1" output_port_id="conv2d_25_1:0" />
+		<IR name="conv2d_25_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_24__xeno_compat__1" output_port_id="add_24__xeno_compat__1:0" />
+		<IR name="add_24__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_24__xeno_compat__1" output_port_id="add_24__xeno_compat__1:0" />
+		<IR name="add_24__xeno_compat__1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_24__xeno_compat__1_prelu/Relu" output_port_id="add_24__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_24__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_24__xeno_compat__1_prelu/Relu" output_port_id="add_24__xeno_compat__1_prelu/Relu:0" />
+		<IR name="add_24__xeno_compat__1_prelu/Relu" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_24__xeno_compat__1_prelu/Neg/mul_" output_port_id="add_24__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_24__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_24__xeno_compat__1_prelu/Neg" output_port_id="add_24__xeno_compat__1_prelu/Neg:0" />
+		<IR name="add_24__xeno_compat__1_prelu/Neg/mul_" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="add_24__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="add_24__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_24__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_24__xeno_compat__1_prelu/Neg_1" output_port_id="add_24__xeno_compat__1_prelu/Neg_1:0" />
+		<IR name="add_24__xeno_compat__1_prelu/Neg_1/mul_/Negate" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_24__xeno_compat__1_prelu/Relu_1" output_port_id="add_24__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_24__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_24__xeno_compat__1_prelu/Relu_1" output_port_id="add_24__xeno_compat__1_prelu/Relu_1:0" />
+		<IR name="add_24__xeno_compat__1_prelu/Relu_1" output_port_id="1" />
+	</map>
+	<map>
+		<framework name="add_24__xeno_compat__1_prelu/mul" output_port_id="add_24__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_24__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_24__xeno_compat__1_prelu/mul" output_port_id="add_24__xeno_compat__1_prelu/mul:0" />
+		<IR name="add_24__xeno_compat__1_prelu/mul" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_24__xeno_compat__1_prelu/add" output_port_id="add_24__xeno_compat__1_prelu/add:0" />
+		<IR name="add_24__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_24__xeno_compat__1_prelu/add" output_port_id="add_24__xeno_compat__1_prelu/add:0" />
+		<IR name="add_24__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_24__xeno_compat__1_1" output_port_id="add_24__xeno_compat__1_prelu/add:0" />
+		<IR name="add_24__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_24__xeno_compat__1_prelu/add" output_port_id="add_24__xeno_compat__1_1:0" />
+		<IR name="add_24__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_24__xeno_compat__1_prelu/add" output_port_id="add_24__xeno_compat__1_1:0" />
+		<IR name="add_24__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="add_24__xeno_compat__1_1" output_port_id="add_24__xeno_compat__1_1:0" />
+		<IR name="add_24__xeno_compat__1_prelu/add" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_30/filter" output_port_id="Conv2D_30/filter:0" />
+		<IR name="Conv2D_30/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_30/filter" output_port_id="Conv2D_30/filter:0" />
+		<IR name="Conv2D_30/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_30" output_port_id="Conv2D_30:0" />
+		<IR name="Conv2D_30" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_30" output_port_id="Conv2D_30:0" />
+		<IR name="Conv2D_30" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="regressor_8/y" output_port_id="regressor_8/y:0" />
+		<IR name="regressor_8/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="regressor_8/y" output_port_id="regressor_8/y:0" />
+		<IR name="regressor_8/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="regressor_8/Transpose" output_port_id="regressor_8:0" />
+		<IR name="regressor_8/Transpose" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="regressor_8" output_port_id="regressor_8:0" />
+		<IR name="regressor_8/Transpose" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="reshape_1/shape" output_port_id="reshape_1/shape:0" />
+		<IR name="reshape_1/shape" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="reshape_1/shape" output_port_id="reshape_1/shape:0" />
+		<IR name="reshape_1/shape" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="reshape_1" output_port_id="reshape_1:0" />
+		<IR name="reshape_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="reshape_1" output_port_id="reshape_1:0" />
+		<IR name="reshape_1" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_31/filter" output_port_id="Conv2D_31/filter:0" />
+		<IR name="Conv2D_31/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_31/filter" output_port_id="Conv2D_31/filter:0" />
+		<IR name="Conv2D_31/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_31" output_port_id="Conv2D_31:0" />
+		<IR name="Conv2D_31" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_31" output_port_id="Conv2D_31:0" />
+		<IR name="Conv2D_31" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="regressor_16/y" output_port_id="regressor_16/y:0" />
+		<IR name="regressor_16/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="regressor_16/y" output_port_id="regressor_16/y:0" />
+		<IR name="regressor_16/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="regressor_16/Transpose" output_port_id="regressor_16:0" />
+		<IR name="regressor_16/Transpose" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="regressor_16" output_port_id="regressor_16:0" />
+		<IR name="regressor_16/Transpose" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="reshape_3/shape" output_port_id="reshape_3/shape:0" />
+		<IR name="reshape_3/shape" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="reshape_3/shape" output_port_id="reshape_3/shape:0" />
+		<IR name="reshape_3/shape" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="reshape_3" output_port_id="reshape_3:0" />
+		<IR name="reshape_3" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="reshape_3" output_port_id="reshape_3:0" />
+		<IR name="reshape_3" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="regressors" output_port_id="regressors:0" />
+		<IR name="regressors" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="regressors" output_port_id="regressors:0" />
+		<IR name="regressors" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_28/filter" output_port_id="Conv2D_28/filter:0" />
+		<IR name="Conv2D_28/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_28/filter" output_port_id="Conv2D_28/filter:0" />
+		<IR name="Conv2D_28/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_28" output_port_id="Conv2D_28:0" />
+		<IR name="Conv2D_28" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_28" output_port_id="Conv2D_28:0" />
+		<IR name="Conv2D_28" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="classificator_8/y" output_port_id="classificator_8/y:0" />
+		<IR name="classificator_8/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="classificator_8/y" output_port_id="classificator_8/y:0" />
+		<IR name="classificator_8/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="classificator_8/Transpose" output_port_id="classificator_8:0" />
+		<IR name="classificator_8/Transpose" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="classificator_8" output_port_id="classificator_8:0" />
+		<IR name="classificator_8/Transpose" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="reshape/shape" output_port_id="reshape/shape:0" />
+		<IR name="reshape/shape" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="reshape/shape" output_port_id="reshape/shape:0" />
+		<IR name="reshape/shape" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="reshape" output_port_id="reshape:0" />
+		<IR name="reshape" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="reshape" output_port_id="reshape:0" />
+		<IR name="reshape" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_29/filter" output_port_id="Conv2D_29/filter:0" />
+		<IR name="Conv2D_29/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_29/filter" output_port_id="Conv2D_29/filter:0" />
+		<IR name="Conv2D_29/filter" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="Conv2D_29" output_port_id="Conv2D_29:0" />
+		<IR name="Conv2D_29" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="Conv2D_29" output_port_id="Conv2D_29:0" />
+		<IR name="Conv2D_29" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="classificator_16/y" output_port_id="classificator_16/y:0" />
+		<IR name="classificator_16/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="classificator_16/y" output_port_id="classificator_16/y:0" />
+		<IR name="classificator_16/y" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="classificator_16/Transpose" output_port_id="classificator_16:0" />
+		<IR name="classificator_16/Transpose" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="classificator_16" output_port_id="classificator_16:0" />
+		<IR name="classificator_16/Transpose" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="reshape_2/shape" output_port_id="reshape_2/shape:0" />
+		<IR name="reshape_2/shape" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="reshape_2/shape" output_port_id="reshape_2/shape:0" />
+		<IR name="reshape_2/shape" output_port_id="0" />
+	</map>
+	<map>
+		<framework name="reshape_2" output_port_id="reshape_2:0" />
+		<IR name="reshape_2" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="reshape_2" output_port_id="reshape_2:0" />
+		<IR name="reshape_2" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="classificators" output_port_id="classificators:0" />
+		<IR name="classificators" output_port_id="2" />
+	</map>
+	<map>
+		<framework name="classificators" output_port_id="classificators:0" />
+		<IR name="classificators" output_port_id="2" />
+	</map>
+</mapping>

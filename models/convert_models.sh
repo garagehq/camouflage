@@ -53,9 +53,9 @@ convert_model () {
 	/opt/intel/openvino_2021/deployment_tools/inference_engine/lib/intel64/myriad_compile \
 		-m ${model_name}.xml \
 		-ip $input_precision \
-		-VPU_NUMBER_OF_SHAVES 4 \
-		-VPU_NUMBER_OF_CMX_SLICES 4 \
-		-o ${model_name}_sh4.blob
+		-VPU_NUMBER_OF_SHAVES 6 \
+		-VPU_NUMBER_OF_CMX_SLICES 6 \
+		-o ${model_name}_sh6.blob
 }
 
 # convert_model palm_detection "[127.5,127.5,127.5]"  "[127.5,127.5,127.5]" "u8"
@@ -66,7 +66,9 @@ convert_model () {
 # convert_model hand_landmark_full_1 "" "[255.0,255.0,255.0]" "u8"
 # convert_model hand_landmark_full_2 "" "[255.0,255.0,255.0]" "u8"
 
+
 convert_model palm_detection_full-2022-09-09 "[127.5,127.5,127.5]"  "[127.5,127.5,127.5]" "u8"
 convert_model palm_detection_lite-2022-08-30 "[127.5,127.5,127.5]"  "[127.5,127.5,127.5]" "u8"
+convert_model palm_detection-2021-02-27 "[127.5,127.5,127.5]"  "[127.5,127.5,127.5]" "u8"
 convert_model hand_landmark_lite-2022-11-12 "" "[255.0,255.0,255.0]" "u8"
-convert_model hand_landmark-2022-10-19 "" "[255.0,255.0,255.0]" "u8"
+convert_model hand_landmark_full-2022-11-10 "" "[255.0,255.0,255.0]" "u8"
