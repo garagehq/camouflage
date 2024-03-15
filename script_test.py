@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
     device = Device()
     pipeline: Pipeline = Pipeline()
-    pipeline.setOpenVINOVersion(version=OpenVINO.Version.VERSION_2021_4)
+    pipeline.setOpenVINOVersion(version=OpenVINO.Version.VERSION_2022_1)
 
     producer_script = build_manager_script(SCRIPT_PRODUCER, pipeline)
     consumer_script = build_manager_script(SCRIPT_CONSUMER, pipeline)

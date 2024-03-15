@@ -263,7 +263,7 @@ class HandTracker:
         print("Creating pipeline...")
         # Start defining a pipeline
         pipeline = dai.Pipeline()
-        pipeline.setOpenVINOVersion(version = dai.OpenVINO.Version.VERSION_2021_4)
+        pipeline.setOpenVINOVersion(version = dai.OpenVINO.Version.VERSION_2022_1)
 
         if self.input_type == "rgb":
             # ColorCamera

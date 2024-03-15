@@ -316,7 +316,7 @@ class TGTTracker:
         print("Creating pipeline...")
         # Start defining a pipeline
         pipeline: Pipeline = Pipeline()
-        pipeline.setOpenVINOVersion(version=OpenVINO.Version.VERSION_2021_4)
+        pipeline.setOpenVINOVersion(version=OpenVINO.Version.VERSION_2022_1)
 
         # ColorCamera
         print("Creating Color Camera...")
