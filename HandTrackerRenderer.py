@@ -203,7 +203,6 @@ class HandTrackerRenderer:
                 cv2.rectangle(self.frame, tuple(focus_zone[0:2]), tuple(focus_zone[2:4]), (0,255,0),2)
 
     def draw(self, frame, hands, bag={}):
-        # self.frame = cv2.flip(frame, 1)
         self.frame = frame
         if bag:
             self.draw_bag(bag)
@@ -340,6 +339,7 @@ class HandTrackerRenderer:
             for hand in hands:        
                 if not self.hide_extras:
                     self.draw_hand(hand)
+        self.frame = cv2.flip(frame, 1)
         return self.frame
 
     def is_finger_on_image(self, finger_tip, image_position):
