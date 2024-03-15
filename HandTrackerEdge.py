@@ -241,7 +241,8 @@ class HandTracker:
         # Start defining a pipeline
         pipeline = dai.Pipeline()
         pipeline.setOpenVINOVersion(version = dai.OpenVINO.Version.VERSION_2021_4)
-        self.pd_input_length = 128
+        # self.pd_input_length = 128
+        self.pd_input_length = 192
 
         # ColorCamera
         print("Creating Color Camera...")

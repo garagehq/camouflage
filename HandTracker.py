@@ -206,8 +206,8 @@ class HandTracker:
         
 
         # Create SSD anchors 
-        self.pd_input_length = 128 # Palm detection
-        # self.pd_input_length = 192 # Palm detection
+        # self.pd_input_length = 128 # Palm detection
+        self.pd_input_length = 192 # Palm detection
         self.anchors = mpu.generate_handtracker_anchors(self.pd_input_length, self.pd_input_length)
         self.nb_anchors = self.anchors.shape[0]
         print(f"{self.nb_anchors} anchors have been created")
@@ -397,10 +397,10 @@ class HandTracker:
 
     def pd_postprocess(self, inference):
         # print(inference.getAllLayerNames())
-        scores = np.array(inference.getLayerFp16("classificators"), dtype=np.float16) # 896
-        # scores = np.array(inference.getLayerFp16("Identity_1"), dtype=np.float16)
-        bboxes = np.array(inference.getLayerFp16("regressors"), dtype=np.float16).reshape((self.nb_anchors,18)) # 896x18
-        # bboxes = np.array(inference.getLayerFp16("Identity"), dtype=np.float16).reshape((self.nb_anchors,18)) 
+        # scores = np.array(inference.getLayerFp16("classificators"), dtype=np.float16) # 896
+        scores = np.array(inference.getLayerFp16("Identity_1"), dtype=np.float16)
+        # bboxes = np.array(inference.getLayerFp16("regressors"), dtype=np.float16).reshape((self.nb_anchors,18)) # 896x18
+        bboxes = np.array(inference.getLayerFp16("Identity"), dtype=np.float16).reshape((self.nb_anchors,18)) 
         # Decode bboxes
         hands = mpu.decode_bboxes(self.pd_score_thresh, scores, bboxes, self.anchors, scale=self.pd_input_length, best_only=self.solo)
         # Non maximum suppression (not needed if solo)
