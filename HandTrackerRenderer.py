@@ -68,7 +68,7 @@ def render_mesh_to_image(mesh_file, rotation_y_angle=0, rotation_x_angle=0, rota
     rotation_z = np.radians(rotation_z_angle)
     # Create a scene
     scene = pyrender.Scene(
-        bg_color=[0, 0, 0, 255], ambient_light=[0.45, 0.45, 0.45])
+        bg_color=[0, 0, 0, 0], ambient_light=[0.45, 0.45, 0.45])
 
     centroid = trimesh_mesh.centroid
     translation_to_origin = trimesh.transformations.translation_matrix(-centroid)
@@ -100,14 +100,18 @@ def render_mesh_to_image(mesh_file, rotation_y_angle=0, rotation_x_angle=0, rota
     
     renderer = pyrender.OffscreenRenderer(viewport_width=viewport_width, viewport_height=viewport_height)
     color, depth = renderer.render(scene)
-    
-    # Convert the color image to BGR format
-    # color = color.astype(np.uint8)
-    color_bgr = cv2.cvtColor(color, cv2.COLOR_RGBA2BGRA)
-
     # Save the rendered image as a PNG file
-    cv2.imwrite('mesh.png', color_bgr)
-    return color_bgr
+    
+    # Convert the color image to RGBA format
+    color_rgba = cv2.cvtColor(color, cv2.COLOR_RGB2RGBA)
+    
+    # Create a mask for the black background
+    mask = np.all(color_rgba[:, :, :3] == [0, 0, 0], axis=-1)
+    
+    # Set the alpha channel to 0 (transparent) where the background is black
+    color_rgba[mask, 3] = 0
+    cv2.imwrite('mesh.png', color_rgba)
+    return color_rgba
 
 class HandTrackerRenderer:
     def __init__(self, 
@@ -526,18 +530,31 @@ class HandTrackerRenderer:
             # Overlay the rendered image on the frame
             if self.mesh_image is not None and self.mesh_visible:
                 overlay = self.mesh_image.copy()
+                # Extract the alpha channel
                 alpha = overlay[:, :, 3] / 255.0
                 overlay = overlay[:, :, :3]
+                
                 x, y = self.image_position
                 background = frame[max(0, y):min(y+overlay.shape[0], frame.shape[0]), 
-                                max(0, x):min(x+overlay.shape[1], frame.shape[1])]
+                                    max(0, x):min(x+overlay.shape[1], frame.shape[1])]
+                
                 overlay_roi = overlay[:background.shape[0], :background.shape[1]]
                 alpha_roi = alpha[:background.shape[0], :background.shape[1]]
-                mask = alpha_roi[:, :, np.newaxis]
-                blended = background * (1 - mask) + overlay_roi * mask
+                
+                # Create a mask for the overlay based on the alpha channel
+                mask = cv2.merge((alpha_roi, alpha_roi, alpha_roi))
+                
+                # Convert the background and mask to floating-point data type
+                background = background.astype(np.float32) / 255.0
+                mask = mask.astype(np.float32)
+                
+                # Perform the blending using cv2.multiply and cv2.add
+                blended = cv2.multiply(background, 1 - mask)
+                blended = cv2.add(blended, cv2.multiply(overlay_roi.astype(np.float32) / 255.0, mask))
+                blended = (blended * 255.0).astype(np.uint8)
+                
                 frame[max(0, y):min(y+overlay.shape[0], frame.shape[0]), 
-                    max(0, x):min(x+overlay.shape[1], frame.shape[1])] = blended
-        
+                        max(0, x):min(x+overlay.shape[1], frame.shape[1])] = blended
         else:
             for hand in hands:        
                 if not self.hide_extras:
