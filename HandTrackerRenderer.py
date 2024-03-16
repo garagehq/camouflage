@@ -68,7 +68,7 @@ def render_mesh_to_image(mesh_file, rotation_y_angle=0, rotation_x_angle=0, rota
     rotation_z = np.radians(rotation_z_angle)
     # Create a scene
     scene = pyrender.Scene(
-        bg_color=[0, 0, 0, 0], ambient_light=[0.45, 0.45, 0.45])
+        bg_color=[0, 0, 0, 255], ambient_light=[0.45, 0.45, 0.45])
 
     centroid = trimesh_mesh.centroid
     translation_to_origin = trimesh.transformations.translation_matrix(-centroid)
@@ -102,7 +102,7 @@ def render_mesh_to_image(mesh_file, rotation_y_angle=0, rotation_x_angle=0, rota
     color, depth = renderer.render(scene)
     
     # Convert the color image to BGR format
-    color = color.astype(np.uint8)
+    # color = color.astype(np.uint8)
     color_bgr = cv2.cvtColor(color, cv2.COLOR_RGBA2BGRA)
 
     # Save the rendered image as a PNG file
@@ -447,55 +447,96 @@ class HandTrackerRenderer:
             peace_detected = False
             three_detected = False
             index_finger_tip = None
-            peace_distance = 0
+            peace_positions = []
             three_direction = 0
-    
+            fist_position = None
+            move_image = False
+            
             for hand in hands:
                 if hand.gesture == "FIST":
                     fist_detected = True
+                    fist_position = hand.landmarks[9]
+                    if self.fist_start_time is None:
+                        self.fist_start_time = time.time()
+                    elif time.time() - self.fist_start_time >= self.fist_duration:
+                        if self.mesh_visible:
+                            self.mesh_visible = False
+                        else:
+                            self.mesh_visible = True
+                            if self.mesh is None:
+                                self.mesh = True
+                                self.mesh_image = render_mesh_to_image(self.model_path, scale=self.mesh_scale)
+                                self.mesh_dirty = False
+                                self.image_position = (fist_position[0] - self.mesh_image.shape[1] // 2,
+                                                    fist_position[1] - self.mesh_image.shape[0] // 2)
+                        self.fist_start_time = None
                 elif hand.gesture == "PEACE":
                     peace_detected = True
-                    peace_distance = np.linalg.norm(hand.landmarks[8] - hand.landmarks[12])
+                    peace_positions.append(hand.landmarks[8])  # Index finger tip landmark
                 elif hand.gesture == "THREE":
                     three_detected = True
                     three_direction = 1 if hand.label == "left" else -1
-                
+                elif hand.gesture == "ONE":
+                    index_finger_tip = hand.landmarks[8]  # Index finger tip landmark
+                    move_image = True
                 if not self.hide_extras:
                     self.draw_hand(hand)
-    
-            # Toggle mesh visibility on fist gesture change
-            if fist_detected and not self.fist_detected_prev:
-                self.mesh_visible = not self.mesh_visible
-                if self.mesh is None:
-                    self.mesh = True
-            self.fist_detected_prev = fist_detected
-    
-            # Update mesh scale on peace gesture change
-            if peace_detected and not self.peace_detected_prev:
-                if self.mesh is not None:
-                    if self.prev_peace_distance != 0:
-                        scale_factor = peace_distance / self.prev_peace_distance
-                        self.mesh_scale *= scale_factor
-                    self.prev_peace_distance = peace_distance
-            self.peace_detected_prev = peace_detected
-    
+
+            if not fist_detected:
+                self.fist_start_time = None
+
+            if peace_detected and len(peace_positions) == 2 and self.mesh_image is not None:
+                # Calculate the distance between the two "PEACE" gestures
+                distance = np.linalg.norm(np.array(peace_positions[0]) - np.array(peace_positions[1]))
+                
+                if self.prev_peace_distance is not None:
+                    # Calculate the change in distance
+                    distance_change = distance - self.prev_peace_distance
+                    
+                    # Scale the image based on the change in distance
+                    if distance_change > 0:
+                        # Increase the image size
+                        scale_factor = 1.05
+                    elif distance_change < 0:
+                        # Decrease the image size
+                        scale_factor = 0.95
+                    else:
+                        scale_factor = 1.0
+                    
+                    self.mesh_scale *= scale_factor
+                    self.mesh_image = render_mesh_to_image(self.model_path, scale=self.mesh_scale)
+                    self.mesh_dirty = False
+                self.prev_peace_distance = distance
+            else:
+                self.prev_peace_distance = None
+
             # Update mesh rotation on three gesture change
             if three_detected and not self.three_detected_prev:
                 self.rotation_angle += 5 * three_direction
             self.three_detected_prev = three_detected
-    
-            # Render mesh to image if necessary
-            if self.mesh is not None and (self.mesh_dirty and self.mesh_image is None):
-                self.mesh_image = render_mesh_to_image(self.model_path, scale=self.mesh_scale)
-                self.mesh_dirty = False
 
+            # Move the image based on the index finger position
+            if move_image and self.mesh_image is not None:
+                image_height, image_width = self.mesh_image.shape[:2]
+                x, y = index_finger_tip
+                image_x = x - image_width // 2
+                image_y = y - image_height // 2
+                self.image_position = (image_x, image_y)
+            
             # Overlay the rendered image on the frame
             if self.mesh_image is not None and self.mesh_visible:
-                overlay = self.mesh_image[:, :, :3]
-                mask = self.mesh_image[:, :, 3] > 0
-                background = frame[100:100+self.mesh_image.shape[0], 100:100+self.mesh_image.shape[1]]
-                background[mask] = overlay[mask]
-                frame[100:100+self.mesh_image.shape[0], 100:100+self.mesh_image.shape[1]] = background
+                overlay = self.mesh_image.copy()
+                alpha = overlay[:, :, 3] / 255.0
+                overlay = overlay[:, :, :3]
+                x, y = self.image_position
+                background = frame[max(0, y):min(y+overlay.shape[0], frame.shape[0]), 
+                                max(0, x):min(x+overlay.shape[1], frame.shape[1])]
+                overlay_roi = overlay[:background.shape[0], :background.shape[1]]
+                alpha_roi = alpha[:background.shape[0], :background.shape[1]]
+                mask = alpha_roi[:, :, np.newaxis]
+                blended = background * (1 - mask) + overlay_roi * mask
+                frame[max(0, y):min(y+overlay.shape[0], frame.shape[0]), 
+                    max(0, x):min(x+overlay.shape[1], frame.shape[1])] = blended
         
         else:
             for hand in hands:        
