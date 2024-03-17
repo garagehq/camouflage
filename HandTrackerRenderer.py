@@ -4,6 +4,7 @@ import time
 import pyvirtualcam
 import trimesh
 import pyrender
+import threading
 
 LINES_HAND = [[0,1],[1,2],[2,3],[3,4], 
             [0,5],[5,6],[6,7],[7,8],
@@ -17,7 +18,7 @@ LINES_BODY = [[4,2],[2,0],[0,1],[1,3],
             [6,12],[12,11],[11,5],
             [12,14],[14,16],[11,13],[13,15]]
 
-def stl_to_pyrender_and_trimesh_mesh(stl_file, color=(0, 0, 255)):
+def stl_to_pyrender_and_trimesh_mesh(stl_file, color=(255, 0, 255)):
     # Load the STL file as a trimesh mesh for bounding box calculation
     trimesh_mesh = trimesh.load_mesh(stl_file)
 
@@ -26,92 +27,6 @@ def stl_to_pyrender_and_trimesh_mesh(stl_file, color=(0, 0, 255)):
     pyrender_mesh = pyrender.Mesh.from_trimesh(trimesh_mesh, material=material)
 
     return pyrender_mesh, trimesh_mesh
-
-def display_mesh(mesh_file, rotation_y_angle=0, rotation_x_angle=0, rotation_z_angle=0, scale=1):
-    pyrender_mesh, trimesh_mesh = stl_to_pyrender_and_trimesh_mesh(mesh_file)
-    rotation_y = np.radians(rotation_y_angle)
-    rotation_x = np.radians(rotation_x_angle)
-    rotation_z = np.radians(rotation_z_angle)
-    # Create a scene
-    scene = pyrender.Scene(
-        bg_color=[0, 0, 0, 0], ambient_light=[0.45, 0.45, 0.45])
-
-    centroid = trimesh_mesh.centroid
-    translation_to_origin = trimesh.transformations.translation_matrix(-centroid)
-    translation_back = trimesh.transformations.translation_matrix(centroid)
-    
-    rotation_matrix = trimesh.transformations.euler_matrix(rotation_x, rotation_y, rotation_z)
-    
-    # Combine transformations: move to origin, rotate, move back
-    combined_transform = translation_back @ rotation_matrix @ translation_to_origin
-
-    mesh_node = pyrender.Node(mesh=pyrender_mesh, matrix=combined_transform)
-    scene.add_node(mesh_node)
-
-    bbox = trimesh_mesh.bounding_box_oriented
-    max_extent = max(bbox.extents)
-    distance =  max_extent *1.25 # Adjust this factor as needed
-    fov = np.pi / 3.0  # Adjust this value to change the field of view
-
-    # # Create the camera pose
-    camera_pose = np.eye(4)
-    camera_pose[:3, 3] = [centroid[0], centroid[1], centroid[2] + distance]
-    
-    # Create the camera
-    camera = pyrender.PerspectiveCamera(yfov=fov, aspectRatio=1.0)
-    scene.add(camera, pose=camera_pose)
-
-def render_mesh_to_image(mesh_file, rotation_y_angle=0, rotation_x_angle=0, rotation_z_angle=0, scale=1):
-    pyrender_mesh, trimesh_mesh = stl_to_pyrender_and_trimesh_mesh(mesh_file)
-    rotation_y = np.radians(rotation_y_angle)
-    rotation_x = np.radians(rotation_x_angle)
-    rotation_z = np.radians(rotation_z_angle)
-    # Create a scene
-    scene = pyrender.Scene(
-        bg_color=[0, 0, 0, 0], ambient_light=[0.45, 0.45, 0.45])
-
-    centroid = trimesh_mesh.centroid
-    translation_to_origin = trimesh.transformations.translation_matrix(-centroid)
-    translation_back = trimesh.transformations.translation_matrix(centroid)
-    
-    rotation_matrix = trimesh.transformations.euler_matrix(rotation_x, rotation_y, rotation_z)
-    
-    # Combine transformations: move to origin, rotate, move back
-    combined_transform = translation_back @ rotation_matrix @ translation_to_origin
-
-    mesh_node = pyrender.Node(mesh=pyrender_mesh, matrix=combined_transform)
-    scene.add_node(mesh_node)
-
-    bbox = trimesh_mesh.bounding_box_oriented
-    max_extent = max(bbox.extents)
-    distance =  max_extent *1.25 # Adjust this factor as needed
-    fov = np.pi / 3.0  # Adjust this value to change the field of view
-
-    # # Create the camera pose
-    camera_pose = np.eye(4)
-    camera_pose[:3, 3] = [centroid[0], centroid[1], centroid[2] + distance]
-    
-    # Create the camera
-    camera = pyrender.PerspectiveCamera(yfov=fov, aspectRatio=1.0)
-    scene.add(camera, pose=camera_pose)
-    
-    viewport_width = int(320 * scale)
-    viewport_height = int(240 * scale)
-    
-    renderer = pyrender.OffscreenRenderer(viewport_width=viewport_width, viewport_height=viewport_height)
-    color, depth = renderer.render(scene)
-    # Save the rendered image as a PNG file
-    
-    # Convert the color image to RGBA format
-    color_rgba = cv2.cvtColor(color, cv2.COLOR_RGB2RGBA)
-    
-    # Create a mask for the black background
-    mask = np.all(color_rgba[:, :, :3] == [0, 0, 0], axis=-1)
-    
-    # Set the alpha channel to 0 (transparent) where the background is black
-    color_rgba[mask, 3] = 0
-    cv2.imwrite('mesh.png', color_rgba)
-    return color_rgba
 
 class HandTrackerRenderer:
     def __init__(self, 
@@ -140,6 +55,12 @@ class HandTrackerRenderer:
             self.mesh_dirty = True
             self.prev_peace_distance = 0
             self.mesh_visible = False
+            self.pyrender_mesh = None
+            self.trimesh_mesh = None
+            self.rotation_x_angle = 0
+            self.rotation_y_angle = 0
+            self.rendering_thread = None
+            self.rendering_lock = threading.Lock()
         self.virtual_cam = virtual_cam
         self.fullscreen = fullscreen
         self.image = None
@@ -187,6 +108,69 @@ class HandTrackerRenderer:
             # Initialize the virtual camera
             self.virtual_cam_output = pyvirtualcam.Camera(width=self.tracker.img_w, height=self.tracker.img_h, fps=self.tracker.video_fps)
 
+    def render_mesh_threaded(self):
+        with self.rendering_lock:
+            self.mesh_image = self.render_mesh_to_image(self.model_path, self.rotation_x_angle, self.rotation_y_angle)
+            self.mesh_dirty = False
+    
+    def initialize_mesh_data(self, mesh_file):
+        self.pyrender_mesh, self.trimesh_mesh = stl_to_pyrender_and_trimesh_mesh(mesh_file)
+        centroid = self.trimesh_mesh.centroid
+        translation_to_origin = trimesh.transformations.translation_matrix(-centroid)
+        translation_back = trimesh.transformations.translation_matrix(centroid)
+        bbox = self.trimesh_mesh.bounding_box_oriented
+        max_extent = max(bbox.extents)
+        distance = max_extent * 1.25
+        fov = np.pi / 3.0
+        return centroid, translation_to_origin, translation_back, distance, fov
+    
+    def render_mesh_to_image(self, mesh_file, rotation_x_angle=0, rotation_y_angle=0):
+        if self.pyrender_mesh is None or self.trimesh_mesh is None:
+            self.centroid, self.translation_to_origin, self.translation_back, self.distance, self.fov = self.initialize_mesh_data(mesh_file)
+    
+        rotation_x = np.radians(rotation_x_angle)
+        rotation_y = np.radians(rotation_y_angle)
+        
+        # Create a scene
+        scene = pyrender.Scene(bg_color=[0, 0, 0, 0], ambient_light=[0.25, 0.25, 0.25])
+        
+        rotation_matrix = trimesh.transformations.euler_matrix(rotation_x, rotation_y, 0)
+        
+        # Combine transformations: move to origin, rotate, move back
+        combined_transform = self.translation_back @ rotation_matrix @ self.translation_to_origin
+    
+        mesh_node = pyrender.Node(mesh=self.pyrender_mesh, matrix=combined_transform)
+        scene.add_node(mesh_node)
+    
+        # Create the camera pose
+        camera_pose = np.eye(4)
+        camera_pose[:3, 3] = [self.centroid[0], self.centroid[1], self.centroid[2] + self.distance]
+        
+        # Create the camera
+        camera = pyrender.PerspectiveCamera(yfov=self.fov, aspectRatio=1.0)
+        scene.add(camera, pose=camera_pose)
+        
+        # Render the mesh at a high resolution (1920x1080)
+        renderer = pyrender.OffscreenRenderer(viewport_width=1920, viewport_height=1080)
+        color, depth = renderer.render(scene)
+        
+        # Convert the color image to RGBA format
+        color_rgba = cv2.cvtColor(color, cv2.COLOR_RGB2RGBA)
+        
+        # Create a mask for the black background
+        mask = np.all(color_rgba[:, :, :3] == [0, 0, 0], axis=-1)
+        
+        # Set the alpha channel to 0 (transparent) where the background is black
+        color_rgba[mask, 3] = 0
+        
+        # Store the high-resolution mesh image
+        self.mesh_image_max = color_rgba
+        
+        # Scale down the mesh image to 320x240
+        mesh_image = cv2.resize(self.mesh_image_max, (320, 240), interpolation=cv2.INTER_LANCZOS4)
+        
+        return mesh_image
+    
     def norm2abs(self, x_y):
         x = int(x_y[0] * self.tracker.frame_size - self.tracker.pad_w)
         y = int(x_y[1] * self.tracker.frame_size - self.tracker.pad_h)
@@ -317,7 +301,7 @@ class HandTrackerRenderer:
         self.frame = frame
         if bag:
             self.draw_bag(bag)
-        if(self.draw_mode):
+        if self.draw_mode:
             peace_gesture_detected = False
             index_finger_detected = False
             for hand in hands:
@@ -332,8 +316,7 @@ class HandTrackerRenderer:
                             self.draw_points.append([index_finger_tip])  # Start a new line
                         else:
                             self.draw_points[-1].append(index_finger_tip)  # Add point to the current line
-                    # Draw a red filled circle around the index finger tip
-                    cv2.circle(frame, tuple(index_finger_tip), 30, (0, 0, 255), -1)
+                    cv2.circle(frame, tuple(index_finger_tip), 30, (0, 255, 0), -1)  # Draw a green filled circle around the index finger tip
                 elif hand.gesture == "PEACE":
                     peace_gesture_detected = True
                 elif hand.gesture == "FOUR":
@@ -369,22 +352,22 @@ class HandTrackerRenderer:
             for line_points in self.draw_points:
                 for i in range(1, len(line_points)):
                     cv2.line(frame, tuple(line_points[i-1]), tuple(line_points[i]), self.line_color, int(self.line_thickness * 1.1))
-            
-        elif(self.interact_2d):
+        elif self.interact_2d:
             fist_detected = False
             palm_detected = False
             peace_detected = False
             index_finger_tip = None
             peace_positions = []
+            move_image = False
             
             for hand in hands:
-                if hand.gesture == "ONE":
-                    index_finger_tip = hand.landmarks[8]  # Index finger tip landmark
-                    if self.image is not None and self.image_position is not None:
-                        # Check if the index finger is on the image
-                        if self.is_finger_on_image(index_finger_tip, self.image_position):
-                            # Update the image position based on the index finger movement
-                            self.image_position = (index_finger_tip[0] - self.image.shape[1] // 2, index_finger_tip[1] - self.image.shape[0] // 2)
+                if hand.gesture == "PEACE":
+                    peace_detected = True
+                    peace_positions.append(hand.landmarks[8])  # Index finger tip landmark
+                    if len(peace_positions) == 1:
+                        move_image = True
+                    else:
+                        move_image = False
                 elif hand.gesture == "FIST":
                     fist_detected = True
                     if self.fist_start_time is None:
@@ -402,13 +385,11 @@ class HandTrackerRenderer:
                         self.fist_start_time = None
                 elif hand.gesture == "PALM":
                     palm_detected = True
-                elif hand.gesture == "PEACE":
-                    peace_detected = True
-                    peace_positions.append(hand.landmarks[8])  # Index finger tip landmark
-            
+                elif hand.gesture == "ONE":
+                    index_finger_tip = hand.landmarks[8]  # Index finger tip landmark
                 if not self.hide_extras:
                     self.draw_hand(hand)
-            
+
             if peace_detected and len(peace_positions) == 2 and self.image is not None:
                 # Calculate the distance between the two "PEACE" gestures
                 distance = np.linalg.norm(np.array(peace_positions[0]) - np.array(peace_positions[1]))
@@ -434,28 +415,34 @@ class HandTrackerRenderer:
                 self.prev_peace_distance = distance
             else:
                 self.prev_peace_distance = None
-            
+            if move_image and self.image is not None and len(peace_positions) == 1 and self.image_position is not None:
+                # Check if the index finger is on the image
+                if self.is_finger_on_image(peace_positions[0], self.image_position, self.image):
+                    # Update the image position based on the index finger movement
+                    image_height, image_width = self.image.shape[:2]
+                    x, y = peace_positions[0]
+                    image_x = x - image_width // 2
+                    image_y = y - image_height // 2
+                    self.image_position = (image_x, image_y)
+
             if not fist_detected:
                 self.fist_start_time = None
-            
             if palm_detected and self.image is not None:
                 self.image = None
                 self.image_position = None
-            
             if self.interact_2d and self.image is not None:
-                # Overlay the image on the frame at the current position
                 frame = self.overlay_image(frame, self.image, self.image_position)
-    
+            if index_finger_tip is not None:
+                # Overlay the image on the frame at the current position
+                cv2.circle(frame, tuple(index_finger_tip), 20, (0, 255, 0), -1)  # Draw a green filled circle around the index finger tip
         elif self.interact_3d:
             fist_detected = False
             peace_detected = False
             three_detected = False
             index_finger_tip = None
             peace_positions = []
-            three_direction = 0
-            fist_position = None
+            three_positions = []
             move_image = False
-            
             for hand in hands:
                 if hand.gesture == "FIST":
                     fist_detected = True
@@ -467,108 +454,93 @@ class HandTrackerRenderer:
                             self.mesh_visible = False
                         else:
                             self.mesh_visible = True
-                            if self.mesh is None:
-                                self.mesh = True
-                                self.mesh_image = render_mesh_to_image(self.model_path, scale=self.mesh_scale)
+                            if self.mesh_image is None:
+                                self.mesh_image = self.render_mesh_to_image(self.model_path)
                                 self.mesh_dirty = False
                                 self.image_position = (fist_position[0] - self.mesh_image.shape[1] // 2,
-                                                    fist_position[1] - self.mesh_image.shape[0] // 2)
+                                                        fist_position[1] - self.mesh_image.shape[0] // 2)
+                            else:
+                                self.image_position = (fist_position[0] - self.mesh_image.shape[1] // 2,
+                                                        fist_position[1] - self.mesh_image.shape[0] // 2)
                         self.fist_start_time = None
                 elif hand.gesture == "PEACE":
                     peace_detected = True
                     peace_positions.append(hand.landmarks[8])  # Index finger tip landmark
+                    if len(peace_positions) == 1:
+                        move_image = True
+                    else:
+                        move_image = False
                 elif hand.gesture == "THREE":
                     three_detected = True
-                    three_direction = 1 if hand.label == "left" else -1
+                    three_positions.append(hand.landmarks[12])  # Middle finger tip landmark
                 elif hand.gesture == "ONE":
                     index_finger_tip = hand.landmarks[8]  # Index finger tip landmark
-                    move_image = True
                 if not self.hide_extras:
                     self.draw_hand(hand)
 
-            if not fist_detected:
-                self.fist_start_time = None
-
             if peace_detected and len(peace_positions) == 2 and self.mesh_image is not None:
-                # Calculate the distance between the two "PEACE" gestures
                 distance = np.linalg.norm(np.array(peace_positions[0]) - np.array(peace_positions[1]))
                 
                 if self.prev_peace_distance is not None:
-                    # Calculate the change in distance
                     distance_change = distance - self.prev_peace_distance
                     
-                    # Scale the image based on the change in distance
                     if distance_change > 0:
-                        # Increase the image size
                         scale_factor = 1.05
                     elif distance_change < 0:
-                        # Decrease the image size
                         scale_factor = 0.95
                     else:
                         scale_factor = 1.0
-                    
-                    self.mesh_scale *= scale_factor
-                    self.mesh_image = render_mesh_to_image(self.model_path, scale=self.mesh_scale)
+                    new_width = int(self.mesh_image.shape[1] * scale_factor)
+                    new_height = int(self.mesh_image.shape[0] * scale_factor)
+                    if new_width > 1920 or new_height > 1080:
+                        max_scale_factor = min(1920 / self.mesh_image.shape[1], 1080 / self.mesh_image.shape[0])
+                        new_width = int(self.mesh_image.shape[1] * max_scale_factor)
+                        new_height = int(self.mesh_image.shape[0] * max_scale_factor)
+                    self.mesh_image = cv2.resize(self.mesh_image_max, (new_width, new_height), interpolation=cv2.INTER_LANCZOS4)
                     self.mesh_dirty = False
                 self.prev_peace_distance = distance
             else:
                 self.prev_peace_distance = None
 
-            # Update mesh rotation on three gesture change
-            if three_detected and not self.three_detected_prev:
-                self.rotation_angle += 5 * three_direction
-            self.three_detected_prev = three_detected
-
-            # Move the image based on the index finger position
-            if move_image and self.mesh_image is not None:
-                image_height, image_width = self.mesh_image.shape[:2]
-                x, y = index_finger_tip
-                image_x = x - image_width // 2
-                image_y = y - image_height // 2
-                self.image_position = (image_x, image_y)
-            
-            # Overlay the rendered image on the frame
+            if move_image and self.mesh_image is not None and len(peace_positions) == 1:
+                if self.is_finger_on_image(peace_positions[0], self.image_position, self.mesh_image):
+                    image_height, image_width = self.mesh_image.shape[:2]
+                    x, y = peace_positions[0]
+                    image_x = x - image_width // 2
+                    image_y = y - image_height // 2
+                    self.image_position = (image_x, image_y)
+            if three_detected and not self.mesh_dirty:
+                if len(three_positions) == 1:
+                    self.rotation_x_angle += 15
+                    if self.rotation_x_angle >= 360:
+                        self.rotation_x_angle = 0
+                elif len(three_positions) == 2:
+                    self.rotation_y_angle += 15
+                    if self.rotation_y_angle >= 360:
+                        self.rotation_y_angle = 0
+                self.mesh_dirty = True
+                if self.rendering_thread is None or not self.rendering_thread.is_alive():
+                    self.rendering_thread = threading.Thread(target=self.render_mesh_threaded)
+                    self.rendering_thread.start()
             if self.mesh_image is not None and self.mesh_visible:
-                overlay = self.mesh_image.copy()
-                # Extract the alpha channel
-                alpha = overlay[:, :, 3] / 255.0
-                overlay = overlay[:, :, :3]
-                
-                x, y = self.image_position
-                background = frame[max(0, y):min(y+overlay.shape[0], frame.shape[0]), 
-                                    max(0, x):min(x+overlay.shape[1], frame.shape[1])]
-                
-                overlay_roi = overlay[:background.shape[0], :background.shape[1]]
-                alpha_roi = alpha[:background.shape[0], :background.shape[1]]
-                
-                # Create a mask for the overlay based on the alpha channel
-                mask = cv2.merge((alpha_roi, alpha_roi, alpha_roi))
-                
-                # Convert the background and mask to floating-point data type
-                background = background.astype(np.float32) / 255.0
-                mask = mask.astype(np.float32)
-                
-                # Perform the blending using cv2.multiply and cv2.add
-                blended = cv2.multiply(background, 1 - mask)
-                blended = cv2.add(blended, cv2.multiply(overlay_roi.astype(np.float32) / 255.0, mask))
-                blended = (blended * 255.0).astype(np.uint8)
-                
-                frame[max(0, y):min(y+overlay.shape[0], frame.shape[0]), 
-                        max(0, x):min(x+overlay.shape[1], frame.shape[1])] = blended
+                frame = self.overlay_image(frame, self.mesh_image, self.image_position)
+            if index_finger_tip is not None:
+                cv2.circle(frame, tuple(index_finger_tip), 20, (0, 255, 0), -1)  # Draw a green filled circle around the index finger tip
+            if not fist_detected:
+                self.fist_start_time = None
         else:
-            for hand in hands:        
+            for hand in hands:
                 if not self.hide_extras:
                     self.draw_hand(hand)
-                    
         # Flip the Frames to stop the mirrored effect (only without virtual_cam)
         if not self.virtual_cam:
             self.frame = cv2.flip(frame, 1)
         return self.frame
 
-    def is_finger_on_image(self, finger_tip, image_position):
+    def is_finger_on_image(self, finger_tip, image_position, image):
         x, y = finger_tip
         ix, iy = image_position
-        iw, ih = self.image.shape[1], self.image.shape[0]
+        iw, ih = image.shape[1], image.shape[0]
         return ix <= x <= ix + iw and iy <= y <= iy + ih
 
     def scale_image(self, image, scale_factor):
