@@ -1,25 +1,23 @@
 import tkinter as tk
 from tkinter import filedialog
 import subprocess
-import multiprocessing
-
+import socket
+import signal
+import time
 
 class Controller:
     def __init__(self):
         self.interaction_mode = 'none'
         self.interaction_file = None
         self.process = None
-        self.message_queue = multiprocessing.Queue()
-
+        self.socket = None
         self.window = tk.Tk()
         self.window.title("Interaction Mode Controller")
+        self.window.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self.mode_var = tk.StringVar(value=self.interaction_mode)
         self.file_path_var = tk.StringVar()
         self.hide_var = tk.BooleanVar(value=False)
-        self.draw_var = tk.BooleanVar(value=False)
-        self.interact_2d_var = tk.BooleanVar(value=False)
-        self.interact_3d_var = tk.BooleanVar(value=False)
         self.virtual_cam_var = tk.BooleanVar(value=False)
         self.fullscreen_var = tk.BooleanVar(value=False)
 
@@ -64,41 +62,46 @@ class Controller:
         options_frame.pack(pady=10)
 
         hide_checkbox = tk.Checkbutton(
-            options_frame, text="Hide Extras", variable=self.hide_var)
+            options_frame, text="Hide Extras", variable=self.hide_var, command=self.toggle_hide)
         hide_checkbox.pack(side=tk.LEFT)
 
-        draw_checkbox = tk.Checkbutton(
-            options_frame, text="Draw", variable=self.draw_var)
-        draw_checkbox.pack(side=tk.LEFT)
-
-        interact_2d_checkbox = tk.Checkbutton(
-            options_frame, text="Interact 2D", variable=self.interact_2d_var)
-        interact_2d_checkbox.pack(side=tk.LEFT)
-
-        interact_3d_checkbox = tk.Checkbutton(
-            options_frame, text="Interact 3D", variable=self.interact_3d_var)
-        interact_3d_checkbox.pack(side=tk.LEFT)
-
         virtual_cam_checkbox = tk.Checkbutton(
-            options_frame, text="Virtual Camera", variable=self.virtual_cam_var)
+            options_frame, text="Virtual Camera", variable=self.virtual_cam_var, command=self.toggle_virtual_cam)
         virtual_cam_checkbox.pack(side=tk.LEFT)
 
         fullscreen_checkbox = tk.Checkbutton(
-            options_frame, text="Fullscreen", variable=self.fullscreen_var)
+            options_frame, text="Fullscreen", variable=self.fullscreen_var, command=self.toggle_fullscreen)
         fullscreen_checkbox.pack(side=tk.LEFT)
 
-        start_button = tk.Button(
-            self.window, text="Start Demo", command=self.start_demo)
-        start_button.pack(pady=20)
+        self.start_button = tk.Button(
+                self.window, text="START", command=self.toggle_demo)
+        self.start_button.pack(pady=20)
+        
+    def toggle_demo(self):
+        if self.process is None:
+            self.start_demo()
+            self.start_button.config(text="STOP")
+        else:
+            self.stop_demo()
+            self.start_button.config(text="START")
+    
+    def on_close(self):
+            self.stop_demo()
+            self.window.quit()
+    
+    def stop_demo(self):
+        if self.process:
+            self.process.terminate()
+            self.process = None
+        if self.socket:
+            self.socket.close()
+            self.socket = None
+
 
     def set_interaction_mode(self, mode):
-        if self.interaction_mode == 'draw' and mode in ['interact2D', 'interact3D']:
+        if mode in ['interact2D', 'interact3D'] and not self.interaction_file:
             tk.messagebox.showerror(
-                "Error", "Cannot switch from Draw mode to Interact mode directly.")
-            return
-        elif self.interaction_mode in ['interact2D', 'interact3D'] and mode == 'draw':
-            tk.messagebox.showerror(
-                "Error", "Cannot switch from Interact mode to Draw mode directly.")
+                "Error", "Please select a valid interaction file before selecting Interact 2D or Interact 3D mode.")
             return
 
         self.interaction_mode = mode
@@ -106,20 +109,22 @@ class Controller:
 
         if self.process:
             self.send_message(mode)
-            if mode == 'interact2D' or mode == 'interact3D':
-                if not self.interaction_file:
-                    tk.messagebox.showerror(
-                        "Error", "Please select an interaction file.")
-                    return
+            if mode in ['interact2D', 'interact3D']:
                 self.send_message(self.interaction_file)
 
     def select_file(self):
         if self.interaction_mode == 'interact2D':
             file_path = filedialog.askopenfilename(
-                filetypes=[("PNG Files", "*.png")])
+                filetypes=[("PNG Files", "*.png")],
+                defaultextension=".png",
+                title="Select PNG File"
+            )
         elif self.interaction_mode == 'interact3D':
             file_path = filedialog.askopenfilename(
-                filetypes=[("STL Files", "*.stl")])
+                filetypes=[("STL Files", "*.stl")],
+                defaultextension=".stl",
+                title="Select STL File"
+            )
         else:
             file_path = None
 
@@ -132,23 +137,18 @@ class Controller:
             "python", "demo.py",
             "--pd_model", ".\\models\\palm_detection_lite-2022-08-30_sh4.blob",
             "--gesture",
-            "--lm_model", ".\\models\\hand_landmark_lite-2022-11-12_sh4.blob"
+            "--lm_model", ".\\models\\hand_landmark_lite-2022-11-12_sh4.blob",
+            "--messages"
         ]
 
         if self.interaction_mode != 'none':
             command.extend(["--interaction_mode", self.interaction_mode])
             if self.interaction_file:
                 command.extend(["--interaction_file", self.interaction_file])
-        else:
-            if self.hide_var.get():
-                command.append("--hide")
-            if self.draw_var.get():
-                command.append("--draw")
-            if self.interact_2d_var.get():
-                command.append("--interact2D")
-            if self.interact_3d_var.get():
-                command.append("--interact3D")
 
+        if self.hide_var.get():
+            command.append("--hide")
+   
         if self.virtual_cam_var.get():
             command.append("--virtual_cam")
 
@@ -156,14 +156,37 @@ class Controller:
             command.append("--fullscreen")
 
         self.process = subprocess.Popen(command)
+        time.sleep(2)  # Adjust the delay as needed
+        
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.connect(('localhost', 12345))
 
     def send_message(self, message):
-        self.message_queue.put(message)
+        self.socket.send(message.encode())
+
+    def toggle_hide(self):
+        if self.process:
+            self.send_message('hide' if self.hide_var.get() else 'show')
+
+    def toggle_virtual_cam(self):
+        if self.process:
+            self.process.terminate()
+            self.start_demo()
+
+    def toggle_fullscreen(self):
+        if self.process:
+            self.process.terminate()
+            self.start_demo()
 
     def run(self):
         self.window.mainloop()
+        if self.socket:
+            self.socket.close()
 
-
+def signal_handler(sig, frame):
+    controller.on_close()
+    
 if __name__ == "__main__":
     controller = Controller()
+    signal.signal(signal.SIGINT, signal_handler)
     controller.run()

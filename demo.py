@@ -3,7 +3,51 @@
 
 from HandTrackerRenderer import HandTrackerRenderer
 import argparse
+import socket
 
+def receive_messages(sock):
+    while True:
+        print("checking messages:")
+        try:
+            data = conn.recv(1024).decode()
+            print("Received:", data)
+            if not data:
+                print("Connection closed by the client")
+                break
+            if data.startswith('interact'):
+                interaction_mode = data
+                print("Received interaction mode:", interaction_mode)
+                if interaction_mode == 'interact2D':
+                    renderer.interaction_mode = 'interact2D'
+                    renderer.draw_mode = False
+                    renderer.interact_3d = False
+                elif interaction_mode == 'interact3D':
+                    renderer.interact_3d = True
+                    renderer.interact_2d = False
+                    renderer.draw_mode = False
+                    renderer.interaction_mode = 'interact3D'
+            elif data == 'draw':
+                print("Received draw mode")
+                renderer.draw_mode = True
+            elif data == "hide":
+                print("Received hide mode")
+                renderer.hide_extras = True
+            elif data == "show":
+                print("Received show mode")
+                renderer.hide_extras = False
+            elif data == "none":
+                print("Received none mode")
+                renderer.interaction_mode = None
+                renderer.interact_2d = False
+                renderer.interact_3d = False
+                renderer.draw_mode = False
+            else:
+                interaction_file = data
+                renderer.interaction_file = interaction_file
+        except socket.error as e:
+            print(f"Socket error: {e}")
+            break 
+            
 parser = argparse.ArgumentParser()
 parser.add_argument('-e', '--edge', action="store_true",
                     help="Use Edge mode (postprocessing runs on the device)")
@@ -53,6 +97,7 @@ parser_renderer.add_argument(
     '--interact3D', action="store_true", help="Enable 3D object interaction")
 parser_renderer.add_argument("--fullscreen", action="store_true", help="Enable fullscreen mode")
 parser_renderer.add_argument("--virtual_cam", action="store_true", help="Send frames to virtual camera instead of displaying in the video window")
+parser_renderer.add_argument("--messages", action="store_true", help="Send frames to virtual camera instead of displaying in the video window")
 
 args = parser.parse_args()
 dargs = vars(args)
@@ -64,7 +109,15 @@ if args.edge:
 else:
     from HandTracker import HandTracker
 
+if args.messages:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind(('localhost', 12345))
+    print("Waiting for a connection...")
+    sock.listen(5)
+    conn, addr = sock.accept()
+    print(f"Connected by {addr}")
 
+    
 tracker = HandTracker(
         input_src=args.input, 
         use_lm= not args.no_lm, 
@@ -92,6 +145,14 @@ renderer = HandTrackerRenderer(
         fullscreen=args.fullscreen,
         virtual_cam=args.virtual_cam)
 
+# Start a separate thread to receive messages from the controller
+import threading
+if args.messages:
+    print("Starting message_thread")
+    message_thread = threading.Thread(target=receive_messages, args=(conn,))
+    message_thread.start()
+
+
 while True:
     # Run hand tracker on next frame
     # 'bag' contains some information related to the frame 
@@ -106,3 +167,6 @@ while True:
         break
 renderer.exit()
 tracker.exit()
+if(args.messages):
+    conn.close()
+    sock.close()
