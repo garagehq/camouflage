@@ -1,9 +1,10 @@
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 import subprocess
 import socket
 import signal
 import time
+import os
 
 class Controller:
     def __init__(self):
@@ -14,14 +15,27 @@ class Controller:
         self.window = tk.Tk()
         self.window.title("Interaction Mode Controller")
         self.window.protocol("WM_DELETE_WINDOW", self.on_close)
-
         self.mode_var = tk.StringVar(value=self.interaction_mode)
         self.file_path_var = tk.StringVar()
         self.hide_var = tk.BooleanVar(value=False)
         self.virtual_cam_var = tk.BooleanVar(value=False)
         self.fullscreen_var = tk.BooleanVar(value=False)
-
+        self.interact2d_button = None
+        self.interact3d_button = None
+        self.interaction_file_type = None
         self.create_widgets()
+        self.update_interaction_buttons()
+
+    def update_interaction_buttons(self):
+        if self.interaction_file_type == "interact2D":
+            self.interact2d_button.config(state=tk.NORMAL)
+            self.interact3d_button.config(state=tk.DISABLED)
+        elif self.interaction_file_type == "interact3D":
+            self.interact2d_button.config(state=tk.DISABLED)
+            self.interact3d_button.config(state=tk.NORMAL)
+        else:
+            self.interact2d_button.config(state=tk.DISABLED)
+            self.interact3d_button.config(state=tk.DISABLED)
 
     def create_widgets(self):
         mode_frame = tk.Frame(self.window)
@@ -37,13 +51,13 @@ class Controller:
                                      command=lambda: self.set_interaction_mode('draw'))
         draw_button.pack(side=tk.LEFT)
 
-        interact2d_button = tk.Radiobutton(mode_frame, text="Interact 2D", variable=self.mode_var, value='interact2D',
-                                           command=lambda: self.set_interaction_mode('interact2D'))
-        interact2d_button.pack(side=tk.LEFT)
-
-        interact3d_button = tk.Radiobutton(mode_frame, text="Interact 3D", variable=self.mode_var, value='interact3D',
-                                           command=lambda: self.set_interaction_mode('interact3D'))
-        interact3d_button.pack(side=tk.LEFT)
+        self.interact2d_button = tk.Radiobutton(mode_frame, text="Interact 2D", variable=self.mode_var, value='interact2D',
+                                                command=lambda: self.set_interaction_mode('interact2D'))
+        self.interact2d_button.pack(side=tk.LEFT)
+        
+        self.interact3d_button = tk.Radiobutton(mode_frame, text="Interact 3D", variable=self.mode_var, value='interact3D',
+                                                command=lambda: self.set_interaction_mode('interact3D'))
+        self.interact3d_button.pack(side=tk.LEFT)
 
         file_frame = tk.Frame(self.window)
         file_frame.pack(pady=10)
@@ -99,38 +113,50 @@ class Controller:
 
 
     def set_interaction_mode(self, mode):
-        if mode in ['interact2D', 'interact3D'] and not self.interaction_file:
-            tk.messagebox.showerror(
-                "Error", "Please select a valid interaction file before selecting Interact 2D or Interact 3D mode.")
+        if mode == 'interact2D' and self.interaction_file_type != 'interact2D':
+                tk.messagebox.showwarning("Warning", "Please select a valid PNG file before selecting Interact 2D mode.")
+                return
+        elif mode == 'interact3D' and self.interaction_file_type != 'interact3D':
+            tk.messagebox.showwarning("Warning", "Please select a valid STL file before selecting Interact 3D mode.")
             return
 
         self.interaction_mode = mode
         self.mode_var.set(mode)
-
+        
         if self.process:
-            self.send_message(mode)
-            if mode in ['interact2D', 'interact3D']:
-                self.send_message(self.interaction_file)
+            if mode.startswith('interact'):
+                self.send_message(mode + " " + self.interaction_file)
+            else:
+                self.send_message(mode)
 
-    def select_file(self):
-        if self.interaction_mode == 'interact2D':
-            file_path = filedialog.askopenfilename(
-                filetypes=[("PNG Files", "*.png")],
-                defaultextension=".png",
-                title="Select PNG File"
-            )
-        elif self.interaction_mode == 'interact3D':
-            file_path = filedialog.askopenfilename(
-                filetypes=[("STL Files", "*.stl")],
-                defaultextension=".stl",
-                title="Select STL File"
-            )
-        else:
-            file_path = None
 
-        if file_path:
+    def validate_and_set_file(self, file_path):
+        if file_path and os.path.exists(file_path):
+            _, file_extension = os.path.splitext(file_path)
+            if file_extension.lower() == ".png":
+                self.interaction_file_type = "interact2D"
+            elif file_extension.lower() == ".stl":
+                self.interaction_file_type = "interact3D"
+            else:
+                self.interaction_file_type = None
+
             self.interaction_file = file_path
             self.file_path_var.set(file_path)
+            self.update_interaction_buttons()
+        else:
+            messagebox.showerror(
+                "Error", "File does not exist. Please select a valid file.")
+            self.interaction_file = None
+            self.interaction_file_type = None
+            self.file_path_var.set('')
+            self.update_interaction_buttons()
+
+    def select_file(self):
+        file_types = {'interact2D': ("PNG Files", "*.png"), 'interact3D': ("STL Files", "*.stl")}
+        file_type = file_types.get(self.interaction_mode, ("All Files", "*.*"))
+        
+        file_path = filedialog.askopenfilename(filetypes=[file_type], defaultextension=file_type[1].split(".")[-1], title="Select File")
+        self.validate_and_set_file(file_path)
 
     def start_demo(self):
         command = [

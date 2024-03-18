@@ -15,19 +15,32 @@ def receive_messages(sock):
                 print("Connection closed by the client")
                 break
             if data.startswith('interact'):
-                interaction_mode = data
-                print("Received interaction mode:", interaction_mode)
-                if interaction_mode == 'interact2D':
-                    renderer.interaction_mode = 'interact2D'
-                    renderer.draw_mode = False
-                    renderer.interact_3d = False
-                elif interaction_mode == 'interact3D':
-                    renderer.interact_3d = True
-                    renderer.interact_2d = False
-                    renderer.draw_mode = False
-                    renderer.interaction_mode = 'interact3D'
+                # Split the data into interaction mode and file path
+                parts = data.split(' ', 1)  # Only split on the first space
+                if len(parts) == 2:
+                    interaction_mode, interaction_file = parts
+                    print("Received interaction mode:", interaction_mode)
+            
+                    if interaction_mode == 'interact2D':
+                        renderer.interaction_mode = 'interact2D'
+                        renderer.draw_mode = False
+                        renderer.interact_3d = False
+                        renderer.image_max = interaction_file
+                        renderer.interaction_file = interaction_file
+                        print("Received interaction file:", interaction_file)
+                    elif interaction_mode == 'interact3D':
+                        renderer.interact_3d = True
+                        renderer.interact_2d = False
+                        renderer.draw_mode = False
+                        renderer.interaction_mode = 'interact3D'
+                        renderer.interaction_file = interaction_file
+                        renderer.model_path = interaction_file
+                        print("Received interaction file:", interaction_file)
+                else:
+                    print("Error: Received data does not conform to expected format.")
             elif data == 'draw':
                 print("Received draw mode")
+                renderer.interaction_mode = "draw"
                 renderer.draw_mode = True
             elif data == "hide":
                 print("Received hide mode")
@@ -41,9 +54,7 @@ def receive_messages(sock):
                 renderer.interact_2d = False
                 renderer.interact_3d = False
                 renderer.draw_mode = False
-            else:
-                interaction_file = data
-                renderer.interaction_file = interaction_file
+                
         except socket.error as e:
             print(f"Socket error: {e}")
             break 
@@ -97,7 +108,11 @@ parser_renderer.add_argument(
     '--interact3D', action="store_true", help="Enable 3D object interaction")
 parser_renderer.add_argument("--fullscreen", action="store_true", help="Enable fullscreen mode")
 parser_renderer.add_argument("--virtual_cam", action="store_true", help="Send frames to virtual camera instead of displaying in the video window")
-parser_renderer.add_argument("--messages", action="store_true", help="Send frames to virtual camera instead of displaying in the video window")
+parser_renderer.add_argument("--messages", action="store_true", help="Enable Sockets to Send Messages back and forth")
+parser_renderer.add_argument("--interaction_mode", type=str,
+                             help="Allow For Interaction Mode to be set to Drawing, 2D or 3D")
+parser_renderer.add_argument("--interaction_file", type=str,
+                             help="Allow For Interaction File to be set for 2D or 3D injection")
 
 args = parser.parse_args()
 dargs = vars(args)
@@ -141,6 +156,8 @@ renderer = HandTrackerRenderer(
         draw_mode=args.draw,
         hide_extras=args.hide,
         interact_2d=args.interact2D,
+        interaction_mode=args.interaction_mode,
+        interaction_file=args.interaction_file,
         interact_3d=args.interact3D,
         fullscreen=args.fullscreen,
         virtual_cam=args.virtual_cam)
@@ -151,7 +168,6 @@ if args.messages:
     print("Starting message_thread")
     message_thread = threading.Thread(target=receive_messages, args=(conn,))
     message_thread.start()
-
 
 while True:
     # Run hand tracker on next frame
@@ -165,6 +181,7 @@ while True:
     key = renderer.waitKey(delay=1)
     if key == 27 or key == ord('q'):
         break
+
 renderer.exit()
 tracker.exit()
 if(args.messages):

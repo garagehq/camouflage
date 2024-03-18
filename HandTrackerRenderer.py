@@ -36,12 +36,12 @@ class HandTrackerRenderer:
                     interact_2d=False,
                     interact_3d=False,
                     interaction_file=None,
+                    interaction_mode=None,
                     hide_extras=False,
                     virtual_cam=False,
                     fullscreen=False):
-    
         self.tracker = tracker
-        self.interaction_mode = 'none'
+        self.interaction_mode = interaction_mode
         self.draw_mode = draw_mode
         self.interact_2d = interact_2d
         self.interact_3d = interact_3d
