@@ -30,44 +30,53 @@ def stl_to_pyrender_and_trimesh_mesh(stl_file, color=(255, 0, 255)):
 
 class HandTrackerRenderer:
     def __init__(self, 
-                tracker,
-                output=None,
-                model_path="img/test.stl",
-                draw_mode=False,
-                hide_extras=False,
-                interact_2d=False,
-                interact_3d=False,
-                fullscreen=False,
-                virtual_cam=False):
-
+                    tracker,
+                    output=None,
+                    draw_mode=False,
+                    interact_2d=False,
+                    interact_3d=False,
+                    interaction_file=None,
+                    hide_extras=False,
+                    virtual_cam=False,
+                    fullscreen=False):
+    
         self.tracker = tracker
+        self.interaction_mode = 'none'
+        self.draw_mode = draw_mode
         self.interact_2d = interact_2d
         self.interact_3d = interact_3d
-        if(self.interact_3d):
-            self.rotation_angle = 0
-            self.model_path = model_path
-            self.mesh = None
-            self.mesh_image = None
-            self.fist_detected_prev = False
-            self.peace_detected_prev = False
-            self.three_detected_prev = False
-            self.mesh_scale = 1.0
-            self.mesh_dirty = True
-            self.prev_peace_distance = 0
-            self.mesh_visible = False
-            self.pyrender_mesh = None
-            self.trimesh_mesh = None
-            self.rotation_x_angle = 0
-            self.rotation_y_angle = 0
-            self.rendering_thread = None
-            self.rendering_lock = threading.Lock()
+        self.interaction_file = interaction_file
+        self.hide_extras = hide_extras
         self.virtual_cam = virtual_cam
         self.fullscreen = fullscreen
+        if self.interact_2d or ( self.interaction_mode == 'interact2D'):
+            self.image_max = self.interaction_file
+        elif (self.interact_2d and self.interaction_file is None):
+            self.image_max =  self.interaction_file
+        else:
+            self.image_max = None
+        if self.interact_3d or (self.interaction_mode == 'interact3D'):
+            self.model_path = self.interaction_file
+        elif (self.interact_3d and self.interaction_file is None):
+            self.model_path =  "img/test.stl"
+        else:
+            self.model_path = None
         self.image = None
+        self.mesh = None
+        self.mesh_image = None
+        self.mesh_dirty = True
+        self.mesh_visible = False
+        self.pyrender_mesh = None
+        self.trimesh_mesh = None
+        self.rotation_x_angle = 0
+        self.rotation_y_angle = 0
+        self.rendering_thread = None
+        self.rendering_lock = threading.Lock()
+        self.virtual_cam = virtual_cam
+        self.fullscreen = fullscreen
         self.image_position = None
         self.fist_start_time = None
         self.fist_duration = 1  # Duration in seconds to hold the fist gesture
-        self.hide_extras = hide_extras
         self.draw_mode = draw_mode
         self.draw_now = False
         self.prev_peace_distance = None
@@ -301,7 +310,7 @@ class HandTrackerRenderer:
         self.frame = frame
         if bag:
             self.draw_bag(bag)
-        if self.draw_mode:
+        if self.draw_mode or (self.interaction_mode == 'draw'):
             peace_gesture_detected = False
             index_finger_detected = False
             for hand in hands:
@@ -352,7 +361,7 @@ class HandTrackerRenderer:
             for line_points in self.draw_points:
                 for i in range(1, len(line_points)):
                     cv2.line(frame, tuple(line_points[i-1]), tuple(line_points[i]), self.line_color, int(self.line_thickness * 1.1))
-        elif self.interact_2d:
+        elif self.interact_2d or (self.interaction_mode == 'interact2D'):
             fist_detected = False
             palm_detected = False
             peace_detected = False
@@ -375,7 +384,7 @@ class HandTrackerRenderer:
                     elif time.time() - self.fist_start_time >= self.fist_duration:
                         if self.image is None:
                             # Load the image and set its initial position
-                            self.image = cv2.imread("img/test.png", cv2.IMREAD_UNCHANGED)
+                            self.image = cv2.imread(self.image_max, cv2.IMREAD_UNCHANGED)
                             fist_size = (2*(hand.landmarks[5][0] - hand.landmarks[17][0]), 2*(hand.landmarks[5][1] - hand.landmarks[0][1]))
                             self.image, self.image_position = self.resize_image(self.image, fist_size, hand.landmarks[9])
                             frame = self.overlay_image(frame, self.image, self.image_position)
@@ -404,7 +413,7 @@ class HandTrackerRenderer:
                         scale_factor  = 1.05
                         new_size = (int(self.image.shape[1] * scale_factor), int(self.image.shape[0] * scale_factor))
                         # Load the original image and resize it to the new size
-                        self.image = cv2.imread("img/test.png", cv2.IMREAD_UNCHANGED)
+                        self.image = cv2.imread(self.image_max, cv2.IMREAD_UNCHANGED)
                         self.image = cv2.resize(self.image, new_size, interpolation=cv2.INTER_LANCZOS4)
                         # Update the image position based on the new size
                         self.image_position = (self.image_position[0] - (new_size[0] - self.image.shape[1]) // 2,
@@ -435,7 +444,7 @@ class HandTrackerRenderer:
             if index_finger_tip is not None:
                 # Overlay the image on the frame at the current position
                 cv2.circle(frame, tuple(index_finger_tip), 20, (0, 255, 0), -1)  # Draw a green filled circle around the index finger tip
-        elif self.interact_3d:
+        elif self.interact_3d  or (self.interaction_mode == 'interact3D'):
             fist_detected = False
             peace_detected = False
             three_detected = False
