@@ -5,6 +5,8 @@ import socket
 import signal
 import time
 import os
+from tkinter import ttk
+from tkinterdnd2 import DND_FILES, TkinterDnD
 
 class Controller:
     def __init__(self):
@@ -12,7 +14,7 @@ class Controller:
         self.interaction_file = None
         self.process = None
         self.socket = None
-        self.window = tk.Tk()
+        self.window = TkinterDnD.Tk()
         self.window.title("Interaction Mode Controller")
         self.window.protocol("WM_DELETE_WINDOW", self.on_close)
         self.mode_var = tk.StringVar(value=self.interaction_mode)
@@ -25,6 +27,23 @@ class Controller:
         self.interaction_file_type = None
         self.create_widgets()
         self.update_interaction_buttons()
+    
+    def create_drag_drop_frame(self):
+        drag_drop_frame = ttk.Frame(self.window, width=400, height=100, relief=tk.SOLID, borderwidth=2)
+        drag_drop_frame.pack(pady=10)
+        drag_drop_frame.pack_propagate(False)
+
+        label = ttk.Label(drag_drop_frame, text="Drag and drop a file here")
+        label.pack(expand=True)
+
+        drag_drop_frame.drop_target_register(DND_FILES)
+        drag_drop_frame.dnd_bind("<<Drop>>", self.drop_file)
+
+        self.drag_drop_frame = drag_drop_frame
+    
+    def drop_file(self, event):
+        file_path = event.data
+        self.validate_and_set_file(file_path)
 
     def update_interaction_buttons(self):
         if self.interaction_file_type == "interact2D":
@@ -71,6 +90,7 @@ class Controller:
         browse_button = tk.Button(
             file_frame, text="Browse", command=self.select_file)
         browse_button.pack(side=tk.LEFT)
+        self.create_drag_drop_frame()
 
         options_frame = tk.Frame(self.window)
         options_frame.pack(pady=10)
@@ -161,10 +181,11 @@ class Controller:
     def start_demo(self):
         command = [
             "python", "demo.py",
-            "--pd_model", ".\\models\\palm_detection_lite-2022-08-30_sh4.blob",
+            # "--pd_model", ".\\models\\palm_detection_lite-2022-08-30_sh4.blob",
             "--gesture",
             "--lm_model", ".\\models\\hand_landmark_lite-2022-11-12_sh4.blob",
-            "--messages"
+            "--messages",
+            "--edge"
         ]
 
         if self.interaction_mode != 'none':
