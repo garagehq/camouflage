@@ -24,15 +24,16 @@ def receive_messages(sock):
                     if interaction_mode == 'interact2D':
                         renderer.interaction_mode = 'interact2D'
                         renderer.draw_mode = False
-                        renderer.interact_3d = False
-                        renderer.image_max = interaction_file
+                        renderer.interact_2d = True
+                        renderer.interact_3d = False                        
                         renderer.interaction_file = interaction_file
+                        renderer.image_max = interaction_file
                         print("Received interaction file:", interaction_file)
                     elif interaction_mode == 'interact3D':
-                        renderer.interact_3d = True
-                        renderer.interact_2d = False
-                        renderer.draw_mode = False
                         renderer.interaction_mode = 'interact3D'
+                        renderer.draw_mode = False
+                        renderer.interact_2d = False
+                        renderer.interact_3d = True
                         renderer.interaction_file = interaction_file
                         renderer.model_path = interaction_file
                         print("Received interaction file:", interaction_file)
@@ -45,9 +46,11 @@ def receive_messages(sock):
             elif data == "hide":
                 print("Received hide mode")
                 renderer.hide_extras = True
+                renderer.show_fps = False
             elif data == "show":
                 print("Received show mode")
                 renderer.hide_extras = False
+                renderer.show_fps = True
             elif data == "none":
                 print("Received none mode")
                 renderer.interaction_mode = None

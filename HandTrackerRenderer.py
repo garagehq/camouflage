@@ -47,20 +47,22 @@ class HandTrackerRenderer:
         self.interact_3d = interact_3d
         self.interaction_file = interaction_file
         self.hide_extras = hide_extras
+        self.image_max = None
+        self.model_path = None
         self.virtual_cam = virtual_cam
         self.fullscreen = fullscreen
-        if self.interact_2d or ( self.interaction_mode == 'interact2D'):
+        if (self.interact_2d or self.interaction_mode == 'interact2D') and self.interaction_file :
             self.image_max = self.interaction_file
-        elif (self.interact_2d and self.interaction_file is None):
-            self.image_max =  self.interaction_file
-        else:
-            self.image_max = None
-        if self.interact_3d or (self.interaction_mode == 'interact3D'):
+            print("Image Max Set", self.image_max)
+        elif ((self.interact_2d or self.interaction_mode == 'interact2D') and self.interaction_file is None):
+            self.image_max =  "img/test.png"
+            print("Setting Default PNG File")
+        if (self.interact_3d or self.interaction_mode == 'interact3D') and self.interaction_file :
             self.model_path = self.interaction_file
-        elif (self.interact_3d and self.interaction_file is None):
+            print("model_path", self.interaction_file)
+        elif (self.interact_3d or self.interaction_mode == 'interact3D') and self.interaction_file is None:
             self.model_path =  "img/test.stl"
-        else:
-            self.model_path = None
+            print("Setting Default STL File")
         self.image = None
         self.mesh = None
         self.mesh_image = None
@@ -439,7 +441,7 @@ class HandTrackerRenderer:
             if palm_detected and self.image is not None:
                 self.image = None
                 self.image_position = None
-            if self.interact_2d and self.image is not None:
+            if (self.interact_2d or (self.interaction_mode == 'interact2D')) and self.image is not None:
                 frame = self.overlay_image(frame, self.image, self.image_position)
             if index_finger_tip is not None:
                 # Overlay the image on the frame at the current position
