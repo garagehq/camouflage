@@ -39,8 +39,14 @@ class HandTrackerRenderer:
                     interaction_mode=None,
                     hide_extras=False,
                     virtual_cam=False,
-                    fullscreen=False):
+                    fullscreen=False,
+                    uvc_device=None):
         self.tracker = tracker
+        self.uvc_device = uvc_device
+        if self.uvc_device is not None:
+            self.uvc = True
+        else:
+            self.uvc = False
         self.interaction_mode = interaction_mode
         self.draw_mode = draw_mode
         self.interact_2d = interact_2d
@@ -50,6 +56,9 @@ class HandTrackerRenderer:
         self.image_max = None
         self.model_path = None
         self.virtual_cam = virtual_cam
+        if self.virtual_cam and self.uvc:
+            print("Warning: Pick either --virtual_cam OR --uvc, turning virtual_cam off")
+            self.virtual_cam = False
         self.fullscreen = fullscreen
         if (self.interact_2d or self.interaction_mode == 'interact2D') and self.interaction_file :
             self.image_max = self.interaction_file
@@ -615,10 +624,12 @@ class HandTrackerRenderer:
     def waitKey(self, delay=1):
         if not self.virtual_cam:
             if self.show_fps:
-                    self.tracker.fps.draw(self.frame, orig=(50,50), size=1, color=(240,180,100))
+                self.tracker.fps.draw(self.frame, orig=(50,50), size=1, color=(240,180,100))
         if self.virtual_cam:
                 # Send the frame to the virtual camera
                 self.virtual_cam_output.send(cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB))
+        elif self.uvc:
+            self.uvc_device.sendFrame(self.frame)
         else:
             if self.fullscreen:
                 cv2.namedWindow("Hand tracking", cv2.WINDOW_NORMAL)

@@ -4,6 +4,7 @@
 from HandTrackerRenderer import HandTrackerRenderer
 import argparse
 import socket
+import depthai as dai
 
 def receive_messages(sock):
     while True:
@@ -116,6 +117,7 @@ parser_renderer.add_argument("--interaction_mode", type=str,
                              help="Allow For Interaction Mode to be set to Drawing, 2D or 3D")
 parser_renderer.add_argument("--interaction_file", type=str,
                              help="Allow For Interaction File to be set for 2D or 3D injection")
+parser_renderer.add_argument("--uvc", action="store_true", help="Enable UVC device mode")
 
 args = parser.parse_args()
 dargs = vars(args)
@@ -126,7 +128,7 @@ if args.edge:
     tracker_args['use_same_image'] = not args.dont_force_same_image
 else:
     from HandTracker import HandTracker
-
+    
 if args.messages:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind(('localhost', 12345))
@@ -135,6 +137,10 @@ if args.messages:
     conn, addr = sock.accept()
     print(f"Connected by {addr}")
 
+if args.uvc:
+    # Create a UVC device
+    print("Creating UVC Device")
+    uvc_device = dai.UVCDevice(1280, 720, 20)
     
 tracker = HandTracker(
         input_src=args.input, 
@@ -163,7 +169,8 @@ renderer = HandTrackerRenderer(
         interaction_file=args.interaction_file,
         interact_3d=args.interact3D,
         fullscreen=args.fullscreen,
-        virtual_cam=args.virtual_cam)
+        virtual_cam=args.virtual_cam,
+        uvc=uvc_device)
 
 # Start a separate thread to receive messages from the controller
 import threading
@@ -190,3 +197,6 @@ tracker.exit()
 if(args.messages):
     conn.close()
     sock.close()
+if(args.uvc):
+    print("Closing UVC Device")
+    uvc_device.close()
