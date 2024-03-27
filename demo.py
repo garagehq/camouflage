@@ -119,6 +119,7 @@ parser_renderer.add_argument("--interaction_file", type=str,
 
 args = parser.parse_args()
 dargs = vars(args)
+# args.internal_frame_height = 600 if args.internal_frame_height is None else args.internal_frame_height
 tracker_args = {a:dargs[a] for a in ['pd_model', 'lm_model', 'internal_fps', 'internal_frame_height'] if dargs[a] is not None}
 
 if args.edge:

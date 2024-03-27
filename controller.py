@@ -19,7 +19,7 @@ class Controller:
         self.window.protocol("WM_DELETE_WINDOW", self.on_close)
         self.mode_var = tk.StringVar(value=self.interaction_mode)
         self.file_path_var = tk.StringVar()
-        self.hide_var = tk.BooleanVar(value=False)
+        self.hide_var = tk.BooleanVar(value=True)
         self.virtual_cam_var = tk.BooleanVar(value=False)
         self.fullscreen_var = tk.BooleanVar(value=False)
         self.interact2d_button = None
@@ -185,7 +185,8 @@ class Controller:
             "--gesture",
             "--lm_model", ".\\models\\hand_landmark_lite-2022-11-12_sh4.blob",
             "--messages",
-            "--edge"
+            "--edge",
+            "-f 15"
         ]
 
         if self.interaction_mode != 'none':

@@ -63,6 +63,8 @@ class HandTrackerRenderer:
         elif (self.interact_3d or self.interaction_mode == 'interact3D') and self.interaction_file is None:
             self.model_path =  "img/test.stl"
             print("Setting Default STL File")
+        self.stl_loading = False
+        self.stl_loading_thread = None
         self.image = None
         self.mesh = None
         self.mesh_image = None
@@ -77,6 +79,7 @@ class HandTrackerRenderer:
         self.virtual_cam = virtual_cam
         self.fullscreen = fullscreen
         self.image_position = None
+        self.loading_position = None
         self.fist_start_time = None
         self.fist_duration = 1  # Duration in seconds to hold the fist gesture
         self.draw_mode = draw_mode
@@ -87,7 +90,7 @@ class HandTrackerRenderer:
         self.peace_gesture_duration = 0.5
         self.index_finger_start_time = None
         self.index_finger_duration = 0.1  # Duration in seconds to hold the index finger before starting to draw
-        self.line_color = (0, 0, 255)  # Red color for drawing
+        self.line_color = (0, 255, 0)  # Red color for drawing
         self.line_thickness = 3  # Line thickness
         # Rendering flags
         if self.tracker.use_lm:
@@ -124,6 +127,12 @@ class HandTrackerRenderer:
             self.mesh_image = self.render_mesh_to_image(self.model_path, self.rotation_x_angle, self.rotation_y_angle)
             self.mesh_dirty = False
     
+    def load_stl_threaded(self, model_path):
+        self.stl_loading = True
+        self.mesh_image = self.render_mesh_to_image(model_path)
+        self.mesh_dirty = False
+        self.stl_loading = False
+        
     def initialize_mesh_data(self, mesh_file):
         self.pyrender_mesh, self.trimesh_mesh = stl_to_pyrender_and_trimesh_mesh(mesh_file)
         centroid = self.trimesh_mesh.centroid
@@ -327,7 +336,9 @@ class HandTrackerRenderer:
                             self.draw_points.append([index_finger_tip])  # Start a new line
                         else:
                             self.draw_points[-1].append(index_finger_tip)  # Add point to the current line
-                    cv2.circle(frame, tuple(index_finger_tip), 30, (0, 255, 0), -1)  # Draw a green filled circle around the index finger tip
+                    overlay = frame.copy()
+                    cv2.circle(overlay, tuple(index_finger_tip), 30, (0, 255, 0), -1)
+                    cv2.addWeighted(overlay, 0.5, frame, 0.5, 0, frame)
                 elif hand.gesture == "PEACE":
                     peace_gesture_detected = True
                 elif hand.gesture == "FOUR":
@@ -427,6 +438,9 @@ class HandTrackerRenderer:
             else:
                 self.prev_peace_distance = None
             if move_image and self.image is not None and len(peace_positions) == 1 and self.image_position is not None:
+                overlay = frame.copy()
+                cv2.circle(overlay, tuple(peace_positions[0]), 50, (128, 128, 128), -1)
+                cv2.addWeighted(overlay, 0.5, frame, 0.5, 0, frame)
                 # Check if the index finger is on the image
                 if self.is_finger_on_image(peace_positions[0], self.image_position, self.image):
                     # Update the image position based on the index finger movement
@@ -466,13 +480,18 @@ class HandTrackerRenderer:
                         else:
                             self.mesh_visible = True
                             if self.mesh_image is None:
-                                self.mesh_image = self.render_mesh_to_image(self.model_path)
-                                self.mesh_dirty = False
-                                self.image_position = (fist_position[0] - self.mesh_image.shape[1] // 2,
-                                                        fist_position[1] - self.mesh_image.shape[0] // 2)
+                                if not self.stl_loading:
+                                    self.stl_loading_thread = threading.Thread(
+                                        target=self.load_stl_threaded, args=(self.model_path,))
+                                    self.stl_loading_thread.start()
+                                self.image_position = (
+                                    fist_position[0] - 50, fist_position[1] - 50)
+                                self.loading_position = (self.image_position[0], self.image_position[1] + 50)
                             else:
                                 self.image_position = (fist_position[0] - self.mesh_image.shape[1] // 2,
-                                                        fist_position[1] - self.mesh_image.shape[0] // 2)
+                                                       fist_position[1] - self.mesh_image.shape[0] // 2)
+                                self.loading_position = (
+                                    self.image_position[0], self.image_position[1] + 50)
                         self.fist_start_time = None
                 elif hand.gesture == "PEACE":
                     peace_detected = True
@@ -514,6 +533,9 @@ class HandTrackerRenderer:
                 self.prev_peace_distance = None
 
             if move_image and self.mesh_image is not None and len(peace_positions) == 1:
+                overlay = frame.copy()
+                cv2.circle(overlay, tuple(peace_positions[0]), 50, (128, 128, 128), -1)
+                cv2.addWeighted(overlay, 0.5, frame, 0.5, 0, frame)
                 if self.is_finger_on_image(peace_positions[0], self.image_position, self.mesh_image):
                     image_height, image_width = self.mesh_image.shape[:2]
                     x, y = peace_positions[0]
@@ -533,7 +555,23 @@ class HandTrackerRenderer:
                 if self.rendering_thread is None or not self.rendering_thread.is_alive():
                     self.rendering_thread = threading.Thread(target=self.render_mesh_threaded)
                     self.rendering_thread.start()
-            if self.mesh_image is not None and self.mesh_visible:
+            if self.stl_loading:
+                # Display loading indicator
+                center = self.loading_position
+                angle = (time.time() * 180) % 360
+                rect_size = (50, 20)
+                rect_points = np.array([
+                    [-rect_size[0] // 2, -rect_size[1] // 2],
+                    [rect_size[0] // 2, -rect_size[1] // 2],
+                    [rect_size[0] // 2, rect_size[1] // 2],
+                    [-rect_size[0] // 2, rect_size[1] // 2]
+                ], dtype=np.int32)
+                rotation_matrix = cv2.getRotationMatrix2D((0, 0), angle, 1)
+                rotated_points = np.dot(rect_points, rotation_matrix[:, :2].T) + center
+                rotated_points = rotated_points.astype(np.int32)  # Convert to integer coordinates
+                if len(rotated_points) > 0:
+                    cv2.drawContours(frame, [rotated_points], 0, (255, 255, 255), 2)
+            if self.mesh_image is not None and self.mesh_visible and not self.stl_loading:
                 frame = self.overlay_image(frame, self.mesh_image, self.image_position)
             if index_finger_tip is not None:
                 cv2.circle(frame, tuple(index_finger_tip), 20, (0, 255, 0), -1)  # Draw a green filled circle around the index finger tip
@@ -543,6 +581,17 @@ class HandTrackerRenderer:
             for hand in hands:
                 if not self.hide_extras:
                     self.draw_hand(hand)
+        
+        if len(hands) == 1:
+            overlay = frame.copy()
+            cv2.circle(overlay, (frame.shape[1] - 30, 30), 10, (0, 255, 255), -1)
+            cv2.addWeighted(overlay, 0.75, frame, 0.25, 0, frame)
+        elif len(hands) == 2:
+            overlay = frame.copy()
+            cv2.circle(overlay, (frame.shape[1] - 60, 30), 10, (0, 255, 255), -1)
+            cv2.circle(overlay, (frame.shape[1] - 30, 30), 10, (0, 255, 255), -1)
+            cv2.addWeighted(overlay, 0.75, frame, 0.25, 0, frame)
+            
         # Flip the Frames to stop the mirrored effect (only without virtual_cam)
         if not self.virtual_cam:
             self.frame = cv2.flip(frame, 1)
@@ -613,7 +662,7 @@ class HandTrackerRenderer:
         cv2.destroyAllWindows()
 
     def waitKey(self, delay=1):
-        if not self.virtual_cam:
+        if not self.virtual_cam and not self.hide_extras:
             if self.show_fps:
                     self.tracker.fps.draw(self.frame, orig=(50,50), size=1, color=(240,180,100))
         if self.virtual_cam:
