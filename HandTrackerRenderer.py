@@ -76,6 +76,9 @@ class HandTrackerRenderer:
         self.rotation_y_angle = 0
         self.rendering_thread = None
         self.rendering_lock = threading.Lock()
+        self.prerendered_images = {}
+        self.prerendering_thread = None
+        self.prerendered_images_lock = threading.Lock()
         self.virtual_cam = virtual_cam
         self.fullscreen = fullscreen
         self.image_position = None
@@ -127,11 +130,23 @@ class HandTrackerRenderer:
             self.mesh_image = self.render_mesh_to_image(self.model_path, self.rotation_x_angle, self.rotation_y_angle)
             self.mesh_dirty = False
     
+
+    def prerender_angle(self, model_path, x_angle, y_angle):
+            with self.prerendered_images_lock:
+                self.prerendered_images[(x_angle, y_angle)] = self.render_mesh_to_image(
+                    model_path, x_angle, y_angle)
+
     def load_stl_threaded(self, model_path):
         self.stl_loading = True
         self.mesh_image = self.render_mesh_to_image(model_path)
         self.mesh_dirty = False
         self.stl_loading = False
+
+        # Generate pre-rendered images for all orientations
+        with self.prerendered_images_lock:
+            for x_angle in range(0, 360, 15):
+                for y_angle in range(0, 360, 15):
+                    self.prerendered_images[(x_angle, y_angle)] = self.render_mesh_to_image(model_path, x_angle, y_angle)
         
     def initialize_mesh_data(self, mesh_file):
         self.pyrender_mesh, self.trimesh_mesh = stl_to_pyrender_and_trimesh_mesh(mesh_file)
@@ -551,10 +566,16 @@ class HandTrackerRenderer:
                     self.rotation_y_angle += 15
                     if self.rotation_y_angle >= 360:
                         self.rotation_y_angle = 0
-                self.mesh_dirty = True
-                if self.rendering_thread is None or not self.rendering_thread.is_alive():
-                    self.rendering_thread = threading.Thread(target=self.render_mesh_threaded)
-                    self.rendering_thread.start()
+                with self.prerendered_images_lock:
+                    if (self.rotation_x_angle, self.rotation_y_angle) in self.prerendered_images:
+                        self.mesh_image = self.prerendered_images[(
+                            self.rotation_x_angle, self.rotation_y_angle)]
+                    else:
+                        self.stl_loading = True
+                        if self.prerendering_thread is None or not self.prerendering_thread.is_alive():
+                            self.prerendering_thread = threading.Thread(target=self.prerender_angle, args=(
+                                self.model_path, self.rotation_x_angle, self.rotation_y_angle))
+                            self.prerendering_thread.start()
             if self.stl_loading:
                 # Display loading indicator
                 center = self.loading_position
