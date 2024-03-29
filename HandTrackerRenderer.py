@@ -82,6 +82,7 @@ class HandTrackerRenderer:
         self.loading_position = None
         self.fist_start_time = None
         self.current_stl_file = None
+        self.current_2D_file = None
         self.fist_duration = 1  # Duration in seconds to hold the fist gesture
         self.draw_mode = draw_mode
         self.draw_now = False
@@ -388,7 +389,12 @@ class HandTrackerRenderer:
             index_finger_tip = None
             peace_positions = []
             move_image = False
-            
+            if self.image is not None and (self.current_2D_file != self.image_max):
+                old_size = (self.image.shape[1], self.image.shape[0])
+                self.current_2D_file = self.image_max
+                self.image = cv2.imread(self.image_max, cv2.IMREAD_UNCHANGED)
+                self.image, self.image_position = self.resize_image(
+                    self.image, old_size, self.image_position)
             for hand in hands:
                 if hand.gesture == "PEACE":
                     peace_detected = True
@@ -405,6 +411,7 @@ class HandTrackerRenderer:
                         if self.image is None:
                             # Load the image and set its initial position
                             self.image = cv2.imread(self.image_max, cv2.IMREAD_UNCHANGED)
+                            self.current_2D_file = self.image_max
                             fist_size = (2*(hand.landmarks[5][0] - hand.landmarks[17][0]), 2*(hand.landmarks[5][1] - hand.landmarks[0][1]))
                             self.image, self.image_position = self.resize_image(self.image, fist_size, hand.landmarks[9])
                             frame = self.overlay_image(frame, self.image, self.image_position)
