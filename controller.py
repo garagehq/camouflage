@@ -29,6 +29,8 @@ class Controller:
         self.create_widgets()
         self.update_interaction_button()
         self.drawing_submenu.pack_forget()
+        self.stl_color_submenu.pack_forget()
+
 
     def create_drag_drop_frame(self):
         drag_drop_frame = ttk.Frame(
@@ -64,8 +66,11 @@ class Controller:
             "Orange": (0, 165, 255)
         }
         if color in color_map:
-            self.send_message(
-                f"change_drawing_color {color_map[color][0]} {color_map[color][1]} {color_map[color][2]}")
+            try:
+                self.send_message(
+                    f"change_drawing_color {color_map[color][0]} {color_map[color][1]} {color_map[color][2]}")
+            except Exception as e:
+                print(e)
 
     def create_widgets(self):
         mode_frame = tk.Frame(self.window)
@@ -143,7 +148,74 @@ class Controller:
         self.start_button = tk.Button(
             self.window, text="START", command=self.toggle_demo)
         self.start_button.pack(pady=20)
+        
+        self.stl_color_submenu = tk.Frame(self.window)
+        tk.Label(self.stl_color_submenu, text="STL Color:").pack(side=tk.LEFT)
 
+        colors = ["Purple", "Red", "Green", "Blue", "Yellow", "Orange"]
+        self.stl_color_var = tk.StringVar(value="Purple")
+
+        stl_color_dropdown = tk.Menubutton(
+            self.stl_color_submenu,
+            textvariable=self.stl_color_var,
+            width=10,
+            bg=self.stl_color_var.get().lower(),
+            relief=tk.RAISED
+        )
+        stl_color_dropdown.pack(side=tk.LEFT)
+
+        stl_color_menu = tk.Menu(stl_color_dropdown, tearoff=0)
+        for color in colors:
+            stl_color_menu.add_command(
+                label=color,
+                command=lambda c=color: [self.stl_color_var.set(
+                    c), self.change_stl_color(c), stl_color_dropdown.config(bg=c.lower())]
+            )
+        stl_color_dropdown["menu"] = stl_color_menu
+
+        self.lighting_submenu = tk.Frame(self.window)
+        tk.Label(self.lighting_submenu, text="Lighting:").pack(side=tk.LEFT)
+
+        lighting_options = ["Low", "Medium", "High"]
+        self.lighting_var = tk.StringVar(value="Medium")
+
+        lighting_dropdown = tk.OptionMenu(
+            self.lighting_submenu,
+            self.lighting_var,
+            *lighting_options,
+            command=self.change_lighting
+        )
+        lighting_dropdown.pack(side=tk.LEFT)
+
+    def change_stl_color(self, color):
+        color_map = {
+            "Purple": (255, 0, 255),
+            "Red": (255, 0, 0),
+            "Green": (0, 255, 0),
+            "Blue": (0, 0, 255),
+            "Yellow": (255, 255, 0),
+            "Orange": (255, 165, 0)
+        }
+        if color in color_map:
+            try:
+                self.send_message(
+                    f"change_stl_color {color_map[color][0]} {color_map[color][1]} {color_map[color][2]}")
+            except Exception as e:
+                print(e)
+
+    def change_lighting(self, lighting):
+        lighting_map = {
+            "Low": (0.25, 0.25, 0.25),
+            "Medium": (0.5, 0.5, 0.5),
+            "High": (0.75, 0.75, 0.75)
+        }
+        if lighting in lighting_map:
+            try:
+                self.send_message(
+                    f"change_lighting {lighting_map[lighting][0]} {lighting_map[lighting][1]} {lighting_map[lighting][2]}")
+            except Exception as e:
+                print(e)
+            
     def toggle_demo(self):
         if self.process is None:
             self.start_demo()
@@ -168,8 +240,17 @@ class Controller:
     def set_interaction_mode(self, mode):
         if mode == "draw" and self.process is not None:
             self.drawing_submenu.pack(pady=10)
+            self.stl_color_submenu.pack_forget()
+            self.lighting_submenu.pack_forget()
+        elif mode == "interact" and self.interaction_file_type == "interact3D":
+            self.drawing_submenu.pack_forget()
+            self.stl_color_submenu.pack(pady=10)
+            self.lighting_submenu.pack(pady=10)
         else:
             self.drawing_submenu.pack_forget()
+            self.stl_color_submenu.pack_forget()
+            self.lighting_submenu.pack_forget()
+
         if mode == 'interact' and self.interaction_file_type not in ['interact2D', 'interact3D']:
             tk.messagebox.showwarning(
                 "Warning", "Please select a valid file (PNG, JPG, JPEG, or STL) before selecting Interact mode.")
@@ -200,9 +281,15 @@ class Controller:
             self.file_path_var.set(file_path)
             self.update_interaction_button()
 
-            if self.interaction_mode == 'interact':
-                interaction_mode = 'interact2D' if self.interaction_file_type == 'interact2D' else 'interact3D'
+            if self.interaction_file_type in ['interact2D', 'interact3D']:
+                # Automatically select the "interact" radio button
+                self.set_interaction_mode('interact')
+            else:
+                # Reset to "none" mode if an invalid file is loaded
+                self.set_interaction_mode('none')
+
             if self.process:
+                interaction_mode = 'interact2D' if self.interaction_file_type == 'interact2D' else 'interact3D'
                 self.send_message(interaction_mode + ' ' + file_path)
         else:
             messagebox.showerror(
@@ -264,13 +351,23 @@ class Controller:
             print("Failed to establish socket connection after maximum retries.")
             self.stop_demo()
 
+        time.sleep(1)
         if self.interaction_mode == "draw":
             self.drawing_submenu.pack(pady=10)
             time.sleep(1)
             self.change_drawing_color(self.color_var.get())
-
+            time.sleep(0.25)
+        elif self.interaction_mode == "interact" and self.interaction_file_type == "interact3D":
+            self.stl_color_submenu.pack(pady=10)
+            self.lighting_submenu.pack(pady=10)
+            time.sleep(1.5)
+            self.change_stl_color(self.stl_color_var.get())
+            time.sleep(1.5)
+            self.change_lighting(self.lighting_var.get())
         else:
             self.drawing_submenu.pack_forget()
+            self.stl_color_submenu.pack_forget()
+            self.lighting_submenu.pack_forget()
         print("Connection Established!")
 
     def display_process_output(self):

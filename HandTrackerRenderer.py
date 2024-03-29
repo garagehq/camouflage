@@ -18,15 +18,8 @@ LINES_BODY = [[4,2],[2,0],[0,1],[1,3],
             [6,12],[12,11],[11,5],
             [12,14],[14,16],[11,13],[13,15]]
 
-def stl_to_pyrender_and_trimesh_mesh(stl_file, color=(255, 0, 255)):
-    # Load the STL file as a trimesh mesh for bounding box calculation
-    trimesh_mesh = trimesh.load_mesh(stl_file)
 
-    # Create a pyrender mesh from the trimesh mesh
-    material = pyrender.MetallicRoughnessMaterial(baseColorFactor=color)
-    pyrender_mesh = pyrender.Mesh.from_trimesh(trimesh_mesh, material=material)
 
-    return pyrender_mesh, trimesh_mesh
 
 class HandTrackerRenderer:
     def __init__(self, 
@@ -49,6 +42,10 @@ class HandTrackerRenderer:
         self.hide_extras = hide_extras
         self.image_max = None
         self.model_path = None
+        self.stl_color = (255, 0, 255)  # Default STL color (Purple)
+        self.lighting = (0.5, 0.5, 0.5)  # Default lighting (Medium)
+        self.current_stl_color = self.stl_color
+        self.current_lighting = self.lighting
         self.virtual_cam = virtual_cam
         self.fullscreen = fullscreen
         if (self.interact_2d or self.interaction_mode == 'interact2D') and self.interaction_file :
@@ -129,18 +126,30 @@ class HandTrackerRenderer:
             self.mesh_image = self.render_mesh_to_image(self.model_path, self.rotation_x_angle, self.rotation_y_angle)
             self.mesh_dirty = False
     
+    def stl_to_pyrender_and_trimesh_mesh(self, stl_file):
+        # Load the STL file as a trimesh mesh for bounding box calculation
+        trimesh_mesh = trimesh.load_mesh(stl_file)
+
+        # Create a pyrender mesh from the trimesh mesh
+        material = pyrender.MetallicRoughnessMaterial(
+            baseColorFactor=self.stl_color)
+        pyrender_mesh = pyrender.Mesh.from_trimesh(trimesh_mesh, material=material)
+
+        return pyrender_mesh, trimesh_mesh
     def load_stl_threaded(self, model_path):
-        if model_path != self.current_stl_file:
-            self.current_stl_file = model_path
-            self.pyrender_mesh = None
-            self.trimesh_mesh = None
-            self.stl_loading = True
-            self.mesh_image = self.render_mesh_to_image(model_path)
-            self.mesh_dirty = False
-            self.stl_loading = False
+        self.current_stl_file = model_path
+        self.current_stl_color = self.stl_color
+        self.current_lighting = self.lighting
+        self.mesh_dirty = True
+        self.pyrender_mesh = None
+        self.trimesh_mesh = None
+        self.stl_loading = True
+        self.mesh_image = self.render_mesh_to_image(model_path)
+        self.mesh_dirty = False
+        self.stl_loading = False
         
     def initialize_mesh_data(self, mesh_file):
-        self.pyrender_mesh, self.trimesh_mesh = stl_to_pyrender_and_trimesh_mesh(
+        self.pyrender_mesh, self.trimesh_mesh = self.stl_to_pyrender_and_trimesh_mesh(
             mesh_file)
         centroid = self.trimesh_mesh.centroid
         translation_to_origin = trimesh.transformations.translation_matrix(-centroid)
@@ -160,7 +169,8 @@ class HandTrackerRenderer:
         rotation_y = np.radians(rotation_y_angle)
         
         # Create a scene
-        scene = pyrender.Scene(bg_color=[0, 0, 0, 0], ambient_light=[0.25, 0.25, 0.25])
+        scene = pyrender.Scene(
+            bg_color=[0, 0, 0, 0], ambient_light=self.lighting)
         
         rotation_matrix = trimesh.transformations.euler_matrix(rotation_x, rotation_y, 0)
         
@@ -482,10 +492,14 @@ class HandTrackerRenderer:
             peace_positions = []
             three_positions = []
             move_image = False
-            if self.mesh_image is not None and (self.current_stl_file != self.interaction_file):
+            if self.mesh_image is not None and (self.current_stl_file != self.interaction_file or self.current_stl_color != self.stl_color or self.current_lighting != self.lighting):
                 self.stl_loading_thread = threading.Thread(
                                         target=self.load_stl_threaded, args=(self.model_path,))
                 self.stl_loading_thread.start()
+            elif(self.current_stl_file != self.interaction_file or self.current_stl_color != self.stl_color or self.current_lighting != self.lighting):
+                self.current_stl_file = self.model_path
+                self.current_stl_color = self.stl_color
+                self.current_lighting = self.lighting
             for hand in hands:
                 if hand.gesture == "FIST":
                     fist_detected = True

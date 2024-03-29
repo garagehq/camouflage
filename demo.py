@@ -64,6 +64,20 @@ def receive_messages(sock):
                     r, g, b = map(int, color_values)
                     renderer.line_color = (r, g, b)
                     print("Line Color", renderer.line_color)
+            elif data.startswith("change_stl_color"):
+                print("Received STL Color Changing")
+                color_values = data.split(" ")[1:]
+                if len(color_values) == 3:
+                    r, g, b = map(int, color_values)
+                    renderer.stl_color = (b, g, r)
+                    print("STL Color", renderer.stl_color)
+            elif data.startswith("change_lighting"):
+                print("Received Lighting Changing")
+                lighting_values = data.split(" ")[1:]
+                if len(lighting_values) == 3:
+                    x, y, z = map(float, lighting_values)
+                    renderer.lighting = (x, y, z)
+                    print("Lighting", renderer.lighting)
                 
         except socket.error as e:
             print(f"Socket error: {e}")
