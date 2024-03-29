@@ -287,7 +287,7 @@ class Controller:
             self.socket.close()
             self.socket = None
         self.drawing_submenu.pack_forget()
-        time.sleep(1)  # Add a small delay before restarting the process
+        time.sleep(0.25)  # Add a small delay to ensure the process is terminated
 
     def send_message(self, message):
         self.socket.send(message.encode())
