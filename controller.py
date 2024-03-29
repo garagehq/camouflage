@@ -46,10 +46,19 @@ class Controller:
 
         self.drag_drop_frame = drag_drop_frame
 
+
     def drop_file(self, event):
         file_path = event.data
-        self.validate_and_set_file(file_path)
-
+        if '{' in file_path:
+            # The file path is in the format "{path}"
+            file_path = file_path[1:-1]  # Remove the curly braces
+        _, file_extension = os.path.splitext(file_path)
+        if file_extension.lower() in [".png", ".jpg", ".jpeg", ".stl"]:
+            self.validate_and_set_file(file_path)
+        else:
+            messagebox.showerror(
+                "Error", "Invalid file type. Please drop a PNG, JPEG, JPG, or STL file.")
+            
     def update_interaction_button(self):
         if self.interaction_file_type in ["interact2D", "interact3D"]:
             self.interact_button.config(state=tk.NORMAL)
