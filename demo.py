@@ -57,6 +57,13 @@ def receive_messages(sock):
                 renderer.interact_2d = False
                 renderer.interact_3d = False
                 renderer.draw_mode = False
+            elif data.startswith("change_drawing_color"):
+                print("Received Color Changing")
+                color_values = data.split(" ")[1:]
+                if len(color_values) == 3:
+                    r, g, b = map(int, color_values)
+                    renderer.line_color = (r, g, b)
+                    print("Line Color", renderer.line_color)
                 
         except socket.error as e:
             print(f"Socket error: {e}")
@@ -132,7 +139,7 @@ if args.messages:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind(('localhost', 12345))
     print("Waiting for a connection...")
-    sock.listen(5)
+    sock.listen(10)
     conn, addr = sock.accept()
     print(f"Connected by {addr}")
 

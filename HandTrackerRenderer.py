@@ -81,6 +81,7 @@ class HandTrackerRenderer:
         self.image_position = None
         self.loading_position = None
         self.fist_start_time = None
+        self.current_stl_file = None
         self.fist_duration = 1  # Duration in seconds to hold the fist gesture
         self.draw_mode = draw_mode
         self.draw_now = False
@@ -128,13 +129,18 @@ class HandTrackerRenderer:
             self.mesh_dirty = False
     
     def load_stl_threaded(self, model_path):
-        self.stl_loading = True
-        self.mesh_image = self.render_mesh_to_image(model_path)
-        self.mesh_dirty = False
-        self.stl_loading = False
+        if model_path != self.current_stl_file:
+            self.current_stl_file = model_path
+            self.pyrender_mesh = None
+            self.trimesh_mesh = None
+            self.stl_loading = True
+            self.mesh_image = self.render_mesh_to_image(model_path)
+            self.mesh_dirty = False
+            self.stl_loading = False
         
     def initialize_mesh_data(self, mesh_file):
-        self.pyrender_mesh, self.trimesh_mesh = stl_to_pyrender_and_trimesh_mesh(mesh_file)
+        self.pyrender_mesh, self.trimesh_mesh = stl_to_pyrender_and_trimesh_mesh(
+            mesh_file)
         centroid = self.trimesh_mesh.centroid
         translation_to_origin = trimesh.transformations.translation_matrix(-centroid)
         translation_back = trimesh.transformations.translation_matrix(centroid)
@@ -146,7 +152,8 @@ class HandTrackerRenderer:
     
     def render_mesh_to_image(self, mesh_file, rotation_x_angle=0, rotation_y_angle=0):
         if self.pyrender_mesh is None or self.trimesh_mesh is None:
-            self.centroid, self.translation_to_origin, self.translation_back, self.distance, self.fov = self.initialize_mesh_data(mesh_file)
+            self.centroid, self.translation_to_origin, self.translation_back, self.distance, self.fov = self.initialize_mesh_data(
+                mesh_file)
     
         rotation_x = np.radians(rotation_x_angle)
         rotation_y = np.radians(rotation_y_angle)
@@ -337,7 +344,7 @@ class HandTrackerRenderer:
                         else:
                             self.draw_points[-1].append(index_finger_tip)  # Add point to the current line
                     overlay = frame.copy()
-                    cv2.circle(overlay, tuple(index_finger_tip), 30, (0, 255, 0), -1)
+                    cv2.circle(overlay, tuple(index_finger_tip), 30, self.line_color, -1)
                     cv2.addWeighted(overlay, 0.5, frame, 0.5, 0, frame)
                 elif hand.gesture == "PEACE":
                     peace_gesture_detected = True
@@ -468,6 +475,10 @@ class HandTrackerRenderer:
             peace_positions = []
             three_positions = []
             move_image = False
+            if self.mesh_image is not None and (self.current_stl_file != self.interaction_file):
+                self.stl_loading_thread = threading.Thread(
+                                        target=self.load_stl_threaded, args=(self.model_path,))
+                self.stl_loading_thread.start()
             for hand in hands:
                 if hand.gesture == "FIST":
                     fist_detected = True

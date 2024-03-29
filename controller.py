@@ -7,6 +7,7 @@ import time
 import os
 from tkinter import ttk
 from tkinterdnd2 import DND_FILES, TkinterDnD
+import threading
 
 class Controller:
     def __init__(self):
@@ -27,6 +28,7 @@ class Controller:
         self.interaction_file_type = None
         self.create_widgets()
         self.update_interaction_buttons()
+        self.drawing_submenu.pack_forget()
     
     def create_drag_drop_frame(self):
         drag_drop_frame = ttk.Frame(self.window, width=400, height=100, relief=tk.SOLID, borderwidth=2)
@@ -56,6 +58,19 @@ class Controller:
             self.interact2d_button.config(state=tk.DISABLED)
             self.interact3d_button.config(state=tk.DISABLED)
 
+    def change_drawing_color(self, color):
+        color_map = {
+            "Red": (0, 0, 255),
+            "Green": (0, 255, 0),
+            "Blue": (255, 0, 0),
+            "Yellow": (0, 255, 255),
+            "Purple": (255, 0, 255),
+            "Orange": (0, 165, 255)
+        }
+        if color in color_map:
+            self.send_message(
+                f"change_drawing_color {color_map[color][0]} {color_map[color][1]} {color_map[color][2]}")
+            
     def create_widgets(self):
         mode_frame = tk.Frame(self.window)
         mode_frame.pack(pady=10)
@@ -78,6 +93,33 @@ class Controller:
                                                 command=lambda: self.set_interaction_mode('interact3D'))
         self.interact3d_button.pack(side=tk.LEFT)
 
+        self.drawing_submenu = tk.Frame(self.window)
+        self.drawing_submenu.pack(pady=10)
+
+        
+        tk.Label(self.drawing_submenu, text="Drawing Color:").pack(side=tk.LEFT)
+
+        colors = ["Green", "Red", "Blue", "Yellow", "Purple", "Orange"]
+        self.color_var = tk.StringVar(value="Green")
+
+        color_dropdown = tk.Menubutton(
+            self.drawing_submenu,
+            textvariable=self.color_var,
+            width=10,
+            bg=self.color_var.get().lower(),
+            relief=tk.RAISED
+        )
+        color_dropdown.pack(side=tk.LEFT)
+
+        color_menu = tk.Menu(color_dropdown, tearoff=0)
+        for color in colors:
+            color_menu.add_command(
+                label=color,
+                command=lambda c=color: [self.color_var.set(
+                    c), self.change_drawing_color(c), color_dropdown.config(bg=c.lower())]
+            )
+        color_dropdown["menu"] = color_menu
+        
         file_frame = tk.Frame(self.window)
         file_frame.pack(pady=10)
 
@@ -130,9 +172,14 @@ class Controller:
         if self.socket:
             self.socket.close()
             self.socket = None
+        self.drawing_submenu.pack_forget()
 
 
     def set_interaction_mode(self, mode):
+        if mode == "draw" and self.process is not None:
+            self.drawing_submenu.pack(pady=10)
+        else:
+            self.drawing_submenu.pack_forget()
         if mode == 'interact2D' and self.interaction_file_type != 'interact2D':
                 tk.messagebox.showwarning("Warning", "Please select a valid PNG file before selecting Interact 2D mode.")
                 return
@@ -153,7 +200,7 @@ class Controller:
     def validate_and_set_file(self, file_path):
         if file_path and os.path.exists(file_path):
             _, file_extension = os.path.splitext(file_path)
-            if file_extension.lower() == ".png":
+            if file_extension.lower() in [".png", ".jpg", ".jpeg"]:
                 self.interaction_file_type = "interact2D"
             elif file_extension.lower() == ".stl":
                 self.interaction_file_type = "interact3D"
@@ -163,6 +210,11 @@ class Controller:
             self.interaction_file = file_path
             self.file_path_var.set(file_path)
             self.update_interaction_buttons()
+
+            if self.process and self.interaction_mode == 'interact3D':
+                self.send_message('interact3D ' + file_path)
+            if self.process and self.interaction_mode == 'interact2D':
+                self.send_message('interact2D ' + file_path)
         else:
             messagebox.showerror(
                 "Error", "File does not exist. Please select a valid file.")
@@ -172,10 +224,11 @@ class Controller:
             self.update_interaction_buttons()
 
     def select_file(self):
-        file_types = {'interact2D': ("PNG Files", "*.png"), 'interact3D': ("STL Files", "*.stl")}
+        file_types = {'interact2D': (
+            "Image Files", "*.png;*.jpg;*.jpeg"), 'interact3D': ("STL Files", "*.stl")}
         file_type = file_types.get(self.interaction_mode, ("All Files", "*.*"))
-        
-        file_path = filedialog.askopenfilename(filetypes=[file_type], defaultextension=file_type[1].split(".")[-1], title="Select File")
+        file_path = filedialog.askopenfilename(filetypes=[
+                                               file_type], defaultextension=file_type[1].split(".")[-1], title="Select File")
         self.validate_and_set_file(file_path)
 
     def start_demo(self):
@@ -206,8 +259,48 @@ class Controller:
         self.process = subprocess.Popen(command)
         time.sleep(2)  # Adjust the delay as needed
         
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect(('localhost', 12345))
+        max_retries = 3
+        retry_delay = 2
+        
+        print("Attempting the connection...")
+        for retry in range(max_retries):
+            try:
+                self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.socket.connect(('localhost', 12345))
+                break
+            except ConnectionRefusedError as e:
+                print(
+                    f"Connection refused. Retrying in {retry_delay} seconds... (Attempt {retry + 1}/{max_retries})")
+                time.sleep(retry_delay)
+        else:
+            print("Failed to establish socket connection after maximum retries.")
+            self.stop_demo()
+        
+        if self.interaction_mode == "draw":
+            self.drawing_submenu.pack(pady=10)
+            time.sleep(1)
+            self.change_drawing_color(self.color_var.get())
+            
+        else:
+            self.drawing_submenu.pack_forget()
+        print("Connection Established!")
+
+
+    def display_process_output(self):
+        while self.process.poll() is None:
+            output = self.process.stdout.readline()
+            if output:
+                print(output.strip())
+
+    def stop_demo(self):
+        if self.process:
+            self.process.terminate()
+            self.process = None
+        if self.socket:
+            self.socket.close()
+            self.socket = None
+        self.drawing_submenu.pack_forget()
+        time.sleep(1)  # Add a small delay before restarting the process
 
     def send_message(self, message):
         self.socket.send(message.encode())

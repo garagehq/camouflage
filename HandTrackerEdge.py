@@ -475,7 +475,12 @@ class HandTracker:
                 cv2.imshow("pre_lm_manip", pre_lm_manip)
 
         # Get result from device
-        res = marshal.loads(self.q_manager_out.get().getData())
+        try:
+            res = marshal.loads(self.q_manager_out.get().getData())
+        except RuntimeError as e:
+            print("ERROR:", e)
+            exit()
+            
         hands = []
         for i in range(len(res.get("lm_score",[]))):
             hand = self.extract_hand_data(res, i)
