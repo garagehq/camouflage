@@ -70,7 +70,7 @@ class Controller:
                 self.send_message(
                     f"change_drawing_color {color_map[color][0]} {color_map[color][1]} {color_map[color][2]}")
             except Exception as e:
-                print(e)
+                print("WARNING: (change_drawing_color) -" + e)
 
     def create_widgets(self):
         mode_frame = tk.Frame(self.window)
@@ -201,7 +201,7 @@ class Controller:
                 self.send_message(
                     f"change_stl_color {color_map[color][0]} {color_map[color][1]} {color_map[color][2]}")
             except Exception as e:
-                print(e)
+                print("WARNING: (change_stl_color) - "+e)
 
     def change_lighting(self, lighting):
         lighting_map = {
@@ -214,7 +214,7 @@ class Controller:
                 self.send_message(
                     f"change_lighting {lighting_map[lighting][0]} {lighting_map[lighting][1]} {lighting_map[lighting][2]}")
             except Exception as e:
-                print(e)
+                print("WARNING: (change_lighting) - " + e)
             
     def toggle_demo(self):
         if self.process is None:
@@ -306,69 +306,105 @@ class Controller:
         self.validate_and_set_file(file_path)
 
     def start_demo(self):
-        command = [
-            "python", "demo.py",
-            # "--pd_model", ".\\models\\palm_detection_lite-2022-08-30_sh4.blob",
-            "--gesture",
-            "--lm_model", ".\\models\\hand_landmark_lite-2022-11-12_sh4.blob",
-            "--messages",
-            "--edge",
-            "-f 15"
-        ]
-        
-        if self.interaction_mode != 'none':
-            interaction_mode = 'interact2D' if self.interaction_file_type == 'interact2D' else 'interact3D'
-            command.extend(["--interaction_mode", interaction_mode])
-            if self.interaction_file:
-                command.extend(["--interaction_file", self.interaction_file])
+        demo_thread = threading.Thread(target=self.run_demo)
+        demo_thread.start()
 
-        if self.hide_var.get():
-            command.append("--hide")
-
-        if self.virtual_cam_var.get():
-            command.append("--virtual_cam")
-
-        if self.fullscreen_var.get():
-            command.append("--fullscreen")
-
-        self.process = subprocess.Popen(command)
-        time.sleep(2)  # Adjust the delay as needed
-
-        max_retries = 3
-        retry_delay = 2
-
-        print("Attempting the connection...")
-        for retry in range(max_retries):
+    def run_demo(self):
+        while True:
             try:
-                self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.socket.connect(('localhost', 12345))
-                break
-            except ConnectionRefusedError as e:
-                print(
-                    f"Connection refused. Retrying in {retry_delay} seconds... (Attempt {retry + 1}/{max_retries})")
-                time.sleep(retry_delay)
-        else:
-            print("Failed to establish socket connection after maximum retries.")
-            self.stop_demo()
+                command = [
+                    "python", "demo.py",
+                    # "--pd_model", ".\\models\\palm_detection_lite-2022-08-30_sh4.blob",
+                    "--gesture",
+                    "--lm_model", ".\\models\\hand_landmark_lite-2022-11-12_sh4.blob",
+                    "--messages",
+                    "--edge",
+                    "-f 15"
+                ]
 
-        time.sleep(1)
-        if self.interaction_mode == "draw":
-            self.drawing_submenu.pack(pady=10)
-            time.sleep(1)
-            self.change_drawing_color(self.color_var.get())
-            time.sleep(0.25)
-        elif self.interaction_mode == "interact" and self.interaction_file_type == "interact3D":
-            self.stl_color_submenu.pack(pady=10)
-            self.lighting_submenu.pack(pady=10)
-            time.sleep(1.5)
-            self.change_stl_color(self.stl_color_var.get())
-            time.sleep(1.5)
-            self.change_lighting(self.lighting_var.get())
-        else:
-            self.drawing_submenu.pack_forget()
-            self.stl_color_submenu.pack_forget()
-            self.lighting_submenu.pack_forget()
-        print("Connection Established!")
+                if self.interaction_mode != 'none':
+                    interaction_mode = 'interact2D' if self.interaction_file_type == 'interact2D' else 'interact3D'
+                    command.extend(["--interaction_mode", interaction_mode])
+                    if self.interaction_file:
+                        command.extend(["--interaction_file", self.interaction_file])
+                
+                if self.interaction_mode == 'draw':
+                    command.append("--draw")
+                    
+                if self.hide_var.get():
+                    command.append("--hide")
+
+                if self.virtual_cam_var.get():
+                    command.append("--virtual_cam")
+
+                if self.fullscreen_var.get():
+                    command.append("--fullscreen")
+
+                self.process = subprocess.Popen(command)
+                time.sleep(2)  # Adjust the delay as needed
+
+                max_retries = 3
+                retry_delay = 2
+
+                print("Attempting the connection...")
+                for retry in range(max_retries):
+                    try:
+                        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        self.socket.connect(('localhost', 12345))
+                        break
+                    except ConnectionRefusedError as e:
+                        print(
+                            f"Connection refused. Retrying in {retry_delay} seconds... (Attempt {retry + 1}/{max_retries})")
+                        time.sleep(retry_delay)
+                else:
+                    print("Failed to establish socket connection after maximum retries.")
+                    self.stop_demo()
+                    break
+
+                time.sleep(1)
+                if self.interaction_mode == "draw":
+                    self.drawing_submenu.pack(pady=10)
+                    time.sleep(1)
+                    self.change_drawing_color(self.color_var.get())
+                    time.sleep(0.25)
+                elif self.interaction_mode == "interact" and self.interaction_file_type == "interact3D":
+                    self.stl_color_submenu.pack(pady=10)
+                    self.lighting_submenu.pack(pady=10)
+                    time.sleep(1.5)
+                    self.change_stl_color(self.stl_color_var.get())
+                    time.sleep(1.5)
+                    self.change_lighting(self.lighting_var.get())
+                else:
+                    self.drawing_submenu.pack_forget()
+                    self.stl_color_submenu.pack_forget()
+                    self.lighting_submenu.pack_forget()
+                print("Connection Established!")
+
+                # Monitor the process
+                while True:
+                    if self.process.poll() is not None:
+                        break
+                    time.sleep(2)
+
+                # Process has stopped, perform cleanup and restart
+                print("Demo process stopped. Restarting...")
+                self.stop_demo()
+
+                print("Restarting demo...")
+
+            except Exception as e:
+                print("Error occurred in demo.py:", str(e))
+                # Perform cleanup and restart
+                self.stop_demo()
+                time.sleep(1)
+
+                # Check if the demo should be restarted
+                if self.process is None:
+                    break
+
+                print("Restarting demo...")
+        # Demo has been stopped, perform final cleanup
+        self.stop_demo()   
 
     def display_process_output(self):
         while self.process.poll() is None:

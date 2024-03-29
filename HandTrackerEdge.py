@@ -460,8 +460,12 @@ class HandTracker:
         if self.laconic:
             video_frame = np.zeros((self.img_h, self.img_w, 3), dtype=np.uint8)
         else:
-            in_video = self.q_video.get()
-            video_frame = in_video.getCvFrame()       
+            try:
+                in_video = self.q_video.get()
+                video_frame = in_video.getCvFrame()
+            except Exception as e:
+                print("ERROR: (next_frame)1 -", e)
+                raise
 
         # For debugging
         if self.trace & 4:
@@ -477,9 +481,9 @@ class HandTracker:
         # Get result from device
         try:
             res = marshal.loads(self.q_manager_out.get().getData())
-        except RuntimeError as e:
-            print("ERROR:", e)
-            exit()
+        except Exception as e:
+            print("ERROR: (next_frame)2 -", e)
+            raise
             
         hands = []
         for i in range(len(res.get("lm_score",[]))):
