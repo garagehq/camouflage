@@ -403,6 +403,9 @@ class HandTrackerRenderer:
                 old_size = (self.image.shape[1], self.image.shape[0])
                 self.current_2D_file = self.image_max
                 self.image = cv2.imread(self.image_max, cv2.IMREAD_UNCHANGED)
+                if not self.virtual_cam:
+                    # Flip the self.image overlay picture horizontally
+                    self.image = cv2.flip(self.image, 1)
                 self.image, self.image_position = self.resize_image(
                     self.image, old_size, self.image_position)
             for hand in hands:
@@ -421,10 +424,12 @@ class HandTrackerRenderer:
                         if self.image is None:
                             # Load the image and set its initial position
                             self.image = cv2.imread(self.image_max, cv2.IMREAD_UNCHANGED)
+                            if not self.virtual_cam:
+                                # Flip the self.image overlay picture horizontally
+                                self.image = cv2.flip(self.image, 1)
                             self.current_2D_file = self.image_max
                             fist_size = (2*(hand.landmarks[5][0] - hand.landmarks[17][0]), 2*(hand.landmarks[5][1] - hand.landmarks[0][1]))
                             self.image, self.image_position = self.resize_image(self.image, fist_size, hand.landmarks[9])
-                            frame = self.overlay_image(frame, self.image, self.image_position)
                         else:
                             self.image = None
                             self.image_position = None
@@ -452,6 +457,9 @@ class HandTrackerRenderer:
                         # Load the original image and resize it to the new size
                         self.image = cv2.imread(self.image_max, cv2.IMREAD_UNCHANGED)
                         self.image = cv2.resize(self.image, new_size, interpolation=cv2.INTER_LANCZOS4)
+                        if not self.virtual_cam:
+                            # Flip the self.image overlay picture horizontally
+                            self.image = cv2.flip(self.image, 1)
                         # Update the image position based on the new size
                         self.image_position = (self.image_position[0] - (new_size[0] - self.image.shape[1]) // 2,
                                                 self.image_position[1] - (new_size[1] - self.image.shape[0]) // 2)
