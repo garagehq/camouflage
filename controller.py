@@ -79,7 +79,7 @@ class Controller:
                 self.send_message(
                     f"change_drawing_color {color_map[color][0]} {color_map[color][1]} {color_map[color][2]}")
             except Exception as e:
-                print("WARNING: (change_drawing_color) -" + e)
+                print("WARNING: (change_drawing_color) -" + str(e))
 
     def create_widgets(self):
         mode_frame = tk.Frame(self.window)
@@ -210,7 +210,7 @@ class Controller:
                 self.send_message(
                     f"change_stl_color {color_map[color][0]} {color_map[color][1]} {color_map[color][2]}")
             except Exception as e:
-                print("WARNING: (change_stl_color) - "+e)
+                print("WARNING: (change_stl_color) - "+str(e))
 
     def change_lighting(self, lighting):
         lighting_map = {
@@ -223,7 +223,7 @@ class Controller:
                 self.send_message(
                     f"change_lighting {lighting_map[lighting][0]} {lighting_map[lighting][1]} {lighting_map[lighting][2]}")
             except Exception as e:
-                print("WARNING: (change_lighting) - " + e)
+                print("WARNING: (change_lighting) - " + str(e))
             
     def toggle_demo(self):
         if self.process is None:
