@@ -183,50 +183,107 @@ class Controller:
         stl_color_dropdown["menu"] = stl_color_menu
 
         self.lighting_submenu = tk.Frame(self.window)
-        tk.Label(self.lighting_submenu, text="Lighting:").pack(side=tk.TOP)
+        # self.lighting_submenu.pack(pady=10)
 
-        self.lighting_x_var = tk.DoubleVar(value=0.5)
-        self.lighting_y_var = tk.DoubleVar(value=0.5)
-        self.lighting_z_var = tk.DoubleVar(value=0.5)
+        tk.Label(self.lighting_submenu, text="Lighting:").pack(side=tk.LEFT)
+
+        self.advanced_lighting_var = tk.BooleanVar(value=False)
+        self.advanced_lighting_button = tk.Checkbutton(
+            self.lighting_submenu,
+            text="Advanced Lighting",
+            variable=self.advanced_lighting_var,
+            command=self.toggle_advanced_lighting
+        )
+        self.advanced_lighting_button.pack(side=tk.LEFT)
+
+        self.preset_lighting_frame = tk.Frame(self.lighting_submenu)
+        self.preset_lighting_frame.pack(side=tk.TOP)
+
+        lighting_options = ["Low", "Medium", "High"]
+        self.lighting_var = tk.StringVar(value="Low")
+
+        for option in lighting_options:
+            tk.Radiobutton(
+                self.preset_lighting_frame,
+                text=option,
+                variable=self.lighting_var,
+                value=option,
+                command=lambda: self.change_lighting(self.lighting_var.get())
+            ).pack(side=tk.LEFT)
+
+        self.advanced_lighting_frame = tk.Frame(self.lighting_submenu)
+
+        self.lighting_x_var = tk.DoubleVar(value=0.25)
+        self.lighting_y_var = tk.DoubleVar(value=0.25)
+        self.lighting_z_var = tk.DoubleVar(value=0.25)
 
         self.lighting_x_entry = None
         self.lighting_y_entry = None
         self.lighting_z_entry = None
-        
+
         # Create sliders for x, y, and z lighting variables
-        self.lighting_x_slider = tk.Scale(self.lighting_submenu, from_=0, to=1, resolution=0.05, orient=tk.HORIZONTAL,
-                                        variable=self.lighting_x_var, command=self.change_lighting)
+        self.lighting_x_slider = tk.Scale(self.advanced_lighting_frame, from_=0, to=1, resolution=0.05, orient=tk.HORIZONTAL,
+                                        variable=self.lighting_x_var, command=self.update_lighting)
         self.lighting_x_slider.pack(side=tk.TOP, fill=tk.X)
 
-        self.lighting_y_slider = tk.Scale(self.lighting_submenu, from_=0, to=1, resolution=0.05, orient=tk.HORIZONTAL,
-                                        variable=self.lighting_y_var, command=self.change_lighting)
+        self.lighting_y_slider = tk.Scale(self.advanced_lighting_frame, from_=0, to=1, resolution=0.05, orient=tk.HORIZONTAL,
+                                        variable=self.lighting_y_var, command=self.update_lighting)
         self.lighting_y_slider.pack(side=tk.TOP, fill=tk.X)
 
-        self.lighting_z_slider = tk.Scale(self.lighting_submenu, from_=0, to=1, resolution=0.05, orient=tk.HORIZONTAL,
-                                        variable=self.lighting_z_var, command=self.change_lighting)
+        self.lighting_z_slider = tk.Scale(self.advanced_lighting_frame, from_=0, to=1, resolution=0.05, orient=tk.HORIZONTAL,
+                                        variable=self.lighting_z_var, command=self.update_lighting)
         self.lighting_z_slider.pack(side=tk.TOP, fill=tk.X)
 
         # Create input text boxes for x, y, and z lighting variables
-        self.lighting_x_entry = tk.Entry(self.lighting_submenu, textvariable=self.lighting_x_var, validate="focusout",
+        self.lighting_x_entry = tk.Entry(self.advanced_lighting_frame, textvariable=self.lighting_x_var, validate="focusout",
                                         validatecommand=self.validate_lighting_entry)
         self.lighting_x_entry.pack(side=tk.TOP)
 
-        self.lighting_y_entry = tk.Entry(self.lighting_submenu, textvariable=self.lighting_y_var, validate="focusout",
+        self.lighting_y_entry = tk.Entry(self.advanced_lighting_frame, textvariable=self.lighting_y_var, validate="focusout",
                                         validatecommand=self.validate_lighting_entry)
         self.lighting_y_entry.pack(side=tk.TOP)
 
-        self.lighting_z_entry = tk.Entry(self.lighting_submenu, textvariable=self.lighting_z_var, validate="focusout",
+        self.lighting_z_entry = tk.Entry(self.advanced_lighting_frame, textvariable=self.lighting_z_var, validate="focusout",
                                         validatecommand=self.validate_lighting_entry)
         self.lighting_z_entry.pack(side=tk.TOP)
-    
-    def change_lighting(self, *args):
+
+        self.advanced_lighting_frame.pack_forget()
+
+
+    def toggle_advanced_lighting(self):
+        if self.advanced_lighting_var.get():
+            self.preset_lighting_frame.pack_forget()
+            self.advanced_lighting_frame.pack(side=tk.TOP)
+        else:
+            self.advanced_lighting_frame.pack_forget()
+            self.preset_lighting_frame.pack(side=tk.TOP)
+
+
+    def change_lighting(self, lighting="Low"):
+        if not self.advanced_lighting_var.get():
+            lighting_map = {
+                "Low": (0.25, 0.25, 0.25),
+                "Medium": (0.5, 0.5, 0.5),
+                "High": (0.75, 0.75, 0.75)
+            }
+            if lighting in lighting_map:
+                try:
+                    self.send_message(
+                        f"change_lighting {lighting_map[lighting][0]} {lighting_map[lighting][1]} {lighting_map[lighting][2]}")
+                except Exception as e:
+                    print("WARNING: (change_lighting) - " + str(e))
+        else:
+            self.update_lighting()
+
+
+    def update_lighting(self, *args):
         x = self.lighting_x_var.get()
         y = self.lighting_y_var.get()
         z = self.lighting_z_var.get()
         try:
             self.send_message(f"change_lighting {x} {y} {z}")
         except Exception as e:
-            print("WARNING: (change_lighting) - " + str(e))
+            print("WARNING: (update_lighting) - " + str(e))
     
     def validate_lighting_entry(self):
         if self.lighting_x_entry is not None:
