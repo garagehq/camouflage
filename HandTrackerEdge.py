@@ -143,9 +143,11 @@ class HandTracker:
         self.use_handedness_average = use_handedness_average
         self.single_hand_tolerance_thresh = single_hand_tolerance_thresh
         self.use_same_image = use_same_image
-
-        self.device = dai.Device()
-
+        try:
+            self.device = dai.Device()
+        except Exception as e:
+            print("ERROR: (HandTrackerEdge) -", str(e))
+            raise
         if input_src == None or input_src == "rgb" or input_src == "rgb_laconic":
             # Note that here (in Host mode), specifying "rgb_laconic" has no effect
             # Color camera frames are systematically transferred to the host
@@ -464,7 +466,7 @@ class HandTracker:
                 in_video = self.q_video.get()
                 video_frame = in_video.getCvFrame()
             except Exception as e:
-                print("ERROR: (next_frame)1 -", e)
+                print("ERROR: (next_frame)1 -", str(e))
                 raise
 
         # For debugging
@@ -482,7 +484,7 @@ class HandTracker:
         try:
             res = marshal.loads(self.q_manager_out.get().getData())
         except Exception as e:
-            print("ERROR: (next_frame)2 -", e)
+            print("ERROR: (next_frame)2 -", str(e))
             raise
             
         hands = []
