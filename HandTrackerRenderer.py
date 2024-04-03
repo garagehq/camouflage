@@ -132,6 +132,8 @@ class HandTrackerRenderer:
 
         # Create a pyrender mesh from the trimesh mesh
         material = pyrender.MetallicRoughnessMaterial(
+            metallicFactor=0.25,  # Adjust the metallic factor (0.0 to 1.0)
+            roughnessFactor=0.5,  # Adjust the roughness factor (0.0 to 1.0)
             baseColorFactor=self.stl_color)
         pyrender_mesh = pyrender.Mesh.from_trimesh(trimesh_mesh, material=material)
 
@@ -179,7 +181,15 @@ class HandTrackerRenderer:
     
         mesh_node = pyrender.Node(mesh=self.pyrender_mesh, matrix=combined_transform)
         scene.add_node(mesh_node)
-    
+
+        # Create directional lights
+        light1 = pyrender.DirectionalLight(color=[1.0, 1.0, 1.0], intensity=1.0)
+        light2 = pyrender.DirectionalLight(color=[1.0, 1.0, 1.0], intensity=1.0)
+
+        # Add lights to the scene
+        scene.add(light1, pose=np.eye(4))
+        scene.add(light2, pose=np.array(
+            [[1, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]))
         # Create the camera pose
         camera_pose = np.eye(4)
         camera_pose[:3, 3] = [self.centroid[0], self.centroid[1], self.centroid[2] + self.distance]

@@ -442,7 +442,7 @@ class Controller:
                     time.sleep(1.5)
                     self.change_stl_color(self.stl_color_var.get())
                     time.sleep(1.5)
-                    self.change_lighting(self.lighting_var.get())
+                    self.change_lighting()
                 else:
                     self.drawing_submenu.pack_forget()
                     self.stl_color_submenu.pack_forget()
