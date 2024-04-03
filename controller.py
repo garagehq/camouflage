@@ -183,18 +183,91 @@ class Controller:
         stl_color_dropdown["menu"] = stl_color_menu
 
         self.lighting_submenu = tk.Frame(self.window)
-        tk.Label(self.lighting_submenu, text="Lighting:").pack(side=tk.LEFT)
+        tk.Label(self.lighting_submenu, text="Lighting:").pack(side=tk.TOP)
 
-        lighting_options = ["Low", "Medium", "High"]
-        self.lighting_var = tk.StringVar(value="Medium")
+        self.lighting_x_var = tk.DoubleVar(value=0.5)
+        self.lighting_y_var = tk.DoubleVar(value=0.5)
+        self.lighting_z_var = tk.DoubleVar(value=0.5)
 
-        lighting_dropdown = tk.OptionMenu(
-            self.lighting_submenu,
-            self.lighting_var,
-            *lighting_options,
-            command=self.change_lighting
-        )
-        lighting_dropdown.pack(side=tk.LEFT)
+        self.lighting_x_entry = None
+        self.lighting_y_entry = None
+        self.lighting_z_entry = None
+        
+        # Create sliders for x, y, and z lighting variables
+        self.lighting_x_slider = tk.Scale(self.lighting_submenu, from_=0, to=1, resolution=0.05, orient=tk.HORIZONTAL,
+                                        variable=self.lighting_x_var, command=self.change_lighting)
+        self.lighting_x_slider.pack(side=tk.TOP, fill=tk.X)
+
+        self.lighting_y_slider = tk.Scale(self.lighting_submenu, from_=0, to=1, resolution=0.05, orient=tk.HORIZONTAL,
+                                        variable=self.lighting_y_var, command=self.change_lighting)
+        self.lighting_y_slider.pack(side=tk.TOP, fill=tk.X)
+
+        self.lighting_z_slider = tk.Scale(self.lighting_submenu, from_=0, to=1, resolution=0.05, orient=tk.HORIZONTAL,
+                                        variable=self.lighting_z_var, command=self.change_lighting)
+        self.lighting_z_slider.pack(side=tk.TOP, fill=tk.X)
+
+        # Create input text boxes for x, y, and z lighting variables
+        self.lighting_x_entry = tk.Entry(self.lighting_submenu, textvariable=self.lighting_x_var, validate="focusout",
+                                        validatecommand=self.validate_lighting_entry)
+        self.lighting_x_entry.pack(side=tk.TOP)
+
+        self.lighting_y_entry = tk.Entry(self.lighting_submenu, textvariable=self.lighting_y_var, validate="focusout",
+                                        validatecommand=self.validate_lighting_entry)
+        self.lighting_y_entry.pack(side=tk.TOP)
+
+        self.lighting_z_entry = tk.Entry(self.lighting_submenu, textvariable=self.lighting_z_var, validate="focusout",
+                                        validatecommand=self.validate_lighting_entry)
+        self.lighting_z_entry.pack(side=tk.TOP)
+    
+    def change_lighting(self, *args):
+        x = self.lighting_x_var.get()
+        y = self.lighting_y_var.get()
+        z = self.lighting_z_var.get()
+        try:
+            self.send_message(f"change_lighting {x} {y} {z}")
+        except Exception as e:
+            print("WARNING: (change_lighting) - " + str(e))
+    
+    def validate_lighting_entry(self):
+        if self.lighting_x_entry is not None:
+            try:
+                value = float(self.lighting_x_entry.get())
+                if 0 <= value <= 1:
+                    self.lighting_x_var.set(value)
+                else:
+                    raise ValueError
+            except ValueError:
+                tk.messagebox.showwarning(
+                    "Invalid Input", "Please enter a value between 0 and 1.")
+                self.lighting_x_entry.delete(0, tk.END)
+                self.lighting_x_entry.insert(0, self.lighting_x_var.get())
+
+        if self.lighting_y_entry is not None:
+            try:
+                value = float(self.lighting_y_entry.get())
+                if 0 <= value <= 1:
+                    self.lighting_y_var.set(value)
+                else:
+                    raise ValueError
+            except ValueError:
+                tk.messagebox.showwarning(
+                    "Invalid Input", "Please enter a value between 0 and 1.")
+                self.lighting_y_entry.delete(0, tk.END)
+                self.lighting_y_entry.insert(0, self.lighting_y_var.get())
+
+        if self.lighting_z_entry is not None:
+            try:
+                value = float(self.lighting_z_entry.get())
+                if 0 <= value <= 1:
+                    self.lighting_z_var.set(value)
+                else:
+                    raise ValueError
+            except ValueError:
+                tk.messagebox.showwarning(
+                    "Invalid Input", "Please enter a value between 0 and 1.")
+                self.lighting_z_entry.delete(0, tk.END)
+                self.lighting_z_entry.insert(0, self.lighting_z_var.get())
+        return True
 
     def change_stl_color(self, color):
         color_map = {
@@ -211,19 +284,6 @@ class Controller:
                     f"change_stl_color {color_map[color][0]} {color_map[color][1]} {color_map[color][2]}")
             except Exception as e:
                 print("WARNING: (change_stl_color) - "+str(e))
-
-    def change_lighting(self, lighting):
-        lighting_map = {
-            "Low": (0.25, 0.25, 0.25),
-            "Medium": (0.5, 0.5, 0.5),
-            "High": (0.75, 0.75, 0.75)
-        }
-        if lighting in lighting_map:
-            try:
-                self.send_message(
-                    f"change_lighting {lighting_map[lighting][0]} {lighting_map[lighting][1]} {lighting_map[lighting][2]}")
-            except Exception as e:
-                print("WARNING: (change_lighting) - " + str(e))
             
     def toggle_demo(self):
         if self.process is None:
