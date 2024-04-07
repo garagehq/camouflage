@@ -5,6 +5,7 @@ import pyvirtualcam
 import trimesh
 import pyrender
 import threading
+import os
 
 LINES_HAND = [[0,1],[1,2],[2,3],[3,4], 
             [0,5],[5,6],[6,7],[7,8],
@@ -29,17 +30,18 @@ def stl_to_pyrender_and_trimesh_mesh(stl_file, color=(255, 0, 255)):
     return pyrender_mesh, trimesh_mesh
 
 class HandTrackerRenderer:
-    def __init__(self, 
-                    tracker,
-                    output=None,
-                    draw_mode=False,
-                    interact_2d=False,
-                    interact_3d=False,
-                    interaction_file=None,
-                    interaction_mode=None,
-                    hide_extras=False,
-                    virtual_cam=False,
-                    fullscreen=False):
+    def __init__(self,
+                 tracker,
+                 output=None,
+                 draw_mode=False,
+                 interact_2d=False,
+                 interact_3d=False,
+                 interaction_file=None,
+                 interaction_mode=None,
+                 hide_extras=False,
+                 virtual_cam=False,
+                 fullscreen=False):
+        
         self.tracker = tracker
         self.interaction_mode = interaction_mode
         self.draw_mode = draw_mode
@@ -95,6 +97,11 @@ class HandTrackerRenderer:
         self.index_finger_duration = 0.1  # Duration in seconds to hold the index finger before starting to draw
         self.line_color = (0, 255, 0)  # Red color for drawing
         self.line_thickness = 3  # Line thickness
+        self.prerender_threads = []
+        self.prerendered_images_lock = threading.Lock()
+        self.prerendering_thread = None
+        self.last_rotation_time = 0
+        self.rotation_delay = 0.7  # Delay in seconds between rotations
         # Rendering flags
         if self.tracker.use_lm:
             self.show_pd_box = False
@@ -127,8 +134,17 @@ class HandTrackerRenderer:
 
     def render_mesh_threaded(self):
         with self.rendering_lock:
-            self.mesh_image = self.render_mesh_to_image(self.model_path, self.rotation_x_angle, self.rotation_y_angle)
-            self.mesh_dirty = False
+            try:
+                self.mesh_image = self.render_mesh_to_image(self.model_path, self.rotation_x_angle, self.rotation_y_angle)
+                filename = f"renders/{os.path.basename(self.model_path)}_{self.rotation_x_angle}_{self.rotation_y_angle}_{self.stl_color[0]}_{self.stl_color[1]}_{self.stl_color[2]}.png"
+                threading.Thread(target=cv2.imwrite, args=(
+                    filename, self.mesh_image)).start()
+                self.mesh_dirty = False
+                self.stl_loading = False
+            except Exception as e:
+                print(f"Error rendering mesh: {str(e)}")
+                self.mesh_dirty = False
+                self.stl_loading = False
     
 
     def prerender_angle(self, model_path, x_angle, y_angle):
@@ -142,11 +158,63 @@ class HandTrackerRenderer:
         self.mesh_dirty = False
         self.stl_loading = False
 
-        # Generate pre-rendered images for all orientations
-        with self.prerendered_images_lock:
-            for x_angle in range(0, 360, 15):
-                for y_angle in range(0, 360, 15):
-                    self.prerendered_images[(x_angle, y_angle)] = self.render_mesh_to_image(model_path, x_angle, y_angle)
+        self.rotation_x_angle = prev_rotation_x_angle
+        self.rotation_y_angle = prev_rotation_y_angle
+
+        # Delete the previous pre-rendered images
+        self.delete_prerendered_images()
+
+        # Generate pre-rendered images for the initial orientation and save them to disk
+        self.prerender_angle(model_path, self.rotation_x_angle,
+                            self.rotation_y_angle, self.stl_color)
+
+        # Start pre-rendering the next possible rotations in a separate thread
+        prerender_thread = threading.Thread(target=self.prerender_next_rotations, args=(
+            model_path, self.rotation_x_angle, self.rotation_y_angle, self.stl_color))
+        prerender_thread.start()
+
+    def prerender_next_rotations(self, model_path, x_angle, y_angle, stl_color):
+        # Define the rotation step
+        rotation_step = 15
+
+        # Pre-render the next possible rotations
+        for i in range(1, 4):
+            next_x_angle = (x_angle + i * rotation_step) % 360
+            next_y_angle = (y_angle + i * rotation_step) % 360
+            self.prerender_angle(model_path, next_x_angle, y_angle, stl_color)
+            self.prerender_angle(model_path, x_angle, next_y_angle, stl_color)
+
+        # Terminate older pre-render threads if there are too many running
+        max_prerender_threads = 5
+        while len(self.prerender_threads) > max_prerender_threads:
+            oldest_thread = self.prerender_threads.pop(0)
+            oldest_thread.join()
+            
+    def prerender_angle(self, model_path, x_angle, y_angle, stl_color):
+        filename = f"renders/{os.path.basename(model_path)}_{x_angle}_{y_angle}_{stl_color[0]}_{stl_color[1]}_{stl_color[2]}.png"
+        if not os.path.exists(filename):
+            with self.prerendered_images_lock:
+                prerender_thread = threading.Thread(target=self._prerender_angle, args=(model_path, x_angle, y_angle, stl_color, filename))
+                prerender_thread.start()
+                self.prerender_threads.append(prerender_thread)
+
+    def _prerender_angle(self, model_path, x_angle, y_angle, stl_color, filename):
+        try:
+            prerendered_image = self.render_mesh_to_image(
+                model_path, x_angle, y_angle)
+            cv2.imwrite(filename, prerendered_image)
+        except Exception as e:
+            print(f"Error pre-rendering angle: {str(e)}")
+
+    def delete_prerendered_images(self):
+        folder_path = "renders"
+        for filename in os.listdir(folder_path):
+            file_path = os.path.join(folder_path, filename)
+            try:
+                if os.path.isfile(file_path):
+                    os.unlink(file_path)
+            except Exception as e:
+                print(f"Failed to delete {file_path}. Reason: {e}")
         
     def initialize_mesh_data(self, mesh_file):
         self.pyrender_mesh, self.trimesh_mesh = stl_to_pyrender_and_trimesh_mesh(mesh_file)
@@ -558,24 +626,39 @@ class HandTrackerRenderer:
                     image_y = y - image_height // 2
                     self.image_position = (image_x, image_y)
             if three_detected and not self.mesh_dirty:
+                current_time = time.time()
+                rotation_changed = False
                 if len(three_positions) == 1:
-                    self.rotation_x_angle += 15
-                    if self.rotation_x_angle >= 360:
-                        self.rotation_x_angle = 0
+                    if current_time - self.last_rotation_time >= self.rotation_delay:
+                        self.rotation_x_angle += 15
+                        if self.rotation_x_angle >= 360:
+                            self.rotation_x_angle = 0
+                        self.last_rotation_time = current_time
+                        rotation_changed = True
                 elif len(three_positions) == 2:
-                    self.rotation_y_angle += 15
-                    if self.rotation_y_angle >= 360:
-                        self.rotation_y_angle = 0
-                with self.prerendered_images_lock:
-                    if (self.rotation_x_angle, self.rotation_y_angle) in self.prerendered_images:
-                        self.mesh_image = self.prerendered_images[(
-                            self.rotation_x_angle, self.rotation_y_angle)]
+                    if current_time - self.last_rotation_time >= self.rotation_delay:
+                        self.rotation_y_angle += 15
+                        if self.rotation_y_angle >= 360:
+                            self.rotation_y_angle = 0
+                        self.last_rotation_time = current_time
+                        rotation_changed = True
+                if(rotation_changed):
+                    filename = f"renders/{os.path.basename(self.model_path)}_{self.rotation_x_angle}_{self.rotation_y_angle}_{self.stl_color[0]}_{self.stl_color[1]}_{self.stl_color[2]}.png"
+                    print("RENDERING:", filename)
+                    if os.path.exists(filename):
+                        self.mesh_image = cv2.imread(filename, cv2.IMREAD_UNCHANGED)
+                        print("File Exists")
                     else:
+                        self.mesh_dirty = True
                         self.stl_loading = True
-                        if self.prerendering_thread is None or not self.prerendering_thread.is_alive():
-                            self.prerendering_thread = threading.Thread(target=self.prerender_angle, args=(
-                                self.model_path, self.rotation_x_angle, self.rotation_y_angle))
-                            self.prerendering_thread.start()
+                        if self.rendering_thread is None or not self.rendering_thread.is_alive():
+                            self.rendering_thread = threading.Thread(
+                                target=self.render_mesh_threaded)
+                            self.rendering_thread.start()
+                        # Start pre-rendering the next possible rotations in a separate thread
+                        prerender_thread = threading.Thread(target=self.prerender_next_rotations, args=(
+                            self.model_path, self.rotation_x_angle, self.rotation_y_angle, self.stl_color))
+                        prerender_thread.start()
             if self.stl_loading:
                 # Display loading indicator
                 center = self.loading_position
