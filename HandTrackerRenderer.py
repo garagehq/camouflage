@@ -396,9 +396,9 @@ class HandTrackerRenderer:
                     overlay = frame.copy()
                     cv2.circle(overlay, tuple(index_finger_tip), 30, self.line_color, -1)
                     cv2.addWeighted(overlay, 0.5, frame, 0.5, 0, frame)
-                elif hand.gesture == "PEACE":
+                elif hand.gesture == "PEACE" and self.draw_points:
                     peace_gesture_detected = True
-                elif hand.gesture == "FOUR":
+                elif hand.gesture == "FOUR" and self.draw_points:
                     index_finger_tip = hand.landmarks[8]  # Index finger tip landmark
                     pinky_finger_tip = hand.landmarks[20]  # Pinky finger tip landmark
 
@@ -448,7 +448,7 @@ class HandTrackerRenderer:
                 self.image, self.image_position = self.resize_image(
                     self.image, old_size, self.image_position)
             for hand in hands:
-                if hand.gesture == "PEACE":
+                if hand.gesture == "PEACE" and self.image is not None:
                     peace_detected = True
                     peace_positions.append(hand.landmarks[8])  # Index finger tip landmark
                     if len(peace_positions) == 1:
@@ -528,10 +528,10 @@ class HandTrackerRenderer:
                 self.image_position = None
             if (self.interact_2d or (self.interaction_mode == 'interact2D')) and self.image is not None:
                 frame = self.overlay_image(frame, self.image, self.image_position)
-            if index_finger_tip is not None:
+            if index_finger_tip is not None and self.image is not None:
                 # Overlay the image on the frame at the current position
                 cv2.circle(frame, tuple(index_finger_tip), 20, (0, 255, 0), -1)  # Draw a green filled circle around the index finger tip
-        elif self.interact_3d  or (self.interaction_mode == 'interact3D'):
+        elif self.interact_3d or (self.interaction_mode == 'interact3D'):
             fist_detected = False
             peace_detected = False
             three_detected = False
@@ -568,11 +568,11 @@ class HandTrackerRenderer:
                                 self.loading_position = (self.image_position[0], self.image_position[1] + 50)
                             else:
                                 self.image_position = (fist_position[0] - self.mesh_image.shape[1] // 2,
-                                                       fist_position[1] - self.mesh_image.shape[0] // 2)
+                                                    fist_position[1] - self.mesh_image.shape[0] // 2)
                                 self.loading_position = (
                                     self.image_position[0], self.image_position[1] + 50)
                         self.fist_start_time = None
-                elif hand.gesture == "PEACE":
+                elif hand.gesture == "PEACE" and self.mesh_image is not None:
                     peace_detected = True
                     peace_positions.append(hand.landmarks[8])  # Index finger tip landmark
                     if len(peace_positions) == 1:
@@ -624,7 +624,7 @@ class HandTrackerRenderer:
                     image_x = x - image_width // 2
                     image_y = y - image_height // 2
                     self.image_position = (image_x, image_y)
-            if three_detected and not self.mesh_dirty:
+            if three_detected and not self.mesh_dirty and self.mesh_image is not None:
                 if len(three_positions) == 1:
                     self.rotation_x_angle += 30
                     if self.rotation_x_angle >= 360:
@@ -655,7 +655,7 @@ class HandTrackerRenderer:
                     cv2.drawContours(frame, [rotated_points], 0, (255, 255, 255), 2)
             if self.mesh_image is not None and self.mesh_visible and not self.model_loading:
                 frame = self.overlay_image(frame, self.mesh_image, self.image_position)
-            if index_finger_tip is not None:
+            if index_finger_tip is not None and self.mesh_image is not None:
                 cv2.circle(frame, tuple(index_finger_tip), 20, (0, 255, 0), -1)  # Draw a green filled circle around the index finger tip
             if not fist_detected:
                 self.fist_start_time = None
