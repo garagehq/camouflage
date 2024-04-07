@@ -42,9 +42,9 @@ class HandTrackerRenderer:
         self.hide_extras = hide_extras
         self.image_max = None
         self.model_path = None
-        self.stl_color = (255, 0, 255)  # Default STL color (Purple)
+        self.model_color = (255, 0, 255)  # Default Model color (Purple)
         self.lighting = (0.5, 0.5, 0.5)  # Default lighting (Medium)
-        self.current_stl_color = self.stl_color
+        self.current_model_color = self.model_color
         self.current_lighting = self.lighting
         self.virtual_cam = virtual_cam
         self.fullscreen = fullscreen
@@ -59,9 +59,9 @@ class HandTrackerRenderer:
             print("model_path", self.interaction_file)
         elif (self.interact_3d or self.interaction_mode == 'interact3D') and self.interaction_file is None:
             self.model_path =  "img/test.stl"
-            print("Setting Default STL File")
-        self.stl_loading = False
-        self.stl_loading_thread = None
+            print("Setting Default Model File")
+        self.model_loading = False
+        self.model_loading_thread = None
         self.image = None
         self.mesh = None
         self.mesh_image = None
@@ -78,7 +78,7 @@ class HandTrackerRenderer:
         self.image_position = None
         self.loading_position = None
         self.fist_start_time = None
-        self.current_stl_file = None
+        self.current_model_file = None
         self.current_2D_file = None
         self.fist_duration = 1  # Duration in seconds to hold the fist gesture
         self.draw_mode = draw_mode
@@ -91,6 +91,8 @@ class HandTrackerRenderer:
         self.index_finger_duration = 0.1  # Duration in seconds to hold the index finger before starting to draw
         self.line_color = (0, 255, 0)  # Red color for drawing
         self.line_thickness = 3  # Line thickness
+        self.scene = None
+        self.mesh_node = None
         # Rendering flags
         if self.tracker.use_lm:
             self.show_pd_box = False
@@ -126,39 +128,41 @@ class HandTrackerRenderer:
             self.mesh_image = self.render_mesh_to_image(self.model_path, self.rotation_x_angle, self.rotation_y_angle)
             self.mesh_dirty = False
     
-    def stl_to_pyrender_and_trimesh_mesh(self, stl_file):
-        # Load the STL file as a trimesh mesh for bounding box calculation
-        trimesh_mesh = trimesh.load_mesh(stl_file)
+    def model_to_pyrender_and_trimesh_mesh(self, model_file):
+        # Load the Model file as a trimesh mesh for bounding box calculation
+        trimesh_mesh = trimesh.load_mesh(model_file)
 
         # Create a pyrender mesh from the trimesh mesh
         material = pyrender.MetallicRoughnessMaterial(
             metallicFactor=0.25,  # Adjust the metallic factor (0.0 to 1.0)
             roughnessFactor=0.5,  # Adjust the roughness factor (0.0 to 1.0)
-            baseColorFactor=self.stl_color)
+            baseColorFactor=self.model_color)
         pyrender_mesh = pyrender.Mesh.from_trimesh(trimesh_mesh, material=material)
 
         return pyrender_mesh, trimesh_mesh
 
-    def load_stl_threaded(self, model_path):
+    def load_model_threaded(self, model_path):
         prev_rotation_x_angle = self.rotation_x_angle
         prev_rotation_y_angle = self.rotation_y_angle
-
-        self.current_stl_file = model_path
-        self.current_stl_color = self.stl_color
+        
+        self.current_model_file = model_path
+        self.current_model_color = self.model_color
         self.current_lighting = self.lighting
         self.mesh_dirty = True
+        self.scene = None
+        self.mesh_image_size = (320, 240)
         self.pyrender_mesh = None
         self.trimesh_mesh = None
-        self.stl_loading = True
+        self.model_loading = True
         self.mesh_image = self.render_mesh_to_image(model_path)
         self.mesh_dirty = False
-        self.stl_loading = False
+        self.model_loading = False
 
         self.rotation_x_angle = prev_rotation_x_angle
         self.rotation_y_angle = prev_rotation_y_angle
         
     def initialize_mesh_data(self, mesh_file):
-        self.pyrender_mesh, self.trimesh_mesh = self.stl_to_pyrender_and_trimesh_mesh(
+        self.pyrender_mesh, self.trimesh_mesh = self.model_to_pyrender_and_trimesh_mesh(
             mesh_file)
         centroid = self.trimesh_mesh.centroid
         translation_to_origin = trimesh.transformations.translation_matrix(-centroid)
@@ -169,69 +173,78 @@ class HandTrackerRenderer:
         fov = np.pi / 3.0
         return centroid, translation_to_origin, translation_back, distance, fov
     
-
     def render_mesh_to_image(self, mesh_file, rotation_x_angle=None, rotation_y_angle=None):
         if rotation_x_angle is None:
             rotation_x_angle = self.rotation_x_angle
         if rotation_y_angle is None:
             rotation_y_angle = self.rotation_y_angle
 
+        if self.scene is None:
+            # Create the scene and add the camera and lighting only once
+            self.scene = pyrender.Scene(
+                bg_color=[0, 0, 0, 0], ambient_light=self.lighting)
+            light1 = pyrender.DirectionalLight(
+                color=[1.0, 1.0, 1.0], intensity=1.0)
+            light2 = pyrender.DirectionalLight(
+                color=[1.0, 1.0, 1.0], intensity=1.0)
+            self.scene.add(light1, pose=np.eye(4))
+            self.scene.add(light2, pose=np.array(
+                [[1, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]))
+
         if self.pyrender_mesh is None or self.trimesh_mesh is None:
             self.centroid, self.translation_to_origin, self.translation_back, self.distance, self.fov = self.initialize_mesh_data(
                 mesh_file)
+            self.pyrender_mesh, self.trimesh_mesh = self.model_to_pyrender_and_trimesh_mesh(
+                mesh_file)
+            
+            camera_pose = np.eye(4)
+            camera_pose[:3, 3] = [self.centroid[0],
+                                  self.centroid[1], self.centroid[2] + self.distance]
+            camera = pyrender.PerspectiveCamera(yfov=self.fov, aspectRatio=1.0)
+            self.scene.add(camera, pose=camera_pose)
+            
+            rotation_x = np.radians(rotation_x_angle)
+            rotation_y = np.radians(rotation_y_angle)
+            rotation_matrix = trimesh.transformations.euler_matrix(
+                rotation_x, rotation_y, 0)
+            # Combine transformations: move to origin, rotate, move back
+            combined_transform = self.translation_back @ rotation_matrix @ self.translation_to_origin
 
-        rotation_x = np.radians(rotation_x_angle)
-        rotation_y = np.radians(rotation_y_angle)
-        
-        # Create a scene
-        scene = pyrender.Scene(
-            bg_color=[0, 0, 0, 0], ambient_light=self.lighting)
-        
-        rotation_matrix = trimesh.transformations.euler_matrix(rotation_x, rotation_y, 0)
-        
-        # Combine transformations: move to origin, rotate, move back
-        combined_transform = self.translation_back @ rotation_matrix @ self.translation_to_origin
-    
-        mesh_node = pyrender.Node(mesh=self.pyrender_mesh, matrix=combined_transform)
-        scene.add_node(mesh_node)
+            self.mesh_node = pyrender.Node(
+                mesh=self.pyrender_mesh, matrix=combined_transform)
+            self.scene.add_node(self.mesh_node)
+        else:
+            rotation_x = np.radians(rotation_x_angle)
+            rotation_y = np.radians(rotation_y_angle)
+            rotation_matrix = trimesh.transformations.euler_matrix(
+                rotation_x, rotation_y, 0)
+            # Update the mesh transformation matrix for rotation
+            self.mesh_node.matrix = self.translation_back @ rotation_matrix @ self.translation_to_origin
 
-        # Create directional lights
-        light1 = pyrender.DirectionalLight(color=[1.0, 1.0, 1.0], intensity=1.0)
-        light2 = pyrender.DirectionalLight(color=[1.0, 1.0, 1.0], intensity=1.0)
+        # Render the scene
+        renderer = pyrender.OffscreenRenderer(
+            viewport_width=1280, viewport_height=720)
+        color, depth = renderer.render(self.scene)
 
-        # Add lights to the scene
-        scene.add(light1, pose=np.eye(4))
-        scene.add(light2, pose=np.array(
-            [[1, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]))
-        # Create the camera pose
-        camera_pose = np.eye(4)
-        camera_pose[:3, 3] = [self.centroid[0], self.centroid[1], self.centroid[2] + self.distance]
-        
-        # Create the camera
-        camera = pyrender.PerspectiveCamera(yfov=self.fov, aspectRatio=1.0)
-        scene.add(camera, pose=camera_pose)
-        
-        # Render the mesh at a high resolution (1920x1080)
-        renderer = pyrender.OffscreenRenderer(viewport_width=1920, viewport_height=1080)
-        color, depth = renderer.render(scene)
-        
         # Convert the color image to RGBA format
         color_rgba = cv2.cvtColor(color, cv2.COLOR_RGB2RGBA)
-        
+
         # Create a mask for the black background
         mask = np.all(color_rgba[:, :, :3] == [0, 0, 0], axis=-1)
-        
+
         # Set the alpha channel to 0 (transparent) where the background is black
         color_rgba[mask, 3] = 0
-        
+
         # Store the high-resolution mesh image
         self.mesh_image_max = color_rgba
-        
+
         # Scale down the mesh image to 320x240
-        mesh_image = cv2.resize(self.mesh_image_max, (320, 240), interpolation=cv2.INTER_LANCZOS4)
-        
+            
+        mesh_image = cv2.resize(self.mesh_image_max, (self.mesh_image_size[0], self.mesh_image_size[1]),
+                                interpolation=cv2.INTER_LANCZOS4)
+
         return mesh_image
-    
+
     def norm2abs(self, x_y):
         x = int(x_y[0] * self.tracker.frame_size - self.tracker.pad_w)
         y = int(x_y[1] * self.tracker.frame_size - self.tracker.pad_h)
@@ -523,13 +536,13 @@ class HandTrackerRenderer:
             peace_positions = []
             three_positions = []
             move_image = False
-            if self.mesh_image is not None and (self.current_stl_file != self.interaction_file or self.current_stl_color != self.stl_color or self.current_lighting != self.lighting):
-                self.stl_loading_thread = threading.Thread(
-                                        target=self.load_stl_threaded, args=(self.model_path,))
-                self.stl_loading_thread.start()
-            elif(self.current_stl_file != self.interaction_file or self.current_stl_color != self.stl_color or self.current_lighting != self.lighting):
-                self.current_stl_file = self.model_path
-                self.current_stl_color = self.stl_color
+            if self.mesh_image is not None and (self.current_model_file != self.interaction_file or self.current_model_color != self.model_color or self.current_lighting != self.lighting):
+                self.model_loading_thread = threading.Thread(
+                    target=self.load_model_threaded, args=(self.model_path,))
+                self.model_loading_thread.start()
+            elif(self.current_model_file != self.interaction_file or self.current_model_color != self.model_color or self.current_lighting != self.lighting):
+                self.current_model_file = self.model_path
+                self.current_model_color = self.model_color
                 self.current_lighting = self.lighting
             for hand in hands:
                 if hand.gesture == "FIST":
@@ -543,10 +556,10 @@ class HandTrackerRenderer:
                         else:
                             self.mesh_visible = True
                             if self.mesh_image is None:
-                                if not self.stl_loading:
-                                    self.stl_loading_thread = threading.Thread(
-                                        target=self.load_stl_threaded, args=(self.model_path,))
-                                    self.stl_loading_thread.start()
+                                if not self.model_loading:
+                                    self.model_loading_thread = threading.Thread(
+                                        target=self.load_model_threaded, args=(self.model_path,))
+                                    self.model_loading_thread.start()
                                 self.image_position = (
                                     fist_position[0] - 50, fist_position[1] - 50)
                                 self.loading_position = (self.image_position[0], self.image_position[1] + 50)
@@ -585,11 +598,14 @@ class HandTrackerRenderer:
                         scale_factor = 1.0
                     new_width = int(self.mesh_image.shape[1] * scale_factor)
                     new_height = int(self.mesh_image.shape[0] * scale_factor)
-                    if new_width > 1920 or new_height > 1080:
-                        max_scale_factor = min(1920 / self.mesh_image.shape[1], 1080 / self.mesh_image.shape[0])
+                    if new_width > 1280 or new_height > 720:
+                        max_scale_factor = min(
+                            1280 / self.mesh_image.shape[1], 720 / self.mesh_image.shape[0])
                         new_width = int(self.mesh_image.shape[1] * max_scale_factor)
                         new_height = int(self.mesh_image.shape[0] * max_scale_factor)
-                    self.mesh_image = cv2.resize(self.mesh_image_max, (new_width, new_height), interpolation=cv2.INTER_LANCZOS4)
+                    self.mesh_image_size = (new_width, new_height)  # Store the new size
+                    self.mesh_image = cv2.resize(
+                        self.mesh_image_max, (self.mesh_image_size[0], self.mesh_image_size[1]), interpolation=cv2.INTER_LANCZOS4)
                     self.mesh_dirty = False
                 self.prev_peace_distance = distance
             else:
@@ -607,18 +623,18 @@ class HandTrackerRenderer:
                     self.image_position = (image_x, image_y)
             if three_detected and not self.mesh_dirty:
                 if len(three_positions) == 1:
-                    self.rotation_x_angle += 15
+                    self.rotation_x_angle += 30
                     if self.rotation_x_angle >= 360:
                         self.rotation_x_angle = 0
                 elif len(three_positions) == 2:
-                    self.rotation_y_angle += 15
+                    self.rotation_y_angle += 30
                     if self.rotation_y_angle >= 360:
                         self.rotation_y_angle = 0
                 self.mesh_dirty = True
                 if self.rendering_thread is None or not self.rendering_thread.is_alive():
                     self.rendering_thread = threading.Thread(target=self.render_mesh_threaded)
                     self.rendering_thread.start()
-            if self.stl_loading:
+            if self.model_loading:
                 # Display loading indicator
                 center = self.loading_position
                 angle = (time.time() * 180) % 360
@@ -634,7 +650,7 @@ class HandTrackerRenderer:
                 rotated_points = rotated_points.astype(np.int32)  # Convert to integer coordinates
                 if len(rotated_points) > 0:
                     cv2.drawContours(frame, [rotated_points], 0, (255, 255, 255), 2)
-            if self.mesh_image is not None and self.mesh_visible and not self.stl_loading:
+            if self.mesh_image is not None and self.mesh_visible and not self.model_loading:
                 frame = self.overlay_image(frame, self.mesh_image, self.image_position)
             if index_finger_tip is not None:
                 cv2.circle(frame, tuple(index_finger_tip), 20, (0, 255, 0), -1)  # Draw a green filled circle around the index finger tip

@@ -69,8 +69,8 @@ def receive_messages(sock):
                 color_values = data.split(" ")[1:]
                 if len(color_values) == 3:
                     r, g, b = map(int, color_values)
-                    renderer.stl_color = (b, g, r)
-                    print("STL Color", renderer.stl_color)
+                    renderer.model_color = (b, g, r)
+                    print("Model Color", renderer.model_color)
             elif data.startswith("change_lighting"):
                 print("Received Lighting Changing")
                 lighting_values = data.split(" ")[1:]
