@@ -93,6 +93,8 @@ class HandTrackerRenderer:
         self.line_thickness = 3  # Line thickness
         self.scene = None
         self.mesh_node = None
+        self.max_height_render = 600
+        self.max_width_render = 1066
         # Rendering flags
         if self.tracker.use_lm:
             self.show_pd_box = False
@@ -134,8 +136,8 @@ class HandTrackerRenderer:
 
         # Create a pyrender mesh from the trimesh mesh
         material = pyrender.MetallicRoughnessMaterial(
-            metallicFactor=0.25,  # Adjust the metallic factor (0.0 to 1.0)
-            roughnessFactor=0.5,  # Adjust the roughness factor (0.0 to 1.0)
+            metallicFactor=0,  # Adjust the metallic factor (0.0 to 1.0)
+            roughnessFactor=0,  # Adjust the roughness factor (0.0 to 1.0)
             baseColorFactor=self.model_color)
         pyrender_mesh = pyrender.Mesh.from_trimesh(trimesh_mesh, material=material)
 
@@ -174,6 +176,7 @@ class HandTrackerRenderer:
         return centroid, translation_to_origin, translation_back, distance, fov
     
     def render_mesh_to_image(self, mesh_file, rotation_x_angle=None, rotation_y_angle=None):
+        start_time = time.time()
         if rotation_x_angle is None:
             rotation_x_angle = self.rotation_x_angle
         if rotation_y_angle is None:
@@ -190,7 +193,8 @@ class HandTrackerRenderer:
             self.scene.add(light1, pose=np.eye(4))
             self.scene.add(light2, pose=np.array(
                 [[1, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]))
-
+        print(f"Scene setup time: {time.time() - start_time:.4f} seconds")
+        start_time = time.time()
         if self.pyrender_mesh is None or self.trimesh_mesh is None:
             self.centroid, self.translation_to_origin, self.translation_back, self.distance, self.fov = self.initialize_mesh_data(
                 mesh_file)
@@ -209,7 +213,6 @@ class HandTrackerRenderer:
                 rotation_x, rotation_y, 0)
             # Combine transformations: move to origin, rotate, move back
             combined_transform = self.translation_back @ rotation_matrix @ self.translation_to_origin
-
             self.mesh_node = pyrender.Node(
                 mesh=self.pyrender_mesh, matrix=combined_transform)
             self.scene.add_node(self.mesh_node)
@@ -220,12 +223,14 @@ class HandTrackerRenderer:
                 rotation_x, rotation_y, 0)
             # Update the mesh transformation matrix for rotation
             self.mesh_node.matrix = self.translation_back @ rotation_matrix @ self.translation_to_origin
-
+        print(f"Mesh setup time: {time.time() - start_time:.4f} seconds")
+        start_time = time.time()
         # Render the scene
         renderer = pyrender.OffscreenRenderer(
-            viewport_width=1280, viewport_height=720)
+            viewport_width=self.max_width_render, viewport_height=self.max_height_render)
         color, depth = renderer.render(self.scene)
-
+        print(f"Rendering time: {time.time() - start_time:.4f} seconds")
+        start_time = time.time()
         # Convert the color image to RGBA format
         color_rgba = cv2.cvtColor(color, cv2.COLOR_RGB2RGBA)
 
@@ -237,12 +242,10 @@ class HandTrackerRenderer:
 
         # Store the high-resolution mesh image
         self.mesh_image_max = color_rgba
-
-        # Scale down the mesh image to 320x240
             
         mesh_image = cv2.resize(self.mesh_image_max, (self.mesh_image_size[0], self.mesh_image_size[1]),
                                 interpolation=cv2.INTER_LANCZOS4)
-
+        print(f"Image processing time: {time.time() - start_time:.4f} seconds")
         return mesh_image
 
     def norm2abs(self, x_y):
@@ -598,9 +601,9 @@ class HandTrackerRenderer:
                         scale_factor = 1.0
                     new_width = int(self.mesh_image.shape[1] * scale_factor)
                     new_height = int(self.mesh_image.shape[0] * scale_factor)
-                    if new_width > 1280 or new_height > 720:
+                    if new_width > self.max_width_render or new_height > self.max_height_render:
                         max_scale_factor = min(
-                            1280 / self.mesh_image.shape[1], 720 / self.mesh_image.shape[0])
+                            self.max_width_render / self.mesh_image.shape[1], self.max_height_render / self.mesh_image.shape[0])
                         new_width = int(self.mesh_image.shape[1] * max_scale_factor)
                         new_height = int(self.mesh_image.shape[0] * max_scale_factor)
                     self.mesh_image_size = (new_width, new_height)  # Store the new size
