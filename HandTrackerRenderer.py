@@ -138,7 +138,11 @@ class HandTrackerRenderer:
         pyrender_mesh = pyrender.Mesh.from_trimesh(trimesh_mesh, material=material)
 
         return pyrender_mesh, trimesh_mesh
+
     def load_stl_threaded(self, model_path):
+        prev_rotation_x_angle = self.rotation_x_angle
+        prev_rotation_y_angle = self.rotation_y_angle
+
         self.current_stl_file = model_path
         self.current_stl_color = self.stl_color
         self.current_lighting = self.lighting
@@ -149,6 +153,9 @@ class HandTrackerRenderer:
         self.mesh_image = self.render_mesh_to_image(model_path)
         self.mesh_dirty = False
         self.stl_loading = False
+
+        self.rotation_x_angle = prev_rotation_x_angle
+        self.rotation_y_angle = prev_rotation_y_angle
         
     def initialize_mesh_data(self, mesh_file):
         self.pyrender_mesh, self.trimesh_mesh = self.stl_to_pyrender_and_trimesh_mesh(
@@ -162,11 +169,17 @@ class HandTrackerRenderer:
         fov = np.pi / 3.0
         return centroid, translation_to_origin, translation_back, distance, fov
     
-    def render_mesh_to_image(self, mesh_file, rotation_x_angle=0, rotation_y_angle=0):
+
+    def render_mesh_to_image(self, mesh_file, rotation_x_angle=None, rotation_y_angle=None):
+        if rotation_x_angle is None:
+            rotation_x_angle = self.rotation_x_angle
+        if rotation_y_angle is None:
+            rotation_y_angle = self.rotation_y_angle
+
         if self.pyrender_mesh is None or self.trimesh_mesh is None:
             self.centroid, self.translation_to_origin, self.translation_back, self.distance, self.fov = self.initialize_mesh_data(
                 mesh_file)
-    
+
         rotation_x = np.radians(rotation_x_angle)
         rotation_y = np.radians(rotation_y_angle)
         
