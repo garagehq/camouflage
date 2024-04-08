@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 import time
 import open3d as o3d
-import threading
 
 
 class ModelRender:
@@ -17,15 +16,9 @@ class ModelRender:
         self.open3d_mesh = None
         self.max_height_render = 600
         self.max_width_render = 1066
-        self.rotation_x_angle = 0
-        self.rotation_y_angle = 0
-        self.rendering_thread = None
-        self.rendering_lock = threading.Lock()
-        self.model_loading_thread = None
-        self.model_loading = False  # Variable to track the loading state
-        self.vis = None  # Visualization object
         # Initialize rotation matrix to identity
         self.rotation_matrix = np.eye(3)
+        self.vis = None  # Visualization object
 
     def setup_visualizer(self):
         self.vis = o3d.visualization.Visualizer()
@@ -39,7 +32,6 @@ class ModelRender:
         ctr.set_zoom(1.0)
 
     def load_model(self):
-        self.model_loading = True
         start_time = time.time()
         self.open3d_mesh = o3d.io.read_triangle_mesh(self.model_path)
         self.open3d_mesh.compute_vertex_normals()
@@ -51,27 +43,15 @@ class ModelRender:
             self.vis.remove_all_geometry()
             self.vis.add_geometry(self.open3d_mesh)
         self.mesh_dirty = False
-        self.model_loading = False
         print(f"Model loading time: {time.time() - start_time:.4f} seconds")
         self.mesh_image = self.render_mesh_to_image()
 
-    def load_model_threaded(self, model_path=None):
-        if model_path:
-            self.model_path = model_path
-        self.model_loading_thread = threading.Thread(target=self.load_model)
-        self.model_loading_thread.start()
-
-    def render_mesh_to_image(self, rotation_x_angle=None, rotation_y_angle=None):
+    def render_mesh_to_image(self):
         start_time = time.time()
-        if rotation_x_angle is None:
-            rotation_x_angle = self.rotation_x_angle
-        if rotation_y_angle is None:
-            rotation_y_angle = self.rotation_y_angle
 
-        # Setting up the rotation
-        R = o3d.geometry.get_rotation_matrix_from_xyz(
-            (np.radians(rotation_x_angle), np.radians(rotation_y_angle), 0))
-        self.open3d_mesh.rotate(R, center=self.open3d_mesh.get_center())
+        # Apply the rotation matrix to the mesh
+        self.open3d_mesh.rotate(self.rotation_matrix,
+                                center=self.open3d_mesh.get_center())
 
         # Update the geometry to apply rotation
         self.vis.update_geometry(self.open3d_mesh)
@@ -100,16 +80,19 @@ class ModelRender:
         print(f"Image processing time: {time.time() - start_time:.4f} seconds")
         return mesh_image
 
-    def render_mesh_threaded(self):
-        with self.rendering_lock:
-            self.mesh_image = self.render_mesh_to_image(
-                self.rotation_x_angle, self.rotation_y_angle)
-            self.mesh_dirty = False
-
     def update_model(self, model_path, model_color, lighting):
         if model_path != self.model_path or model_color != self.model_color or lighting != self.lighting:
             self.model_path = model_path
             self.model_color = model_color
             self.lighting = lighting
-            self.load_model_threaded(model_path)
+            self.load_model()  # Load the model directly in the main thread
             self.mesh_dirty = True
+
+    def update_rotation(self, rotation_x, rotation_y):
+        # Update the rotation matrix based on the new rotation angles
+        rotation_matrix_x = o3d.geometry.get_rotation_matrix_from_xyz(
+            (np.radians(rotation_x), 0, 0))
+        rotation_matrix_y = o3d.geometry.get_rotation_matrix_from_xyz(
+            (0, np.radians(rotation_y), 0))
+        self.rotation_matrix = np.dot(rotation_matrix_x, rotation_matrix_y)
+        self.mesh_dirty = True

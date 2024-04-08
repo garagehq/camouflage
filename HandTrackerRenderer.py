@@ -423,9 +423,7 @@ class HandTrackerRenderer:
                             if self.model_render is None:
                                 self.model_render = ModelRender(
                                     self.model_path, self.model_color, self.lighting)
-                                self.model_loading_thread = threading.Thread(
-                                    target=self.model_render.load_model_threaded, args=(self.model_path,))
-                                self.model_loading_thread.start()
+                                self.model_render.start_rendering_thread()
                                 self.image_position = (
                                     fist_position[0] - 50, fist_position[1] - 50)
                                 self.loading_position = (
@@ -486,15 +484,14 @@ class HandTrackerRenderer:
                         self.model_render.mesh_image_max, (
                             self.model_render.mesh_image_size[0], self.model_render.mesh_image_size[1]),
                         interpolation=cv2.INTER_LANCZOS4)
-                    self.model_render.mesh_dirty = False
+                    self.model_render.mesh_dirty = True
                 self.prev_peace_distance = distance
             else:
                 self.prev_peace_distance = None
 
             if move_image and self.model_render is not None and len(peace_positions) == 1:
                 overlay = frame.copy()
-                cv2.circle(overlay, tuple(
-                    peace_positions[0]), 50, (128, 128, 128), -1)
+                cv2.circle(overlay, tuple(peace_positions[0]), 50, (128, 128, 128), -1)
                 cv2.addWeighted(overlay, 0.5, frame, 0.5, 0, frame)
                 if self.is_finger_on_image(peace_positions[0], self.image_position, self.model_render.mesh_image):
                     image_height, image_width = self.model_render.mesh_image.shape[:2]
@@ -502,46 +499,21 @@ class HandTrackerRenderer:
                     image_x = x - image_width // 2
                     image_y = y - image_height // 2
                     self.image_position = (image_x, image_y)
+
             if three_detected and self.model_render is not None:
-                if (not self.model_render.mesh_dirty):
-                    if len(three_positions) == 1:
-                        self.model_render.rotation_x_angle += 30
-                        if self.model_render.rotation_x_angle >= 360:
-                            self.model_render.rotation_x_angle = 0
-                    elif len(three_positions) == 2:
-                        self.model_render.rotation_y_angle += 30
-                        if self.model_render.rotation_y_angle >= 360:
-                            self.model_render.rotation_y_angle = 0
-                    self.model_render.mesh_dirty = True
-                    if self.model_render.rendering_thread is None or not self.model_render.rendering_thread.is_alive():
-                        self.model_render.rendering_thread = threading.Thread(
-                            target=self.model_render.render_mesh_threaded)
-                        self.model_render.rendering_thread.start()
-            if self.model_render is not None and self.model_render.model_loading:
-                # Display loading indicator
-                center = self.loading_position
-                angle = (time.time() * 180) % 360
-                rect_size = (50, 20)
-                rect_points = np.array([
-                    [-rect_size[0] // 2, -rect_size[1] // 2],
-                    [rect_size[0] // 2, -rect_size[1] // 2],
-                    [rect_size[0] // 2, rect_size[1] // 2],
-                    [-rect_size[0] // 2, rect_size[1] // 2]
-                ], dtype=np.int32)
-                rotation_matrix = cv2.getRotationMatrix2D((0, 0), angle, 1)
-                rotated_points = np.dot(
-                    rect_points, rotation_matrix[:, :2].T) + center
-                rotated_points = rotated_points.astype(
-                    np.int32)  # Convert to integer coordinates
-                if len(rotated_points) > 0:
-                    cv2.drawContours(
-                        frame, [rotated_points], 0, (255, 255, 255), 2)
-            if self.model_render is not None and self.model_render.mesh_image is not None and self.mesh_visible and not self.model_render.model_loading:
+                if len(three_positions) == 1:
+                    self.model_render.update_rotation(30, 0)
+                elif len(three_positions) == 2:
+                    self.model_render.update_rotation(0, 30)
+
+            if self.model_render is not None and self.model_render.mesh_image is not None and self.mesh_visible:
                 frame = self.overlay_image(
                     frame, self.model_render.mesh_image, self.image_position)
+
             if index_finger_tip is not None and self.model_render is not None and self.model_render.mesh_image is not None:
                 # Draw a green filled circle around the index finger tip
                 cv2.circle(frame, tuple(index_finger_tip), 20, (0, 255, 0), -1)
+
             if not fist_detected:
                 self.fist_start_time = None
         else:
