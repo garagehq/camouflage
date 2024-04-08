@@ -77,7 +77,9 @@ class HandTrackerRenderer:
         self.index_finger_duration = 0.1  # Duration in seconds to hold the index finger before starting to draw
         self.line_color = (0, 255, 0)  # Red color for drawing
         self.line_thickness = 3  # Line thickness
-
+        self.last_rotation_time = 0
+        # Minimum interval between rotations (in seconds)
+        self.rotation_interval = 0.3
         self.model_render = None
         # Rendering flags
         if self.tracker.use_lm:
@@ -424,6 +426,7 @@ class HandTrackerRenderer:
                                 self.model_render = ModelRender(
                                     self.model_path, self.model_color, self.lighting)
                                 self.model_render.start_rendering_thread()
+                                self.model_render.initialize_model()
                                 self.image_position = (
                                     fist_position[0] - 50, fist_position[1] - 50)
                                 self.loading_position = (
@@ -501,10 +504,13 @@ class HandTrackerRenderer:
                     self.image_position = (image_x, image_y)
 
             if three_detected and self.model_render is not None:
-                if len(three_positions) == 1:
-                    self.model_render.update_rotation(30, 0)
-                elif len(three_positions) == 2:
-                    self.model_render.update_rotation(0, 30)
+                current_time = time.time()
+                if current_time - self.last_rotation_time >= self.rotation_interval:
+                    if len(three_positions) == 1:
+                        self.model_render.update_rotation(15, 0)
+                    elif len(three_positions) == 2:
+                        self.model_render.update_rotation(0, 15)
+                    self.last_rotation_time = current_time
 
             if self.model_render is not None and self.model_render.mesh_image is not None and self.mesh_visible:
                 frame = self.overlay_image(
