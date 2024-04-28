@@ -39,7 +39,7 @@ class HandTrackerRenderer:
         self.hide_extras = hide_extras
         self.image_max = None
         self.model_path = None
-        self.model_color = (255, 0, 255)  # Default Model color (Purple)
+        self.model_color = (128, 128, 128)  # Default Model color (Grey)
         self.lighting = (0.25, 0.25, 0.25)  # Default lighting (Low)
         self.current_model_color = self.model_color
         self.current_lighting = self.lighting
