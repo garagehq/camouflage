@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import time
 import open3d as o3d
+import trimesh
 import threading
 import queue
 
@@ -60,7 +61,14 @@ class ModelRender:
             self.open3d_mesh.compute_vertex_normals()
         elif file_format == "obj":
             print("loading obj file")
-            self.open3d_mesh = o3d.io.read_triangle_mesh(self.model_path)
+            mesh = trimesh.load(self.model_path)
+            if isinstance(mesh, trimesh.Scene):
+                # If the loaded object is a scene, get the first mesh
+                mesh = mesh.geometry.values()[0]
+            self.open3d_mesh = o3d.geometry.TriangleMesh(
+                vertices=o3d.utility.Vector3dVector(mesh.vertices),
+                triangles=o3d.utility.Vector3iVector(mesh.faces)
+            )
             self.open3d_mesh.compute_vertex_normals()
             # Check if the OBJ file has vertex colors
             if not np.asarray(self.open3d_mesh.vertex_colors).size:
