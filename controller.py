@@ -371,7 +371,7 @@ class Controller:
             self.lighting_submenu.pack_forget()
         elif mode == "interact" and self.interaction_file_type == "interact3D":
             self.drawing_submenu.pack_forget()
-            if self.file_extension.lower() in [".step", ".obj"]:
+            if self.file_extension.lower() in [".step", ".glb"]:
                 self.color_submenu.pack_forget()
             else:
                 self.color_submenu.pack(pady=10)
