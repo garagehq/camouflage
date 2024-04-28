@@ -9,7 +9,8 @@ open3d
 tkinterdnd2
 fbx
 pygltflib
-pythonOCC
+vtk
+cadquery
 # for mouse inputs
 pynput
 screeninfo
