@@ -26,10 +26,11 @@ class Controller:
         self.fullscreen_var = tk.BooleanVar(value=False)
         self.interact_button = None
         self.interaction_file_type = None
+        self.file_extension = None
         self.create_widgets()
         self.update_interaction_button()
         self.drawing_submenu.pack_forget()
-        self.stl_color_submenu.pack_forget()
+        self.color_submenu.pack_forget()
 
 
     def create_drag_drop_frame(self):
@@ -52,12 +53,12 @@ class Controller:
         if '{' in file_path:
             # The file path is in the format "{path}"
             file_path = file_path[1:-1]  # Remove the curly braces
-        _, file_extension = os.path.splitext(file_path)
-        if file_extension.lower() in [".png", ".jpg", ".jpeg", ".stl"]:
+        _, self.file_extension = os.path.splitext(file_path)
+        if self.file_extension.lower() in [".png", ".jpg", ".jpeg", ".stl", ".step", ".obj", ".glb"]:
             self.validate_and_set_file(file_path)
         else:
             messagebox.showerror(
-                "Error", "Invalid file type. Please drop a PNG, JPEG, JPG, or STL file.")
+                "Error", "Invalid file type. Please drop a PNG, JPEG, JPG, STL, STEP, OBJ, or GLB file.")
             
     def update_interaction_button(self):
         if self.interaction_file_type in ["interact2D", "interact3D"]:
@@ -158,29 +159,29 @@ class Controller:
             self.window, text="START", command=self.toggle_demo)
         self.start_button.pack(pady=20)
         
-        self.stl_color_submenu = tk.Frame(self.window)
-        tk.Label(self.stl_color_submenu, text="STL Color:").pack(side=tk.LEFT)
+        self.color_submenu = tk.Frame(self.window)
+        tk.Label(self.color_submenu, text="Model Color:").pack(side=tk.LEFT)
 
         colors = ["Purple", "Red", "Green", "Blue", "Yellow", "Orange"]
-        self.stl_color_var = tk.StringVar(value="Purple")
+        self.model_color_var = tk.StringVar(value="Purple")
 
-        stl_color_dropdown = tk.Menubutton(
-            self.stl_color_submenu,
-            textvariable=self.stl_color_var,
+        model_color_dropdown = tk.Menubutton(
+            self.color_submenu,
+            textvariable=self.model_color_var,
             width=10,
-            bg=self.stl_color_var.get().lower(),
+            bg=self.model_color_var.get().lower(),
             relief=tk.RAISED
         )
-        stl_color_dropdown.pack(side=tk.LEFT)
+        model_color_dropdown.pack(side=tk.LEFT)
 
-        stl_color_menu = tk.Menu(stl_color_dropdown, tearoff=0)
+        model_color_menu = tk.Menu(model_color_dropdown, tearoff=0)
         for color in colors:
-            stl_color_menu.add_command(
+            model_color_menu.add_command(
                 label=color,
-                command=lambda c=color: [self.stl_color_var.set(
-                    c), self.change_stl_color(c), stl_color_dropdown.config(bg=c.lower())]
+                command=lambda c=color: [self.model_color_var.set(
+                    c), self.change_stl_color(c), model_color_dropdown.config(bg=c.lower())]
             )
-        stl_color_dropdown["menu"] = stl_color_menu
+        model_color_dropdown["menu"] = model_color_menu
 
         self.lighting_submenu = tk.Frame(self.window)
         # self.lighting_submenu.pack(pady=10)
@@ -366,15 +367,18 @@ class Controller:
     def set_interaction_mode(self, mode):
         if mode == "draw" and self.process is not None:
             self.drawing_submenu.pack(pady=10)
-            self.stl_color_submenu.pack_forget()
+            self.color_submenu.pack_forget()
             self.lighting_submenu.pack_forget()
         elif mode == "interact" and self.interaction_file_type == "interact3D":
             self.drawing_submenu.pack_forget()
-            self.stl_color_submenu.pack(pady=10)
+            if self.file_extension.lower() in [".step", ".obj"]:
+                self.color_submenu.pack_forget()
+            else:
+                self.color_submenu.pack(pady=10)
             self.lighting_submenu.pack(pady=10)
         else:
             self.drawing_submenu.pack_forget()
-            self.stl_color_submenu.pack_forget()
+            self.color_submenu.pack_forget()
             self.lighting_submenu.pack_forget()
 
         if mode == 'interact' and self.interaction_file_type not in ['interact2D', 'interact3D']:
@@ -395,10 +399,10 @@ class Controller:
 
     def validate_and_set_file(self, file_path):
         if file_path and os.path.exists(file_path):
-            _, file_extension = os.path.splitext(file_path)
-            if file_extension.lower() in [".png", ".jpg", ".jpeg"]:
+            _, self.file_extension = os.path.splitext(file_path)
+            if self.file_extension.lower() in [".png", ".jpg", ".jpeg"]:
                 self.interaction_file_type = "interact2D"
-            elif file_extension.lower() == ".stl":
+            elif self.file_extension.lower() in [".stl", ".step", ".obj", ".glb"]:
                 self.interaction_file_type = "interact3D"
             else:
                 self.interaction_file_type = None
@@ -417,6 +421,11 @@ class Controller:
             if self.process:
                 interaction_mode = 'interact2D' if self.interaction_file_type == 'interact2D' else 'interact3D'
                 self.send_message(interaction_mode + ' ' + file_path)
+            if self.interaction_file_type == "interact3D":
+                if self.file_extension.lower() in [".step", ".obj"]:
+                    self.color_submenu.pack_forget()
+                else:
+                    self.color_submenu.pack(pady=10)
         else:
             messagebox.showerror(
                 "Error", "File does not exist. Please select a valid file.")
@@ -494,15 +503,18 @@ class Controller:
                     self.change_drawing_color(self.color_var.get())
                     time.sleep(0.25)
                 elif self.interaction_mode == "interact" and self.interaction_file_type == "interact3D":
-                    self.stl_color_submenu.pack(pady=10)
+                    if self.file_extension.lower() in [".step", ".obj"]:
+                        self.color_submenu.pack_forget()
+                    else:
+                        self.color_submenu.pack(pady=10)
+                        time.sleep(1.5)
+                        self.change_stl_color(self.model_color_var.get())
                     self.lighting_submenu.pack(pady=10)
-                    time.sleep(1.5)
-                    self.change_stl_color(self.stl_color_var.get())
                     time.sleep(1.5)
                     self.change_lighting()
                 else:
                     self.drawing_submenu.pack_forget()
-                    self.stl_color_submenu.pack_forget()
+                    self.color_submenu.pack_forget()
                     self.lighting_submenu.pack_forget()
                 print("Connection Established!")
 

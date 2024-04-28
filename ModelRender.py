@@ -42,12 +42,33 @@ class ModelRender:
     def load_model(self):
         print("Loading Model")
         start_time = time.time()
-        if(self.open3d_mesh):
+        if self.open3d_mesh:
             self.old_model = self.open3d_mesh
-        self.open3d_mesh = o3d.io.read_triangle_mesh(self.model_path)
-        self.open3d_mesh.compute_vertex_normals()
-        self.open3d_mesh.paint_uniform_color(
-            [c / 255.0 for c in self.model_color])
+
+        # Determine the file format based on the file extension
+        file_format = self.model_path.split(".")[-1].lower()
+
+        if file_format == "stl":
+            print("loading stl file")
+            self.open3d_mesh = o3d.io.read_triangle_mesh(self.model_path)
+            self.open3d_mesh.compute_vertex_normals()
+            self.open3d_mesh.paint_uniform_color(
+                [c / 255.0 for c in self.model_color])
+        elif file_format == "step":
+            print("loading step file")
+            self.open3d_mesh = o3d.io.read_triangle_mesh(self.model_path)
+            self.open3d_mesh.compute_vertex_normals()
+        elif file_format == "obj":
+            print("loading obj file")
+            self.open3d_mesh = o3d.io.read_triangle_mesh(self.model_path)
+            self.open3d_mesh.compute_vertex_normals()
+            # Check if the OBJ file has vertex colors
+            if not np.asarray(self.open3d_mesh.vertex_colors).size:
+                self.open3d_mesh.paint_uniform_color(
+                    [c / 255.0 for c in self.model_color])
+        elif file_format == "glb":
+            print("loading glb file")
+            self.open3d_mesh = o3d.io.read_triangle_mesh(self.model_path)
         if not self.vis:
             self.setup_visualizer()
         else:
