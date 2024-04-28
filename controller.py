@@ -73,7 +73,8 @@ class Controller:
             "Blue": (255, 0, 0),
             "Yellow": (0, 255, 255),
             "Purple": (255, 0, 255),
-            "Orange": (0, 165, 255)
+            "Orange": (0, 165, 255),
+            "Grey": (128, 128, 128)
         }
         if color in color_map:
             try:
@@ -105,7 +106,7 @@ class Controller:
 
         tk.Label(self.drawing_submenu, text="Drawing Color:").pack(side=tk.LEFT)
 
-        colors = ["Green", "Red", "Blue", "Yellow", "Purple", "Orange"]
+        colors = ["Green", "Red", "Blue", "Yellow", "Purple", "Orange", "Grey"]
         self.color_var = tk.StringVar(value="Green")
 
         color_dropdown = tk.Menubutton(
@@ -162,8 +163,8 @@ class Controller:
         self.color_submenu = tk.Frame(self.window)
         tk.Label(self.color_submenu, text="Model Color:").pack(side=tk.LEFT)
 
-        colors = ["Purple", "Red", "Green", "Blue", "Yellow", "Orange"]
-        self.model_color_var = tk.StringVar(value="Purple")
+        colors = ["Grey", "Red", "Green", "Blue", "Yellow", "Orange", "Purple"]
+        self.model_color_var = tk.StringVar(value="Grey")
 
         model_color_dropdown = tk.Menubutton(
             self.color_submenu,
@@ -334,7 +335,8 @@ class Controller:
             "Green": (0, 255, 0),
             "Blue": (0, 0, 255),
             "Yellow": (255, 255, 0),
-            "Orange": (255, 165, 0)
+            "Orange": (255, 165, 0),
+            "Grey": (128, 128, 128)
         }
         if color in color_map:
             try:
