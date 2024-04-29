@@ -54,11 +54,11 @@ class Controller:
             # The file path is in the format "{path}"
             file_path = file_path[1:-1]  # Remove the curly braces
         _, self.file_extension = os.path.splitext(file_path)
-        if self.file_extension.lower() in [".png", ".jpg", ".jpeg", ".stl", ".step", ".obj", ".glb"]:
+        if self.file_extension.lower() in [".png", ".jpg", ".jpeg", ".stl", ".step", ".obj", ".glb", ".gltf"]:
             self.validate_and_set_file(file_path)
         else:
             messagebox.showerror(
-                "Error", "Invalid file type. Please drop a PNG, JPEG, JPG, STL, STEP, OBJ, or GLB file.")
+                "Error", "Invalid file type. Please drop a PNG, JPEG, JPG, STL, STEP, OBJ, GLB, or GLTF file.")
             
     def update_interaction_button(self):
         if self.interaction_file_type in ["interact2D", "interact3D"]:
@@ -373,7 +373,7 @@ class Controller:
             self.lighting_submenu.pack_forget()
         elif mode == "interact" and self.interaction_file_type == "interact3D":
             self.drawing_submenu.pack_forget()
-            if self.file_extension.lower() in [".step", ".glb"]:
+            if self.file_extension.lower() in [".step", ".glb", ".gltf"]:
                 self.color_submenu.pack_forget()
             else:
                 self.color_submenu.pack(pady=10)
@@ -404,7 +404,7 @@ class Controller:
             _, self.file_extension = os.path.splitext(file_path)
             if self.file_extension.lower() in [".png", ".jpg", ".jpeg"]:
                 self.interaction_file_type = "interact2D"
-            elif self.file_extension.lower() in [".stl", ".step", ".obj", ".glb"]:
+            elif self.file_extension.lower() in [".stl", ".step", ".obj", ".glb", ".gltf"]:
                 self.interaction_file_type = "interact3D"
             else:
                 self.interaction_file_type = None
@@ -424,7 +424,7 @@ class Controller:
                 interaction_mode = 'interact2D' if self.interaction_file_type == 'interact2D' else 'interact3D'
                 self.send_message(interaction_mode + ' ' + file_path)
             if self.interaction_file_type == "interact3D":
-                if self.file_extension.lower() in [".step", ".obj"]:
+                if self.file_extension.lower() in [".step", ".gltf", ".glb"]:
                     self.color_submenu.pack_forget()
                 else:
                     self.color_submenu.pack(pady=10)
@@ -505,7 +505,7 @@ class Controller:
                     self.change_drawing_color(self.color_var.get())
                     time.sleep(0.25)
                 elif self.interaction_mode == "interact" and self.interaction_file_type == "interact3D":
-                    if self.file_extension.lower() in [".step", ".obj"]:
+                    if self.file_extension.lower() in [".step", ".gltf", ".glb"]:
                         self.color_submenu.pack_forget()
                     else:
                         self.color_submenu.pack(pady=10)
