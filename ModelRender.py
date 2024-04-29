@@ -5,9 +5,7 @@ import open3d as o3d
 import trimesh
 import threading
 import queue
-import os
 import tempfile
-import glob
 import vtk
 from vtk.util import numpy_support
 import cadquery as cq
@@ -22,6 +20,7 @@ class ModelRender:
         self.mesh_image_max = None
         self.mesh_image_size = (320, 240)
         self.open3d_mesh = None
+        self.old_model = None
         self.max_height_render = 648
         self.max_width_render = 1152
         # Initialize rotation matrix to identity
@@ -41,7 +40,10 @@ class ModelRender:
         print("Setting up Visualizer")
         self.vis = o3d.visualization.Visualizer()
         self.vis.create_window(
-            visible=False, width=self.max_width_render, height=self.max_height_render)        
+            visible=False, width=self.max_width_render, height=self.max_height_render)
+        self.vis.get_render_option().background_color = np.asarray([
+            116/255, 116/255, 0])
+
         self.vis.add_geometry(self.open3d_mesh)
         print("Setting Up Camera View")
         ctr = self.vis.get_view_control()
@@ -49,60 +51,35 @@ class ModelRender:
         ctr.set_lookat(self.open3d_mesh.get_center())
         ctr.set_up([0, 1, 0])
         ctr.set_zoom(1.0)
-        print("Done Settuping Up Visualizer")
+        print("Done Setting Up Visualizer")
 
 
-    def convert_step_to_vtp_files(self, step_file_path, output_dir):
-        # Load the STEP file using CadQuery
-        result = cq.importers.importStep(step_file_path)
+    def convert_step_to_gltf(self, step_file_path, output_file):
+        assy = cq.Assembly()
+        components = cq.importers.importStep(step_file_path)
 
-        # Ensure the output directory exists
-        os.makedirs(output_dir, exist_ok=True)
-
-        # Extract solids from the result
-        solids = []
-        if isinstance(result, cq.Workplane):
-            solids = result.solids().vals()
-        elif isinstance(result, cq.Shape):
-            solids = [result]
-
-        # Check the number of solids
-        if len(solids) == 0:
-            raise ValueError("No solids found in the STEP file.")
-
-        for i, solid in enumerate(solids):
-            # Generate the output file name
-            output_file = os.path.join(output_dir, f"shape_{i}.vtp")
-
-            # Export the solid as a VTP file
-            cq.exporters.export(solid, output_file, exportType='VTP')
-            print(f"Exported {output_file}")
-
-
-    def load_and_render_vtp_files(self, vtp_files):
-        # Clear the existing actors from the renderer
-        self.renderer.RemoveAllViewProps()
-
-        # Load each VTP file and create an actor for each element
-        for vtp_file in vtp_files:
-            reader = vtk.vtkXMLPolyDataReader()
-            reader.SetFileName(vtp_file)
-            reader.Update()
-
-            mapper = vtk.vtkPolyDataMapper()
-            mapper.SetInputConnection(reader.GetOutputPort())
-
-            actor = vtk.vtkActor()
-            actor.SetMapper(mapper)
-
-            # Add the actor to the renderer
-            self.renderer.AddActor(actor)
-
-        # Reset the camera
-        self.renderer.ResetCamera()
+        # Add each component to the assembly
+        for i, solid in enumerate(components.solids().vals()):
+            # Check if the solid has a color attribute
+            if hasattr(solid, 'color'):
+                # Use the color from the STEP file
+                color = solid.color
+                print(f"Color found: {color}")
+            else:
+                # If no color is found, use a default color (e.g., gray)
+                color = cq.Color(0.5, 0.5, 0.5)
+            # Add the solid to the assembly with the color
+            assy.add(solid, color=color, name=f"component_{i}")
+            print(f"Added component_{i}")
+        # Save the assembly to glTF
+        assy.save(output_file, "GLTF")
+        print(f"Exported {output_file}")
+    
+    def initialize_model(self):
+        self.rotation_queue.put(("load_model", None))
         
     def load_model(self):
-        print("Loading Model")
+        print("Loading Model...")
         start_time = time.time()
         if self.open3d_mesh:
             self.old_model = self.open3d_mesh
@@ -118,20 +95,14 @@ class ModelRender:
                 [c / 255.0 for c in self.model_color])
         elif file_format == "step":
             print("loading step file")
-            # Create a temporary directory to store the converted VTP files
-            with tempfile.TemporaryDirectory() as temp_dir:
-                # Convert the STEP file to individual VTP files
-                self.convert_step_to_vtp_files(self.model_path, temp_dir)
-
-                # Get the list of converted VTP files
-                vtp_files = glob.glob(os.path.join(temp_dir, "*.vtp"))
-
-                # Load and render the VTP files
-                self.load_and_render_vtp_files(vtp_files)
-
-                self.mesh_dirty = False
-                print(f"Model loading time: {time.time() - start_time:.4f} seconds")
-                self.mesh_image = self.render_mesh_to_image()
+            # Create a temporary file to store the converted glTF file
+            with tempfile.NamedTemporaryFile(suffix=".gltf", delete=False) as temp_file:
+                output_file = temp_file.name
+            # Convert the STEP file to glTF format
+            self.convert_step_to_gltf(self.model_path, output_file)
+            print(f"Converted {self.model_path} to {output_file}")
+            # Load the glTF file
+            self.open3d_mesh = o3d.io.read_triangle_mesh(output_file)
         elif file_format == "obj":
             print("loading obj file")
             mesh = trimesh.load(self.model_path)
@@ -147,15 +118,19 @@ class ModelRender:
             if not np.asarray(self.open3d_mesh.vertex_colors).size:
                 self.open3d_mesh.paint_uniform_color(
                     [c / 255.0 for c in self.model_color])
-        elif file_format == "glb":
-            print("loading glb file")
+        elif file_format == "glb" or file_format == "gltf":
+            print(f"loading {file_format} file")
             self.open3d_mesh = o3d.io.read_triangle_mesh(self.model_path)
-        if file_format != "step":
-            if not self.vis:
-                self.setup_visualizer()
-            else:
+            self.open3d_mesh.compute_vertex_normals()
+            self.open3d_mesh.compute_triangle_normals()
+        if not self.vis:
+            self.setup_visualizer()
+            self.vis.add_geometry(self.open3d_mesh)
+        else:
+            if self.old_model is not None:
                 self.vis.remove_geometry(self.old_model)
-                self.vis.add_geometry(self.open3d_mesh)
+            self.vis.add_geometry(self.open3d_mesh)
+            
         self.mesh_dirty = False
         print(f"Model loading time: {time.time() - start_time:.4f} seconds")
         self.mesh_image = self.render_mesh_to_image()
@@ -179,75 +154,39 @@ class ModelRender:
         return cropped_image
 
     def render_mesh_to_image(self):
-        print("Rendering Mesh to Image")
         start_time = time.time()
-        file_format = self.model_path.split(".")[-1].lower()
 
-        if file_format == "step":
-            # Apply the rotation matrix to each actor in the renderer
-            rotation_matrix_4x4 = np.eye(4)
-            rotation_matrix_4x4[:3, :3] = self.rotation_matrix
-            for actor in self.renderer.GetActors():
-                transform = vtk.vtkTransform()
-                transform.SetMatrix(self.rotation_matrix_4x4.flatten())
-                actor.SetUserTransform(transform)
+        # Apply the rotation matrix to the mesh
+        self.open3d_mesh.rotate(self.rotation_matrix,
+                                center=self.open3d_mesh.get_center())
 
-            self.render_window.Render()
-            # Capture the rendered image
-            window_to_image_filter = vtk.vtkWindowToImageFilter()
-            window_to_image_filter.SetInput(self.render_window)
-            window_to_image_filter.Update()
+        # Update the geometry to apply rotation
+        self.vis.update_geometry(self.open3d_mesh)
+        self.vis.poll_events()
+        self.vis.update_renderer()
+        
+        # Capture the image
+        image = self.vis.capture_screen_float_buffer(do_render=True)
+        print(f"Scene rendering time: {time.time() - start_time:.4f} seconds")
+        start_time = time.time()
+        # Convert Open3D image to a numpy array
+        image = np.asarray(image)
+        image = (image * 255).astype(np.uint8)
+        # Use BGRA to include an alpha channel
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGRA)
+        
+        color_mask = (0, 116, 116)
+        color_mask = np.all(image[:, :, :3] == color_mask, axis=-1)
+        # Set alpha to 0 where the background is white
+        image[color_mask, 3] = 0
 
-            # Get the captured image as a numpy array
-            vtk_image = window_to_image_filter.GetOutput()
-            width, height, _ = vtk_image.GetDimensions()
-            vtk_array = vtk_image.GetPointData().GetScalars()
-            numpy_array = numpy_support.vtk_to_numpy(vtk_array)
-            numpy_array = numpy_array.reshape(height, width, -1)
-            numpy_array = numpy_array[:, :, ::-1]  # Convert RGB to BGR
-
-            print(f"Scene rendering time: {time.time() - start_time:.4f} seconds")
-            start_time = time.time()
-            numpy_array = cv2.cvtColor(numpy_array, cv2.COLOR_BGR2BGRA)
-            white_background = np.all(numpy_array[:, :, :3] == 255, axis=-1)
-            numpy_array[white_background, 3] = 0
-
-            self.mesh_image_max = numpy_array
-            mesh_image = cv2.resize(
-                self.mesh_image_max, self.mesh_image_size, interpolation=cv2.INTER_LANCZOS4)
-        else:
-            # Apply the rotation matrix to the mesh
-            self.open3d_mesh.rotate(self.rotation_matrix,
-                                    center=self.open3d_mesh.get_center())
-
-            # Update the geometry to apply rotation
-            self.vis.update_geometry(self.open3d_mesh)
-            self.vis.poll_events()
-            self.vis.update_renderer()
-            
-            # Capture the image
-            image = self.vis.capture_screen_float_buffer(do_render=True)
-            print(f"Scene rendering time: {time.time() - start_time:.4f} seconds")
-            start_time = time.time()
-            # Convert Open3D image to a numpy array
-            image = np.asarray(image)
-            image = (image * 255).astype(np.uint8)
-            # Use BGRA to include an alpha channel
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGRA)
-            white_background = np.all(image[:, :, :3] == 255, axis=-1)
-            # Set alpha to 0 where the background is white
-            image[white_background, 3] = 0
-
-            # Store the high-resolution mesh image with transparency
-            self.mesh_image_max = image
-            # Resize for the smaller version
-            mesh_image = cv2.resize(
-                self.mesh_image_max, self.mesh_image_size, interpolation=cv2.INTER_LANCZOS4)
+        # Store the high-resolution mesh image with transparency
+        self.mesh_image_max = image
+        # Resize for the smaller version
+        mesh_image = cv2.resize(
+            self.mesh_image_max, self.mesh_image_size, interpolation=cv2.INTER_LANCZOS4)
         print(f"Image processing time: {time.time() - start_time:.4f} seconds")
         return mesh_image
-    
-    def initialize_model(self):
-        self.rotation_queue.put(("load_model", None))
 
     def update_model(self, model_path, model_color, lighting):
         print("Updating Model")
