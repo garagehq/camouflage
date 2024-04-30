@@ -69,8 +69,7 @@ class ModelRender:
 
 
     def initialize_model(self):
-        with self.lock:
-            self.rotation_queue.put(("load_model", None))
+        self.rotation_queue.put(("load_model", None))
         
 
     def remove_actor_or_collection(self, actors):
