@@ -173,9 +173,18 @@ class ModelRender:
             reader = vtk.vtkGLTFReader()
             reader.SetFileName(gltf_path)
             reader.Update()
-            output_data = reader.GetOutput()
-            actors = self.process_blocks(output_data)
-            self.update_renderer_actors(actors)
+
+            mapper = vtk.vtkCompositePolyDataMapper2()
+            mapper.SetInputConnection(reader.GetOutputPort())
+
+            # Create an actor
+            actor = vtk.vtkActor()
+            actor.SetMapper(mapper)
+            self.vtk_mesh = actor
+            self.renderer.AddActor(self.vtk_mesh)
+            # output_data = reader.GetOutput()
+            # actors = self.process_blocks(output_data)
+            # self.update_renderer_actors(actors)
         if (self.reset_rotations):
             self.rotation_matrix.Identity()
         self.mesh_dirty = False
@@ -186,24 +195,23 @@ class ModelRender:
         self.mesh_image = self.render_mesh_to_image()
         self.model_loaded = True
 
-    def apply_materials_directly(self, actor, block):
-        field_data = block.GetFieldData()
-        if field_data:
-            num_arrays = field_data.GetNumberOfArrays()
-            for i in range(num_arrays):
-                array = field_data.GetArray(i)
-                if debug_flag:
-                    print(f"Field data array: {array.GetName()}")
-                if array.GetName() == "MaterialProperty":
-                    # Process the material property
-                    color = array.GetTuple3(0)  # Assume RGB color
-                    actor.GetProperty().SetColor(color[0], color[1], color[2])  
-    
+    def apply_materials_directly(self, actor, polydata):
+        print(f"Point Data {polydata.GetPointData()}")
+        print(f"FieldData: {polydata.GetFieldData()}")
+        if polydata.GetPointData().HasArray("Material"):
+            # Here you would apply the material properties to the actor
+            # This is just a placeholder to illustrate the concept
+            material_array = polydata.GetPointData().GetArray("Material")
+            # Apply properties like diffuse color, specular, etc., to the actor
+            # You might need to create a vtkProperty and set it on the actor
+            material_property = vtk.vtkProperty()
+            # Example: Setting diffuse color, this should be adapted based on actual material data
+            material_property.SetDiffuseColor(material_array.GetTuple3(0))
+            actor.SetProperty(material_property)
     def process_blocks(self, data):
         actors = vtk.vtkActorCollection()
         if isinstance(data, vtk.vtkPolyData):
-            actor_ = self.create_actor_from_polydata(data)
-            self.apply_materials_directly(actor_, data)
+            actor_ = self.create_actor_from_data(data)
             actors.AddItem(actor_)
         elif isinstance(data, vtk.vtkMultiBlockDataSet):
             for i in range(data.GetNumberOfBlocks()):
@@ -217,20 +225,16 @@ class ModelRender:
                     actor = child_actors.GetNextActor()
         return actors
 
-
-    def create_actor_from_polydata(self, polydata):
-        mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInputData(polydata)
+    def create_actor_from_data(self, data):
+        mapper = vtk.vtkCompositePolyDataMapper2()
+        mapper.SetInputDataObject(data)
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
-        # Check for existing color information
-        has_color = polydata.GetPointData().GetScalars(
-            ) or polydata.GetCellData().GetScalars()
-        if not has_color:
-            # Apply default color if no color information is present
-            actor.GetProperty().SetColor(self.model_color[0] / 255.0,
-                                        self.model_color[1] / 255.0,
-                                        self.model_color[2] / 255.0)
+        self.apply_materials_directly(actor, data)
+        has_color = data.GetPointData().GetScalars(
+        ) or data.GetCellData().GetScalars()
+        if has_color:
+            print("Contains color")
         return actor
 
 
