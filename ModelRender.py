@@ -1,14 +1,13 @@
 import cv2
 import numpy as np
 import time
-import trimesh
+import math
 import threading
 import queue
 import tempfile
 import vtk
 from vtk.util import numpy_support
 import cadquery as cq
-
 
 class ModelRender:
     def __init__(self, model_path=None, model_color=(128, 128, 128), lighting=(0.25, 0.25, 0.25)):
@@ -29,23 +28,12 @@ class ModelRender:
         self.rendering_thread = None
         self.stop_event = threading.Event()
         self.renderer = vtk.vtkRenderer()
-        self.renderer.SetBackground(1, 1, 1)  # Set background color to white
+        self.renderer.SetBackground(116/255.0, 116/255.0, 0)
         self.render_window = vtk.vtkRenderWindow()
         self.render_window.SetOffScreenRendering(True)
         self.render_window.AddRenderer(self.renderer)
         self.render_window.SetSize(
             self.max_width_render, self.max_height_render)
-
-    def setup_visualizer(self):
-        print("Setting up Visualizer")
-        self.renderer.AddActor(self.vtk_mesh)
-        print("Setting Up Camera View")
-        camera = self.renderer.GetActiveCamera()
-        camera.SetPosition(0, 0, 1)
-        camera.SetFocalPoint(0, 0, 0)
-        camera.SetViewUp(0, 1, 0)
-        self.renderer.ResetCamera()
-        print("Done Setting Up Visualizer")
 
     def convert_step_to_gltf(self, step_file_path, output_file):
         assy = cq.Assembly()
@@ -83,7 +71,36 @@ class ModelRender:
             self.renderer.RemoveActor(actors)
         else:
             raise TypeError("Unsupported type for actor removal.")
+        self.rotation_matrix = vtk.vtkMatrix4x4()
 
+    def adjust_camera(self):
+        # Reset the camera
+        self.renderer.ResetCamera()
+        # Get the bounding box of the model
+        bounds = self.renderer.ComputeVisiblePropBounds()
+        # Calculate the center of the bounding box
+        center = [(bounds[1] + bounds[0]) / 2, (bounds[3] +
+                                                bounds[2]) / 2, (bounds[5] + bounds[4]) / 2]
+        # Calculate the diagonal length of the bounding box
+        diagonal = math.sqrt((bounds[1] - bounds[0])**2 +
+                            (bounds[3] - bounds[2])**2 + (bounds[5] - bounds[4])**2)
+        # Set the camera position and focal point based on the bounding box
+        camera = self.renderer.GetActiveCamera()
+        camera.SetFocalPoint(center[0], center[1], center[2])
+        # Calculate the camera position based on the model center and diagonal length
+        # Adjust the distance based on the diagonal length
+        camera_distance = diagonal * 1.5
+        camera_position = [
+            center[0],
+            center[1],
+            center[2] + camera_distance
+        ]
+        camera.SetPosition(camera_position)
+        camera.SetViewUp(0, 1, 0)
+
+        # Reset the clipping range of the camera
+        self.renderer.ResetCameraClippingRange()
+    
     def load_model(self):
         print("Loading Model...")
         start_time = time.time()
@@ -138,12 +155,11 @@ class ModelRender:
                 # Convert the STEP file to glTF format
                 self.convert_step_to_gltf(self.model_path, output_file)
                 print(f"Converted {self.model_path} to {output_file}")
-                # Load the glTF file
-                reader = vtk.vtkGLTFReader()
-                reader.SetFileName(output_file)
+                gltf_path = output_file
             else:
-                reader = vtk.vtkGLTFReader()
-                reader.SetFileName(self.model_path)
+                gltf_path = self.model_path
+            reader = vtk.vtkGLTFReader()
+            reader.SetFileName(gltf_path)
             reader.Update()
             output_data = reader.GetOutput()
             actors = self.process_blocks(output_data)
@@ -151,12 +167,28 @@ class ModelRender:
         self.mesh_dirty = False
         print(f"Model loading time: {time.time() - start_time:.4f} seconds")
         self.center_of_mass = self.get_center_of_mass()  # Store the center of mass
+        self.adjust_camera()  # Adjust the camera based on the loaded model
         self.mesh_image = self.render_mesh_to_image()
 
+    def apply_materials_directly(self, actor, block):
+        field_data = block.GetFieldData()
+        if field_data:
+            num_arrays = field_data.GetNumberOfArrays()
+            for i in range(num_arrays):
+                array = field_data.GetArray(i)
+                print(f"Field data array: {array.GetName()}")
+                if array.GetName() == "MaterialProperty":
+                    # Process the material property
+                    # This is just an example, you'll need to see what's actually available in your case
+                    color = array.GetTuple3(0)  # Assume RGB color
+                    actor.GetProperty().SetColor(color[0], color[1], color[2])  
+    
     def process_blocks(self, data):
         actors = vtk.vtkActorCollection()
         if isinstance(data, vtk.vtkPolyData):
-            actors.AddItem(self.create_actor_from_polydata(data))
+            actor_ = self.create_actor_from_polydata(data)
+            self.apply_materials_directly(actor_, data)
+            actors.AddItem(actor_)
         elif isinstance(data, vtk.vtkMultiBlockDataSet):
             for i in range(data.GetNumberOfBlocks()):
                 child_block = data.GetBlock(i)
@@ -175,7 +207,6 @@ class ModelRender:
         mapper.SetInputData(polydata)
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
-
         # Check for existing color information
         has_color = polydata.GetPointData().GetScalars(
             ) or polydata.GetCellData().GetScalars()
@@ -197,7 +228,6 @@ class ModelRender:
             self.renderer.AddActor(actor)
             actor = actors.GetNextActor()
 
-
     def remove_actor_or_collection(self, actors):
         if isinstance(actors, vtk.vtkActorCollection):
             actors.InitTraversal()
@@ -207,6 +237,7 @@ class ModelRender:
                 actor = actors.GetNextActor()
         elif isinstance(actors, vtk.vtkActor):
             self.renderer.RemoveActor(actors)
+
     def crop_image_to_content(self, image):
         # Check where the alpha channel is not zero
         alpha_channel = image[:, :, 3]
@@ -227,8 +258,6 @@ class ModelRender:
 
     def render_mesh_to_image(self):
         start_time = time.time()
-        # Set the background color
-        self.renderer.SetBackground(116/255.0, 116/255.0, 0)
 
         # Apply the rotation matrix to the mesh
         transform = vtk.vtkTransform()
@@ -332,10 +361,7 @@ class ModelRender:
     
     def update_rotation(self, rotation_x, rotation_y):
         # Assuming self.center_of_mass has been calculated and stored
-        if self.center_of_mass is None:
-            center = [0, 0, 0]
-        else: 
-            center = self.center_of_mass
+        center = self.center_of_mass
 
         # Create a transformation that rotates around the fixed center of mass
         rotation_transform = vtk.vtkTransform()
