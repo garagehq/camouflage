@@ -514,12 +514,12 @@ class HandTrackerRenderer:
                         self.model_render.update_rotation(0, 15)
                     self.last_rotation_time = current_time
 
-            
             if self.model_render is not None:
-                if self.model_render.mesh_image is not None and self.mesh_visible:
+                # with self.model_render.lock:
+                if self.model_render.mesh_image is not None and self.model_render.model_loaded and self.mesh_visible:
                     frame = self.overlay_image(
                         frame, self.model_render.mesh_image, self.image_position)
-                elif self.model_render.mesh_image is None and self.mesh_visible:
+                elif self.model_render.mesh_image is None and self.model_render.model_loaded is False and self.mesh_visible:
                     print("draw: show loading symbol")
             if index_finger_tip is not None and self.model_render is not None and self.model_render.mesh_image is not None:
                 # Draw a green filled circle around the index finger tip

@@ -22,6 +22,8 @@ class ModelRender:
         self.old_model = None
         self.max_height_render = 648
         self.max_width_render = 1152
+        self.model_loaded = False
+        self.loaded_model = None
         # Initialize rotation matrix to identity
         self.rotation_matrix = vtk.vtkMatrix4x4()
         self.rotation_queue = queue.Queue()
@@ -34,6 +36,7 @@ class ModelRender:
         self.render_window.AddRenderer(self.renderer)
         self.render_window.SetSize(
             self.max_width_render, self.max_height_render)
+        
 
     def convert_step_to_gltf(self, step_file_path, output_file):
         assy = cq.Assembly()
@@ -56,8 +59,18 @@ class ModelRender:
         assy.save(output_file, "GLTF")
         print(f"Exported {output_file}")
 
+
+    def load_model_async(self):
+        self.loaded_model = None
+        self.model_loaded = False
+
+        thread = threading.Thread(target=self.load_model)
+        thread.start()
+
+
     def initialize_model(self):
-        self.rotation_queue.put(("load_model", None))
+        with self.lock:
+            self.rotation_queue.put(("load_model", None))
         
 
     def remove_actor_or_collection(self, actors):
@@ -102,6 +115,7 @@ class ModelRender:
     
     def load_model(self):
         print("Loading Model...")
+        self.model_loaded = False
         start_time = time.time()
         if self.vtk_mesh:
             self.old_model = self.vtk_mesh
@@ -169,6 +183,8 @@ class ModelRender:
         self.center_of_mass = self.get_center_of_mass()  # Store the center of mass
         self.adjust_camera()  # Adjust the camera based on the loaded model
         self.mesh_image = self.render_mesh_to_image()
+        self.model_loaded = True
+        print("load_model: MODEL LOADED")
 
     def apply_materials_directly(self, actor, block):
         field_data = block.GetFieldData()
@@ -400,6 +416,13 @@ class ModelRender:
                 elif operation == "rotate":
                     self.rotation_matrix = data
                     self.mesh_image = self.render_mesh_to_image()
+                # if operation == "load_model_async":
+                #     self.load_model_async()
+                # elif operation == "rotate" and self.model_loaded:
+                #     with self.lock:
+                #         self.rotation_matrix = data
+                #         self.vtk_mesh = self.loaded_model
+                #         self.mesh_image = self.render_mesh_to_image()
             time.sleep(0.1)  # Add a small delay to avoid excessive CPU usage
 
     def __del__(self):
