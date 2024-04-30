@@ -26,7 +26,7 @@ class ModelRender:
         self.loaded_model = None
         # Initialize rotation matrix to identity
         self.rotation_matrix = vtk.vtkMatrix4x4()
-        self.rotation_queue = queue.Queue()
+        self.task_queue = queue.Queue()
         self.rendering_thread = None
         self.stop_event = threading.Event()
         self.renderer = vtk.vtkRenderer()
@@ -60,7 +60,7 @@ class ModelRender:
         print(f"Exported {output_file}")
 
     def initialize_model(self):
-        self.rotation_queue.put(("load_model", None))
+        self.task_queue.put(("load_model", None))
         
 
     def remove_actor_or_collection(self, actors):
@@ -322,7 +322,7 @@ class ModelRender:
             self.model_color = model_color
             self.lighting = lighting
             self.mesh_dirty = True
-            self.rotation_queue.put(("load_model", None))
+            self.task_queue.put(("load_model", None))
 
     def get_combined_bounds(self, actor_collection):
         combined_bounds = [float('inf'), -float('inf'),
@@ -386,7 +386,7 @@ class ModelRender:
         self.rotation_matrix.DeepCopy(current_transform.GetMatrix())
 
         self.mesh_dirty = True
-        self.rotation_queue.put(("rotate", self.rotation_matrix))
+        self.task_queue.put(("rotate", self.rotation_matrix))
 
     def start_rendering_thread(self):
         self.rendering_thread = threading.Thread(target=self.rendering_loop)
@@ -399,8 +399,8 @@ class ModelRender:
 
     def rendering_loop(self):
         while not self.stop_event.is_set():
-            if not self.rotation_queue.empty():
-                operation, data = self.rotation_queue.get()
+            if not self.task_queue.empty():
+                operation, data = self.task_queue.get()
                 if operation == "load_model":
                     self.load_model()
                 elif operation == "rotate":
