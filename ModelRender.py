@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 import time
-import open3d as o3d
 import trimesh
 import threading
 import queue
@@ -9,6 +8,7 @@ import tempfile
 import vtk
 from vtk.util import numpy_support
 import cadquery as cq
+
 
 class ModelRender:
     def __init__(self, model_path=None, model_color=(128, 128, 128), lighting=(0.25, 0.25, 0.25)):
@@ -19,13 +19,12 @@ class ModelRender:
         self.mesh_dirty = True
         self.mesh_image_max = None
         self.mesh_image_size = (320, 240)
-        self.open3d_mesh = None
+        self.vtk_mesh = None
         self.old_model = None
         self.max_height_render = 648
         self.max_width_render = 1152
         # Initialize rotation matrix to identity
-        self.rotation_matrix = np.eye(3)
-        self.vis = None  # Visualization object
+        self.rotation_matrix = vtk.vtkMatrix4x4()
         self.rotation_queue = queue.Queue()
         self.rendering_thread = None
         self.stop_event = threading.Event()
@@ -34,25 +33,19 @@ class ModelRender:
         self.render_window = vtk.vtkRenderWindow()
         self.render_window.SetOffScreenRendering(True)
         self.render_window.AddRenderer(self.renderer)
-        self.render_window.SetSize(self.max_width_render, self.max_height_render)
-        
+        self.render_window.SetSize(
+            self.max_width_render, self.max_height_render)
+
     def setup_visualizer(self):
         print("Setting up Visualizer")
-        self.vis = o3d.visualization.Visualizer()
-        self.vis.create_window(
-            visible=False, width=self.max_width_render, height=self.max_height_render)
-        self.vis.get_render_option().background_color = np.asarray([
-            116/255, 116/255, 0])
-
-        self.vis.add_geometry(self.open3d_mesh)
+        self.renderer.AddActor(self.vtk_mesh)
         print("Setting Up Camera View")
-        ctr = self.vis.get_view_control()
-        ctr.set_front([0, 0, -1])
-        ctr.set_lookat(self.open3d_mesh.get_center())
-        ctr.set_up([0, 1, 0])
-        ctr.set_zoom(1.0)
+        camera = self.renderer.GetActiveCamera()
+        camera.SetPosition(0, 0, 1)
+        camera.SetFocalPoint(0, 0, 0)
+        camera.SetViewUp(0, 1, 0)
+        self.renderer.ResetCamera()
         print("Done Setting Up Visualizer")
-
 
     def convert_step_to_gltf(self, step_file_path, output_file):
         assy = cq.Assembly()
@@ -74,67 +67,146 @@ class ModelRender:
         # Save the assembly to glTF
         assy.save(output_file, "GLTF")
         print(f"Exported {output_file}")
-    
+
     def initialize_model(self):
         self.rotation_queue.put(("load_model", None))
         
+
+    def remove_actor_or_collection(self, actors):
+        if isinstance(actors, vtk.vtkActorCollection):
+            actors.InitTraversal()
+            actor = actors.GetNextActor()
+            while actor:
+                self.renderer.RemoveActor(actor)
+                actor = actors.GetNextActor()
+        elif isinstance(actors, vtk.vtkActor):
+            self.renderer.RemoveActor(actors)
+        else:
+            raise TypeError("Unsupported type for actor removal.")
+
     def load_model(self):
         print("Loading Model...")
         start_time = time.time()
-        if self.open3d_mesh:
-            self.old_model = self.open3d_mesh
+        if self.vtk_mesh:
+            self.old_model = self.vtk_mesh
 
         # Determine the file format based on the file extension
         file_format = self.model_path.split(".")[-1].lower()
 
         if file_format == "stl":
             print("loading stl file")
-            self.open3d_mesh = o3d.io.read_triangle_mesh(self.model_path)
-            self.open3d_mesh.compute_vertex_normals()
-            self.open3d_mesh.paint_uniform_color(
-                [c / 255.0 for c in self.model_color])
-        elif file_format == "step":
-            print("loading step file")
-            # Create a temporary file to store the converted glTF file
-            with tempfile.NamedTemporaryFile(suffix=".gltf", delete=False) as temp_file:
-                output_file = temp_file.name
-            # Convert the STEP file to glTF format
-            self.convert_step_to_gltf(self.model_path, output_file)
-            print(f"Converted {self.model_path} to {output_file}")
-            # Load the glTF file
-            self.open3d_mesh = o3d.io.read_triangle_mesh(output_file)
+            reader = vtk.vtkSTLReader()
+            reader.SetFileName(self.model_path)
+            reader.Update()
+            self.vtk_mesh = reader.GetOutput()
+            mapper = vtk.vtkPolyDataMapper()
+            mapper.SetInputData(self.vtk_mesh)
+            actor = vtk.vtkActor()
+            actor.SetMapper(mapper)
+            actor.GetProperty().SetColor(self.model_color[0] / 255.0,
+                                        self.model_color[1] / 255.0,
+                                        self.model_color[2] / 255.0)
+            self.vtk_mesh = actor
+
+            if self.old_model is not None:
+                self.remove_actor_or_collection(self.old_model)
+            self.renderer.AddActor(self.vtk_mesh)
         elif file_format == "obj":
             print("loading obj file")
-            mesh = trimesh.load(self.model_path)
-            if isinstance(mesh, trimesh.Scene):
-                # If the loaded object is a scene, get the first mesh
-                mesh = mesh.geometry.values()[0]
-            self.open3d_mesh = o3d.geometry.TriangleMesh(
-                vertices=o3d.utility.Vector3dVector(mesh.vertices),
-                triangles=o3d.utility.Vector3iVector(mesh.faces)
-            )
-            self.open3d_mesh.compute_vertex_normals()
-            # Check if the OBJ file has vertex colors
-            if not np.asarray(self.open3d_mesh.vertex_colors).size:
-                self.open3d_mesh.paint_uniform_color(
-                    [c / 255.0 for c in self.model_color])
-        elif file_format == "glb" or file_format == "gltf":
-            print(f"loading {file_format} file")
-            self.open3d_mesh = o3d.io.read_triangle_mesh(self.model_path)
-            self.open3d_mesh.compute_vertex_normals()
-            self.open3d_mesh.compute_triangle_normals()
-        if not self.vis:
-            self.setup_visualizer()
-            self.vis.add_geometry(self.open3d_mesh)
-        else:
+            reader = vtk.vtkOBJReader()
+            reader.SetFileName(self.model_path)
+            reader.Update()
+            self.vtk_mesh = reader.GetOutput()
+            mapper = vtk.vtkPolyDataMapper()
+            mapper.SetInputData(self.vtk_mesh)
+            actor = vtk.vtkActor()
+            actor.SetMapper(mapper)
+            actor.GetProperty().SetColor(self.model_color[0] / 255.0,
+                                        self.model_color[1] / 255.0,
+                                        self.model_color[2] / 255.0)
+            self.vtk_mesh = actor
+
             if self.old_model is not None:
-                self.vis.remove_geometry(self.old_model)
-            self.vis.add_geometry(self.open3d_mesh)
-            
+                self.remove_actor_or_collection(self.old_model)
+            self.renderer.AddActor(self.vtk_mesh)
+        elif file_format == "glb" or file_format == "gltf" or file_format == "step":
+            print(f"loading {file_format} file")
+            if file_format == "step":
+                # Create a temporary file to store the converted glTF file
+                with tempfile.NamedTemporaryFile(suffix=".gltf", delete=False) as temp_file:
+                    output_file = temp_file.name
+                # Convert the STEP file to glTF format
+                self.convert_step_to_gltf(self.model_path, output_file)
+                print(f"Converted {self.model_path} to {output_file}")
+                # Load the glTF file
+                reader = vtk.vtkGLTFReader()
+                reader.SetFileName(output_file)
+            else:
+                reader = vtk.vtkGLTFReader()
+                reader.SetFileName(self.model_path)
+            reader.Update()
+            output_data = reader.GetOutput()
+            actors = self.process_blocks(output_data)
+            self.update_renderer_actors(actors)
         self.mesh_dirty = False
         print(f"Model loading time: {time.time() - start_time:.4f} seconds")
+        self.center_of_mass = self.get_center_of_mass()  # Store the center of mass
         self.mesh_image = self.render_mesh_to_image()
 
+    def process_blocks(self, data):
+        actors = vtk.vtkActorCollection()
+        if isinstance(data, vtk.vtkPolyData):
+            actors.AddItem(self.create_actor_from_polydata(data))
+        elif isinstance(data, vtk.vtkMultiBlockDataSet):
+            for i in range(data.GetNumberOfBlocks()):
+                child_block = data.GetBlock(i)
+                child_actors = self.process_blocks(
+                    child_block)  # Recursively process
+                child_actors.InitTraversal()
+                actor = child_actors.GetNextActor()
+                while actor:
+                    actors.AddItem(actor)
+                    actor = child_actors.GetNextActor()
+        return actors
+
+
+    def create_actor_from_polydata(self, polydata):
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputData(polydata)
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+
+        # Check for existing color information
+        has_color = polydata.GetPointData().GetScalars(
+            ) or polydata.GetCellData().GetScalars()
+        if not has_color:
+            # Apply default color if no color information is present
+            actor.GetProperty().SetColor(self.model_color[0] / 255.0,
+                                        self.model_color[1] / 255.0,
+                                        self.model_color[2] / 255.0)
+        return actor
+
+
+    def update_renderer_actors(self, actors):
+        if self.vtk_mesh:
+            self.remove_actor_or_collection(self.vtk_mesh)
+        self.vtk_mesh = actors
+        actors.InitTraversal()
+        actor = actors.GetNextActor()
+        while actor:
+            self.renderer.AddActor(actor)
+            actor = actors.GetNextActor()
+
+
+    def remove_actor_or_collection(self, actors):
+        if isinstance(actors, vtk.vtkActorCollection):
+            actors.InitTraversal()
+            actor = actors.GetNextActor()
+            while actor:
+                self.renderer.RemoveActor(actor)
+                actor = actors.GetNextActor()
+        elif isinstance(actors, vtk.vtkActor):
+            self.renderer.RemoveActor(actors)
     def crop_image_to_content(self, image):
         # Check where the alpha channel is not zero
         alpha_channel = image[:, :, 3]
@@ -155,24 +227,45 @@ class ModelRender:
 
     def render_mesh_to_image(self):
         start_time = time.time()
+        # Set the background color
+        self.renderer.SetBackground(116/255.0, 116/255.0, 0)
 
         # Apply the rotation matrix to the mesh
-        self.open3d_mesh.rotate(self.rotation_matrix,
-                                center=self.open3d_mesh.get_center())
-
-        # Update the geometry to apply rotation
-        self.vis.update_geometry(self.open3d_mesh)
-        self.vis.poll_events()
-        self.vis.update_renderer()
-        
+        transform = vtk.vtkTransform()
+        transform.SetMatrix(self.rotation_matrix)
+        # Check if vtk_mesh is an ActorCollection or a single Actor
+        if isinstance(self.vtk_mesh, vtk.vtkActorCollection):
+            self.vtk_mesh.InitTraversal()
+            actor = self.vtk_mesh.GetNextActor()
+            while actor:
+                # Apply the transform to each actor in the collection
+                actor.SetUserTransform(transform)
+                actor = self.vtk_mesh.GetNextActor()
+        elif isinstance(self.vtk_mesh, vtk.vtkActor):
+            # Apply the transform to a single actor
+            self.vtk_mesh.SetUserTransform(transform)
+        else:
+            raise TypeError("Unsupported type for vtk_mesh.")
+        # Render the scene
+        self.render_window.Render()
         # Capture the image
-        image = self.vis.capture_screen_float_buffer(do_render=True)
+        window_to_image_filter = vtk.vtkWindowToImageFilter()
+        window_to_image_filter.SetInput(self.render_window)
+        window_to_image_filter.ReadFrontBufferOff()
+        window_to_image_filter.Update()
+
+        vtk_image = window_to_image_filter.GetOutput()
+        width, height, _ = vtk_image.GetDimensions()
+        vtk_array = vtk_image.GetPointData().GetScalars()
+        components = vtk_array.GetNumberOfComponents()
+
+        image = numpy_support.vtk_to_numpy(
+            vtk_array).reshape(height, width, components)
+        image = image.astype(np.uint8)
+
         print(f"Scene rendering time: {time.time() - start_time:.4f} seconds")
         start_time = time.time()
-        # Convert Open3D image to a numpy array
-        image = np.asarray(image)
-        image = (image * 255).astype(np.uint8)
-        # Use BGRA to include an alpha channel
+        # Convert the image to BGRA format
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGRA)
         
         color_mask = (0, 116, 116)
@@ -197,15 +290,73 @@ class ModelRender:
             self.mesh_dirty = True
             self.rotation_queue.put(("load_model", None))
 
+    def get_combined_bounds(self, actor_collection):
+        combined_bounds = [float('inf'), -float('inf'),
+                        float('inf'), -float('inf'),
+                        float('inf'), -float('inf')]
+
+        actor_collection.InitTraversal()
+        actor = actor_collection.GetNextActor()
+        while actor:
+            bounds = actor.GetBounds()
+            # Update the combined bounds
+            combined_bounds[0] = min(combined_bounds[0], bounds[0])  # xmin
+            combined_bounds[1] = max(combined_bounds[1], bounds[1])  # xmax
+            combined_bounds[2] = min(combined_bounds[2], bounds[2])  # ymin
+            combined_bounds[3] = max(combined_bounds[3], bounds[3])  # ymax
+            combined_bounds[4] = min(combined_bounds[4], bounds[4])  # zmin
+            combined_bounds[5] = max(combined_bounds[5], bounds[5])  # zmax
+
+            actor = actor_collection.GetNextActor()
+        return combined_bounds
+    
+    def get_center_of_mass(self):
+        # Get bounds returns (xmin, xmax, ymin, ymax, zmin, zmax)
+        print("Type of vtk_mesh:", type(self.vtk_mesh))
+        
+        if isinstance(self.vtk_mesh, vtk.vtkActor):
+            # Single actor, get bounds directly
+            bounds = self.vtk_mesh.GetBounds()
+            print(f"Bounds: {bounds}")
+        elif isinstance(self.vtk_mesh, vtk.vtkActorCollection):
+            # Actor collection, compute combined bounds
+            bounds = self.get_combined_bounds(self.vtk_mesh)
+            print(f"Combined bounds: {bounds}")
+        else:
+            raise TypeError("Unsupported type for vtk_mesh.")
+        
+        center = [(bounds[1] + bounds[0]) / 2,  # Center in x
+                (bounds[3] + bounds[2]) / 2,  # Center in y
+                (bounds[5] + bounds[4]) / 2]  # Center in z
+        return center
+    
     def update_rotation(self, rotation_x, rotation_y):
-        # Update the rotation matrix based on the new rotation angles
-        rotation_matrix_x = o3d.geometry.get_rotation_matrix_from_xyz(
-            (np.radians(rotation_x), 0, 0))
-        rotation_matrix_y = o3d.geometry.get_rotation_matrix_from_xyz(
-            (0, np.radians(rotation_y), 0))
-        self.rotation_matrix = np.dot(rotation_matrix_x, rotation_matrix_y)
+        # Assuming self.center_of_mass has been calculated and stored
+        if self.center_of_mass is None:
+            center = [0, 0, 0]
+        else: 
+            center = self.center_of_mass
+
+        # Create a transformation that rotates around the fixed center of mass
+        rotation_transform = vtk.vtkTransform()
+        rotation_transform.PostMultiply()  # Ensure transformations are applied in order
+
+        # Translate to origin based on the fixed center, rotate, translate back
+        rotation_transform.Translate(-center[0], -center[1], -center[2])
+        rotation_transform.RotateX(rotation_x)
+        rotation_transform.RotateY(rotation_y)
+        rotation_transform.Translate(center[0], center[1], center[2])
+
+        # Apply the cumulative rotation to the existing transformation
+        current_transform = vtk.vtkTransform()
+        current_transform.SetMatrix(self.rotation_matrix)
+        current_transform.Concatenate(rotation_transform)
+
+        # Update the rotation matrix with the new cumulative transformation
+        self.rotation_matrix.DeepCopy(current_transform.GetMatrix())
+
+        # Mark the mesh as dirty and queue the rotation for processing
         self.mesh_dirty = True
-        # Add the rotation matrix to the queue
         self.rotation_queue.put(("rotate", self.rotation_matrix))
 
     def start_rendering_thread(self):
