@@ -521,7 +521,7 @@ class HandTrackerRenderer:
                 elif not self.model_render.model_loaded and self.mesh_visible:
                     cv2.putText(frame, "Loading...", self.loading_position,
                                 cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-                    print("LOADING")
+                    print("LOADING...")
             if index_finger_tip is not None and self.model_render is not None and self.model_render.mesh_image is not None:
                 # Draw a green filled circle around the index finger tip
                 cv2.circle(frame, tuple(index_finger_tip), 20, (0, 255, 0), -1)

@@ -59,15 +59,6 @@ class ModelRender:
         assy.save(output_file, "GLTF")
         print(f"Exported {output_file}")
 
-
-    def load_model_async(self):
-        self.loaded_model = None
-        self.model_loaded = False
-
-        thread = threading.Thread(target=self.load_model)
-        thread.start()
-
-
     def initialize_model(self):
         self.rotation_queue.put(("load_model", None))
         
@@ -415,13 +406,6 @@ class ModelRender:
                 elif operation == "rotate":
                     self.rotation_matrix = data
                     self.mesh_image = self.render_mesh_to_image()
-                # if operation == "load_model_async":
-                #     self.load_model_async()
-                # elif operation == "rotate" and self.model_loaded:
-                #     with self.lock:
-                #         self.rotation_matrix = data
-                #         self.vtk_mesh = self.loaded_model
-                #         self.mesh_image = self.render_mesh_to_image()
             time.sleep(0.1)  # Add a small delay to avoid excessive CPU usage
 
     def __del__(self):
