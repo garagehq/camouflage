@@ -509,9 +509,9 @@ class HandTrackerRenderer:
                 current_time = time.time()
                 if current_time - self.last_rotation_time >= self.rotation_interval:
                     if len(three_positions) == 1:
-                        self.model_render.update_rotation(10, 0)
+                        self.model_render.update_rotation(15, 0)
                     elif len(three_positions) == 2:
-                        self.model_render.update_rotation(0, 10)
+                        self.model_render.update_rotation(0, 15)
                     self.last_rotation_time = current_time
 
             if self.model_render is not None:

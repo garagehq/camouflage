@@ -192,7 +192,8 @@ class ModelRender:
             num_arrays = field_data.GetNumberOfArrays()
             for i in range(num_arrays):
                 array = field_data.GetArray(i)
-                print(f"Field data array: {array.GetName()}")
+                if debug_flag:
+                    print(f"Field data array: {array.GetName()}")
                 if array.GetName() == "MaterialProperty":
                     # Process the material property
                     color = array.GetTuple3(0)  # Assume RGB color
