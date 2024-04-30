@@ -494,7 +494,7 @@ class HandTrackerRenderer:
             else:
                 self.prev_peace_distance = None
 
-            if move_image and self.model_render is not None and len(peace_positions) == 1:
+            if move_image and self.model_render is not None and len(peace_positions) == 1 and self.mesh_visible:
                 overlay = frame.copy()
                 cv2.circle(overlay, tuple(peace_positions[0]), 50, (128, 128, 128), -1)
                 cv2.addWeighted(overlay, 0.5, frame, 0.5, 0, frame)
@@ -505,13 +505,13 @@ class HandTrackerRenderer:
                     image_y = y - image_height // 2
                     self.image_position = (image_x, image_y)
 
-            if three_detected and self.model_render is not None:
+            if three_detected and self.model_render is not None and self.mesh_visible:
                 current_time = time.time()
                 if current_time - self.last_rotation_time >= self.rotation_interval:
                     if len(three_positions) == 1:
-                        self.model_render.update_rotation(15, 0)
+                        self.model_render.update_rotation(10, 0)
                     elif len(three_positions) == 2:
-                        self.model_render.update_rotation(0, 15)
+                        self.model_render.update_rotation(0, 10)
                     self.last_rotation_time = current_time
 
             if self.model_render is not None:
@@ -519,7 +519,7 @@ class HandTrackerRenderer:
                     frame = self.overlay_image(
                         frame, self.model_render.mesh_image, self.image_position)
                 elif not self.model_render.model_loaded and self.mesh_visible:
-                    cv2.putText(frame, "Loading...", self.loading_position,
+                    cv2.putText(frame, "...", self.loading_position,
                                 cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
                     print("LOADING...")
             if index_finger_tip is not None and self.model_render is not None and self.model_render.mesh_image is not None:

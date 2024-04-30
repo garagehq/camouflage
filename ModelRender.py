@@ -9,6 +9,7 @@ import vtk
 from vtk.util import numpy_support
 import cadquery as cq
 
+debug_flag = False
 class ModelRender:
     def __init__(self, model_path=None, model_color=(128, 128, 128), lighting=(0.25, 0.25, 0.25)):
         self.model_path = model_path
@@ -23,6 +24,7 @@ class ModelRender:
         self.max_height_render = 648
         self.max_width_render = 1152
         self.model_loaded = False
+        self.reset_rotations = True
         self.loaded_model = None
         # Initialize rotation matrix to identity
         self.rotation_matrix = vtk.vtkMatrix4x4()
@@ -57,7 +59,8 @@ class ModelRender:
             print(f"Added component_{i}")
         # Save the assembly to glTF
         assy.save(output_file, "GLTF")
-        print(f"Exported {output_file}")
+        if debug_flag:
+            print(f"Exported {output_file}")
 
     def initialize_model(self):
         self.task_queue.put(("load_model", None))
@@ -104,9 +107,12 @@ class ModelRender:
         self.renderer.ResetCameraClippingRange()
     
     def load_model(self):
-        print("Loading Model...")
+        if debug_flag:
+            print("Loading Model...")
         self.model_loaded = False
-        start_time = time.time()
+        if debug_flag:
+            start_time = time.time()
+        
         if self.vtk_mesh:
             self.old_model = self.vtk_mesh
 
@@ -114,7 +120,8 @@ class ModelRender:
         file_format = self.model_path.split(".")[-1].lower()
 
         if file_format == "stl":
-            print("loading stl file")
+            if debug_flag:
+                print("loading stl file")
             reader = vtk.vtkSTLReader()
             reader.SetFileName(self.model_path)
             reader.Update()
@@ -132,7 +139,8 @@ class ModelRender:
                 self.remove_actor_or_collection(self.old_model)
             self.renderer.AddActor(self.vtk_mesh)
         elif file_format == "obj":
-            print("loading obj file")
+            if debug_flag:
+                print("loading obj file")
             reader = vtk.vtkOBJReader()
             reader.SetFileName(self.model_path)
             reader.Update()
@@ -150,7 +158,8 @@ class ModelRender:
                 self.remove_actor_or_collection(self.old_model)
             self.renderer.AddActor(self.vtk_mesh)
         elif file_format == "glb" or file_format == "gltf" or file_format == "step":
-            print(f"loading {file_format} file")
+            if debug_flag:
+                print(f"loading {file_format} file")
             if file_format == "step":
                 # Create a temporary file to store the converted glTF file
                 with tempfile.NamedTemporaryFile(suffix=".gltf", delete=False) as temp_file:
@@ -167,14 +176,15 @@ class ModelRender:
             output_data = reader.GetOutput()
             actors = self.process_blocks(output_data)
             self.update_renderer_actors(actors)
-        self.rotation_matrix.Identity()
+        if (self.reset_rotations):
+            self.rotation_matrix.Identity()
         self.mesh_dirty = False
-        print(f"Model loading time: {time.time() - start_time:.4f} seconds")
+        if debug_flag:
+            print(f"Model loading time: {time.time() - start_time:.4f} seconds")
         self.center_of_mass = self.get_center_of_mass()  # Store the center of mass
         self.adjust_camera()  # Adjust the camera based on the loaded model
         self.mesh_image = self.render_mesh_to_image()
         self.model_loaded = True
-        print("load_model: MODEL LOADED")
 
     def apply_materials_directly(self, actor, block):
         field_data = block.GetFieldData()
@@ -262,7 +272,8 @@ class ModelRender:
         return cropped_image
 
     def render_mesh_to_image(self):
-        start_time = time.time()
+        if debug_flag:
+            start_time = time.time()
 
         # Apply the rotation matrix to the mesh
         transform = vtk.vtkTransform()
@@ -296,9 +307,9 @@ class ModelRender:
         image = numpy_support.vtk_to_numpy(
             vtk_array).reshape(height, width, components)
         image = image.astype(np.uint8)
-
-        print(f"Scene rendering time: {time.time() - start_time:.4f} seconds")
-        start_time = time.time()
+        if debug_flag:
+            print(f"Scene rendering time: {time.time() - start_time:.4f} seconds")
+            start_time = time.time()
         # Convert the image to BGRA format
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGRA)
         
@@ -312,12 +323,18 @@ class ModelRender:
         # Resize for the smaller version
         mesh_image = cv2.resize(
             self.mesh_image_max, self.mesh_image_size, interpolation=cv2.INTER_LANCZOS4)
-        print(f"Image processing time: {time.time() - start_time:.4f} seconds")
+        if debug_flag:
+            print(f"Image processing time: {time.time() - start_time:.4f} seconds")
         return mesh_image
 
     def update_model(self, model_path, model_color, lighting):
-        print("Updating Model")
+        if debug_flag:
+            print("Updating Model...")
         if model_path != self.model_path or model_color != self.model_color or lighting != self.lighting:
+            if model_path == self.model_path:
+                self.reset_rotations = False
+            else:
+                self.reset_rotations = True
             self.model_path = model_path
             self.model_color = model_color
             self.lighting = lighting
@@ -346,16 +363,15 @@ class ModelRender:
     
     def get_center_of_mass(self):
         # Get bounds returns (xmin, xmax, ymin, ymax, zmin, zmax)
-        print("Type of vtk_mesh:", type(self.vtk_mesh))
+        if debug_flag:
+            print("Type of vtk_mesh:", type(self.vtk_mesh))
         
         if isinstance(self.vtk_mesh, vtk.vtkActor):
             # Single actor, get bounds directly
             bounds = self.vtk_mesh.GetBounds()
-            print(f"Bounds: {bounds}")
         elif isinstance(self.vtk_mesh, vtk.vtkActorCollection):
             # Actor collection, compute combined bounds
             bounds = self.get_combined_bounds(self.vtk_mesh)
-            print(f"Combined bounds: {bounds}")
         else:
             raise TypeError("Unsupported type for vtk_mesh.")
         
