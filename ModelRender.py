@@ -71,7 +71,6 @@ class ModelRender:
             self.renderer.RemoveActor(actors)
         else:
             raise TypeError("Unsupported type for actor removal.")
-        self.rotation_matrix = vtk.vtkMatrix4x4()
 
     def adjust_camera(self):
         # Reset the camera
@@ -164,6 +163,7 @@ class ModelRender:
             output_data = reader.GetOutput()
             actors = self.process_blocks(output_data)
             self.update_renderer_actors(actors)
+        self.rotation_matrix.Identity()
         self.mesh_dirty = False
         print(f"Model loading time: {time.time() - start_time:.4f} seconds")
         self.center_of_mass = self.get_center_of_mass()  # Store the center of mass
@@ -179,7 +179,6 @@ class ModelRender:
                 print(f"Field data array: {array.GetName()}")
                 if array.GetName() == "MaterialProperty":
                     # Process the material property
-                    # This is just an example, you'll need to see what's actually available in your case
                     color = array.GetTuple3(0)  # Assume RGB color
                     actor.GetProperty().SetColor(color[0], color[1], color[2])  
     
@@ -360,7 +359,6 @@ class ModelRender:
         return center
     
     def update_rotation(self, rotation_x, rotation_y):
-        # Assuming self.center_of_mass has been calculated and stored
         center = self.center_of_mass
 
         # Create a transformation that rotates around the fixed center of mass
@@ -381,7 +379,6 @@ class ModelRender:
         # Update the rotation matrix with the new cumulative transformation
         self.rotation_matrix.DeepCopy(current_transform.GetMatrix())
 
-        # Mark the mesh as dirty and queue the rotation for processing
         self.mesh_dirty = True
         self.rotation_queue.put(("rotate", self.rotation_matrix))
 

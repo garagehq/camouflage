@@ -420,8 +420,10 @@ class HandTrackerRenderer:
                     elif time.time() - self.fist_start_time >= self.fist_duration:
                         if self.mesh_visible:
                             self.mesh_visible = False
+                            print("draw: Turning Mesh Visibility OFF")
                         else:
                             self.mesh_visible = True
+                            print("draw: Turning Mesh Visibility ON")
                             if self.model_render is None:
                                 self.model_render = ModelRender(
                                     self.model_path, self.model_color, self.lighting)
@@ -512,10 +514,13 @@ class HandTrackerRenderer:
                         self.model_render.update_rotation(0, 15)
                     self.last_rotation_time = current_time
 
-            if self.model_render is not None and self.model_render.mesh_image is not None and self.mesh_visible:
-                frame = self.overlay_image(
-                    frame, self.model_render.mesh_image, self.image_position)
-
+            
+            if self.model_render is not None:
+                if self.model_render.mesh_image is not None and self.mesh_visible:
+                    frame = self.overlay_image(
+                        frame, self.model_render.mesh_image, self.image_position)
+                elif self.model_render.mesh_image is None and self.mesh_visible:
+                    print("draw: show loading symbol")
             if index_finger_tip is not None and self.model_render is not None and self.model_render.mesh_image is not None:
                 # Draw a green filled circle around the index finger tip
                 cv2.circle(frame, tuple(index_finger_tip), 20, (0, 255, 0), -1)
