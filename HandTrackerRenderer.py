@@ -80,7 +80,10 @@ class HandTrackerRenderer:
         self.last_rotation_time = 0
         # Minimum interval between rotations (in seconds)
         self.rotation_interval = 0.3
-        self.model_render = None
+        self.model_render = ModelRender(
+                                    self.model_path, self.model_color, self.lighting)
+        self.model_render.start_rendering_thread()
+        
         # Rendering flags
         if self.tracker.use_lm:
             self.show_pd_box = False
@@ -424,10 +427,7 @@ class HandTrackerRenderer:
                         else:
                             self.mesh_visible = True
                             print("draw: Turning Mesh Visibility ON")
-                            if self.model_render is None:
-                                self.model_render = ModelRender(
-                                    self.model_path, self.model_color, self.lighting)
-                                self.model_render.start_rendering_thread()
+                            if self.model_render.model_loaded is False:
                                 self.model_render.initialize_model()
                                 self.image_position = (
                                     fist_position[0] - 50, fist_position[1] - 50)
@@ -494,7 +494,7 @@ class HandTrackerRenderer:
             else:
                 self.prev_peace_distance = None
 
-            if move_image and self.model_render is not None and len(peace_positions) == 1 and self.mesh_visible:
+            if move_image and self.model_render is not None and len(peace_positions) == 1 and self.mesh_visible and self.model_render.model_loaded:
                 overlay = frame.copy()
                 cv2.circle(overlay, tuple(peace_positions[0]), 50, (128, 128, 128), -1)
                 cv2.addWeighted(overlay, 0.5, frame, 0.5, 0, frame)
@@ -505,7 +505,7 @@ class HandTrackerRenderer:
                     image_y = y - image_height // 2
                     self.image_position = (image_x, image_y)
 
-            if three_detected and self.model_render is not None and self.mesh_visible:
+            if three_detected and self.model_render is not None and self.mesh_visible and self.model_render.model_loaded:
                 current_time = time.time()
                 if current_time - self.last_rotation_time >= self.rotation_interval:
                     if len(three_positions) == 1:

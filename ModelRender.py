@@ -79,6 +79,7 @@ class ModelRender:
             self.renderer.RemoveActor(actors)
         else:
             raise TypeError("Unsupported type for actor removal.")
+        self.rotation_matrix.DeepCopy(vtk.vtkMatrix4x4())
 
     def adjust_camera(self):
         # Reset the camera
