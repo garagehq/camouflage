@@ -5,6 +5,7 @@ import socket
 import signal
 import time
 import os
+import sys
 from tkinter import ttk
 from tkinterdnd2 import DND_FILES, TkinterDnD
 import threading
@@ -24,6 +25,7 @@ class Controller:
         self.hide_var = tk.BooleanVar(value=True)
         self.virtual_cam_var = tk.BooleanVar(value=False)
         self.fullscreen_var = tk.BooleanVar(value=False)
+        self.use_depthai_var = tk.BooleanVar(value=True)  # Default: use DepthAI hardware
         self.interact_button = None
         self.interaction_file_type = None
         self.create_widgets()
@@ -53,11 +55,11 @@ class Controller:
             # The file path is in the format "{path}"
             file_path = file_path[1:-1]  # Remove the curly braces
         _, file_extension = os.path.splitext(file_path)
-        if file_extension.lower() in [".png", ".jpg", ".jpeg", ".stl"]:
+        if file_extension.lower() in [".png", ".jpg", ".jpeg", ".stl", ".obj"]:
             self.validate_and_set_file(file_path)
         else:
             messagebox.showerror(
-                "Error", "Invalid file type. Please drop a PNG, JPEG, JPG, or STL file.")
+                "Error", "Invalid file type. Please drop a PNG, JPEG, JPG, STL, or OBJ file.")
             
     def update_interaction_button(self):
         if self.interaction_file_type in ["interact2D", "interact3D"]:
@@ -141,6 +143,11 @@ class Controller:
 
         options_frame = tk.Frame(self.window)
         options_frame.pack(pady=10)
+
+        # Hardware selection checkbox
+        depthai_checkbox = tk.Checkbutton(
+            options_frame, text="Use DepthAI Hardware", variable=self.use_depthai_var)
+        depthai_checkbox.pack(side=tk.LEFT)
 
         hide_checkbox = tk.Checkbutton(
             options_frame, text="Hide Extras", variable=self.hide_var, command=self.toggle_hide)
@@ -355,12 +362,22 @@ class Controller:
         self.window.quit()
 
     def stop_demo(self):
+        if self.socket:
+            try:
+                self.socket.close()
+            except:
+                pass
+            self.socket = None
         if self.process:
             self.process.terminate()
+            try:
+                # Wait up to 2 seconds for process to terminate
+                self.process.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                # Force kill if it doesn't terminate
+                self.process.kill()
+                self.process.wait()
             self.process = None
-        if self.socket:
-            self.socket.close()
-            self.socket = None
         self.drawing_submenu.pack_forget()
 
     def set_interaction_mode(self, mode):
@@ -398,7 +415,7 @@ class Controller:
             _, file_extension = os.path.splitext(file_path)
             if file_extension.lower() in [".png", ".jpg", ".jpeg"]:
                 self.interaction_file_type = "interact2D"
-            elif file_extension.lower() == ".stl":
+            elif file_extension.lower() in [".stl", ".obj"]:  # Support both STL and OBJ
                 self.interaction_file_type = "interact3D"
             else:
                 self.interaction_file_type = None
@@ -438,15 +455,27 @@ class Controller:
     def run_demo(self):
         while True:
             try:
+                # Cross-platform paths
+                model_path = os.path.join("models", "hand_landmark_lite-2022-11-12_sh4.blob")
+
                 command = [
-                    "python", "demo.py",
-                    # "--pd_model", ".\\models\\palm_detection_lite-2022-08-30_sh4.blob",
+                    sys.executable,  # Use current Python interpreter (works cross-platform)
+                    "demo.py",
                     "--gesture",
-                    "--lm_model", ".\\models\\hand_landmark_lite-2022-11-12_sh4.blob",
+                    "--lm_model", model_path,
                     "--messages",
-                    "--edge",
-                    "-f 15"
+                    "-f", "15"
                 ]
+
+                # Configure based on hardware selection
+                if self.use_depthai_var.get():
+                    # DepthAI hardware mode (default)
+                    print("Starting in DepthAI hardware mode (edge mode)...")
+                    command.append("--edge")  # Enable edge mode for DepthAI
+                else:
+                    # Webcam fallback mode
+                    print("Starting in webcam mode (no DepthAI hardware)...")
+                    command.extend(["-i", "0"])  # Use webcam 0
 
                 if self.interaction_mode != 'none':
                     interaction_mode = 'interact2D' if self.interaction_file_type == 'interact2D' else 'interact3D'
@@ -466,8 +495,30 @@ class Controller:
                 if self.fullscreen_var.get():
                     command.append("--fullscreen")
 
-                self.process = subprocess.Popen(command)
-                time.sleep(2)  # Adjust the delay as needed
+                # Set environment variables for subprocess
+                env = os.environ.copy()
+
+                # For 3D rendering on macOS: use EGL (offscreen rendering)
+                # This prevents "API misuse: setting the main menu on a non-main thread" errors
+                if self.interaction_mode == 'interact' and self.interaction_file_type == 'interact3D':
+                    env['PYOPENGL_PLATFORM'] = 'egl'
+                    print("Setting PYOPENGL_PLATFORM=egl for 3D rendering")
+
+                # Capture stdout/stderr for debugging
+                self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, env=env)
+
+                # Start thread to read and print demo.py output in real-time
+                def print_output():
+                    try:
+                        for line in self.process.stdout:
+                            print(f"[demo.py] {line.rstrip()}")
+                    except:
+                        pass
+
+                output_thread = threading.Thread(target=print_output, daemon=True)
+                output_thread.start()
+
+                time.sleep(5)  # Give demo.py more time to start socket server
 
                 max_retries = 3
                 retry_delay = 2
@@ -476,7 +527,7 @@ class Controller:
                 for retry in range(max_retries):
                     try:
                         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                        self.socket.connect(('localhost', 12345))
+                        self.socket.connect(('localhost', 54465))
                         break
                     except ConnectionRefusedError as e:
                         print(
@@ -484,6 +535,15 @@ class Controller:
                         time.sleep(retry_delay)
                 else:
                     print("Failed to establish socket connection after maximum retries.")
+                    # Print demo.py output for debugging
+                    if self.process and self.process.stdout:
+                        print("\n=== demo.py output ===")
+                        try:
+                            output = self.process.stdout.read()
+                            print(output)
+                        except:
+                            pass
+                        print("======================\n")
                     self.stop_demo()
                     break
 
@@ -515,6 +575,7 @@ class Controller:
                 # Process has stopped, perform cleanup and restart
                 print("Demo process stopped. Restarting...")
                 self.stop_demo()
+                time.sleep(1)  # Wait for socket port to be released
 
                 print("Restarting demo...")
 
@@ -522,7 +583,7 @@ class Controller:
                 print("Error occurred in demo.py:", str(e))
                 # Perform cleanup and restart
                 self.stop_demo()
-                time.sleep(1)
+                time.sleep(1)  # Wait for socket port to be released
 
                 # Check if the demo should be restarted
                 if self.process is None:
@@ -539,12 +600,22 @@ class Controller:
                 print(output.strip())
 
     def stop_demo(self):
+        if self.socket:
+            try:
+                self.socket.close()
+            except:
+                pass
+            self.socket = None
         if self.process:
             self.process.terminate()
+            try:
+                # Wait up to 2 seconds for process to terminate
+                self.process.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                # Force kill if it doesn't terminate
+                self.process.kill()
+                self.process.wait()
             self.process = None
-        if self.socket:
-            self.socket.close()
-            self.socket = None
         self.drawing_submenu.pack_forget()
         time.sleep(0.25)  # Add a small delay to ensure the process is terminated
 

@@ -125,11 +125,56 @@ Internal camera FPS set to: 36
 
 ## Install
 
-Install the python packages (depthai, opencv) with the following command:
+### Prerequisites
 
+On macOS, install system dependencies:
+```bash
+brew install python-tk@3.11
+brew install mesa  # Required for 3D interaction mode
 ```
-python3 -m pip install -r requirements.txt
+
+### Setup Virtual Environment
+
+```bash
+# Create virtual environment with Python 3.11 (required for TensorFlow 2.13)
+python3.11 -m venv venv
+
+# Activate virtual environment
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Force reinstall depthai to ensure compatibility with DepthAI hardware
+# Note: --no-deps prevents upgrading numpy which would break TensorFlow compatibility
+pip install depthai --force-reinstall --no-deps
 ```
+
+**Note:** Some optional packages (`fbx`, `pythonOCC`) are not available on PyPI and can be skipped for core functionality.
+
+**Important:** This codebase requires DepthAI SDK v2.x. The requirements.txt pins `depthai<3.0` because v3 has breaking API changes that require code updates. See [v2 vs v3 migration guide](https://docs.luxonis.com/software-v3/depthai/tutorials/v2-vs-v3/).
+
+The `depthai` force-reinstall step ensures you have the correct version for your DepthAI hardware. The `--no-deps` flag prevents numpy from being upgraded to v2.x which breaks TensorFlow 2.13 compatibility. See [Luxonis DepthAI docs](https://docs.luxonis.com/software-v3/depthai/) for details.
+
+## Controller Application
+
+A GUI controller is available for interactive use with drawing and object interaction modes:
+
+```bash
+source venv/bin/activate
+python controller.py
+```
+
+The controller includes:
+- **Use DepthAI Hardware** checkbox (checked by default): Requires DepthAI camera for optimal performance. Uncheck to use webcam as fallback.
+- **Interaction Modes:**
+  - **Draw:** Enable freehand drawing with index finger
+  - **2D Interaction:** Load and interact with 2D images
+  - **3D Interaction:** Load and manipulate 3D models (STL/OBJ files) - rotate, resize, and position with hand gestures
+- **Color controls** for drawing and 3D models
+- **Lighting controls** for 3D rendering
+
+The controller communicates with `demo.py` via socket (port 54465) to switch between modes dynamically.
 
 ## Run
 

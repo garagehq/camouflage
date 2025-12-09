@@ -2,8 +2,11 @@ import cv2
 import numpy as np
 import time
 import trimesh
-import pyrender
 import threading
+
+# Lazy import pyrender to avoid OpenGL context creation on import
+# This prevents macOS threading issues when not using 3D rendering
+pyrender = None
 
 class ModelRender:
     def __init__(self, model_path=None, model_color=None, lighting=None):
@@ -34,6 +37,12 @@ class ModelRender:
         self.model_loading_thread.start()
         
     def model_to_pyrender_and_trimesh_mesh(self, model_file):
+        global pyrender
+        # Lazy import pyrender only when actually needed
+        if pyrender is None:
+            import pyrender as pr
+            pyrender = pr
+
         # Load the Model file as a trimesh mesh for bounding box calculation
         trimesh_mesh = trimesh.load_mesh(model_file)
 
@@ -85,6 +94,12 @@ class ModelRender:
             rotation_x_angle = self.rotation_x_angle
         if rotation_y_angle is None:
             rotation_y_angle = self.rotation_y_angle
+
+        global pyrender
+        # Ensure pyrender is imported
+        if pyrender is None:
+            import pyrender as pr
+            pyrender = pr
 
         if self.scene is None:
             # Create the scene and add the camera and lighting only once

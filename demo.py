@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
 
+import os
+import sys
+
+# Check if 3D interaction mode is requested
+if '--interact3D' in sys.argv or any('interact3D' in arg for arg in sys.argv):
+    # Set platform for offscreen rendering if not already set by controller.py
+    if 'PYOPENGL_PLATFORM' not in os.environ:
+        # Force pyrender to use EGL for offscreen rendering on macOS
+        # This prevents "API misuse: setting the main menu on a non-main thread" errors
+        os.environ['PYOPENGL_PLATFORM'] = 'egl'
+        print("Using EGL for 3D rendering (offscreen mode)")
+    else:
+        print(f"Using {os.environ['PYOPENGL_PLATFORM']} for 3D rendering (set by controller)")
 
 from HandTrackerRenderer import HandTrackerRenderer
 import argparse
@@ -151,7 +164,8 @@ else:
 
 if args.messages:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.bind(('localhost', 12345))
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Allow socket reuse
+    sock.bind(('localhost', 54465))
     print("Waiting for a connection...")
     sock.listen(10)
     conn, addr = sock.accept()
