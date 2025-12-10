@@ -75,8 +75,11 @@ class HandTrackerRenderer:
         self.peace_gesture_duration = 0.5
         self.index_finger_start_time = None
         self.index_finger_duration = 0.1  # Duration in seconds to hold the index finger before starting to draw
-        self.line_color = (0, 255, 0)  # Red color for drawing
+        self.line_color = (0, 255, 0)  # Green color for drawing
         self.line_thickness = 3  # Line thickness
+        self.pinch_threshold = 20  # Distance threshold in pixels for pinch detection
+        self.pinch_start_time = None
+        self.pinch_duration = 0.05  # Duration in seconds to hold pinch before starting to draw
 
         self.model_render = None
         # Rendering flags
@@ -99,15 +102,353 @@ class HandTrackerRenderer:
         self.show_body = False # self.tracker.body_pre_focusing is not None
         self.show_inferences_status = False
 
+        # Pie menu system for in-stream controls
+        self.pie_menu_active = False
+        self.pie_menu_center = None
+        self.pie_menu_radius = 65  # Reduced by 1/3
+        self.pie_icon_radius = 23  # Reduced by 1/3
+        self.fist_hold_start = None
+        self.fist_hold_duration = 1.0  # Seconds to hold fist to show menu
+        self.pie_selection_start = None
+        self.pie_selection_duration = 0.5  # Seconds to hold on icon to activate
+        self.pie_selected_index = -1
+        self.pie_menu_cooldown = False  # Prevents menu from reopening until fist is released
+        self.pie_fade_start = None  # When fade animation started
+        self.pie_fade_duration = 0.5  # How long to show selected icon before fading
+        self.pie_fade_index = -1  # Which icon is fading
+        self.pie_fade_position = None  # Where to show the fading icon
+        self.pie_menu_items = [
+            {'id': 'draw', 'label': 'Draw', 'icon': 'pencil', 'action': self._toggle_draw_mode, 'get_state': lambda: self.draw_mode},
+            {'id': 'extras', 'label': 'Extras', 'icon': 'eye', 'action': self._toggle_hide_extras, 'get_state': lambda: not self.hide_extras},
+        ]
+
         if output is None:
             self.output = None
         else:
             fourcc = cv2.VideoWriter_fourcc(*"MJPG")
             self.output = cv2.VideoWriter(output,fourcc,self.tracker.video_fps,(self.tracker.img_w, self.tracker.img_h))
         
+        self.virtual_cam_output = None
         if self.virtual_cam:
-            # Initialize the virtual camera
-            self.virtual_cam_output = pyvirtualcam.Camera(width=self.tracker.img_w, height=self.tracker.img_h, fps=self.tracker.video_fps)
+            try:
+                self.virtual_cam_output = pyvirtualcam.Camera(
+                    width=self.tracker.img_w,
+                    height=self.tracker.img_h,
+                    fps=self.tracker.video_fps
+                )
+                print(f"Virtual camera started: {self.virtual_cam_output.device} ({self.virtual_cam_output.backend})")
+            except RuntimeError as e:
+                print(f"Warning: Could not create virtual camera: {e}")
+                print("On macOS: Install OBS and start it once to register the virtual camera")
+                print("On Linux: Install v4l2loopback (sudo modprobe v4l2loopback)")
+                print("On Windows: Install OBS Virtual Camera")
+                self.virtual_cam = False
+
+    def _toggle_draw_mode(self):
+        """Toggle draw mode on/off."""
+        self.draw_mode = not self.draw_mode
+        if self.draw_mode:
+            self.interaction_mode = 'draw'
+        else:
+            self.interaction_mode = None
+        print(f"Draw mode: {'ON' if self.draw_mode else 'OFF'}")
+
+    def _toggle_hide_extras(self):
+        """Toggle hide extras on/off."""
+        self.hide_extras = not self.hide_extras
+        self.show_fps = not self.hide_extras
+        print(f"Extras: {'SHOWN' if not self.hide_extras else 'HIDDEN'}")
+
+    def _get_pie_icon_positions(self, center):
+        """Calculate positions for pie menu icons around center."""
+        import math
+        positions = []
+        n = len(self.pie_menu_items)
+        for i in range(n):
+            angle = (2 * math.pi * i / n) - math.pi / 2  # Start from top
+            x = int(center[0] + self.pie_menu_radius * math.cos(angle))
+            y = int(center[1] + self.pie_menu_radius * math.sin(angle))
+            positions.append((x, y))
+        return positions
+
+    def _draw_pie_icon(self, cx, cy, icon_type, active, hover_progress=0):
+        """Draw a pie menu icon at position (cx, cy)."""
+        radius = self.pie_icon_radius
+
+        # Background circle
+        bg_color = (80, 180, 80) if active else (60, 60, 60)
+        if hover_progress > 0:
+            highlight = (100, 200, 255)
+            bg_color = tuple(int(bg_color[i] + (highlight[i] - bg_color[i]) * hover_progress) for i in range(3))
+
+        cv2.circle(self.frame, (cx, cy), radius, bg_color, -1)
+        cv2.circle(self.frame, (cx, cy), radius, (200, 200, 200), 2)
+
+        # Draw progress arc if hovering
+        if hover_progress > 0:
+            end_angle = int(360 * hover_progress)
+            cv2.ellipse(self.frame, (cx, cy), (radius - 2, radius - 2), -90, 0, end_angle, (0, 255, 255), 3)
+
+        # Draw icon symbol (scaled down by 1/3)
+        icon_color = (255, 255, 255)
+
+        if icon_type == 'pencil':
+            cv2.line(self.frame, (cx - 8, cy + 8), (cx + 7, cy - 7), icon_color, 2)
+            cv2.line(self.frame, (cx + 5, cy - 5), (cx + 8, cy - 8), icon_color, 2)
+            cv2.circle(self.frame, (cx - 8, cy + 8), 2, icon_color, -1)
+        elif icon_type == 'eye':
+            cv2.ellipse(self.frame, (cx, cy), (9, 5), 0, 0, 360, icon_color, 2)
+            cv2.circle(self.frame, (cx, cy), 3, icon_color, -1)
+            if not active:
+                cv2.line(self.frame, (cx - 10, cy + 8), (cx + 10, cy - 8), (0, 0, 255), 2)
+
+    def _draw_text(self, text, pos, font=cv2.FONT_HERSHEY_SIMPLEX, scale=0.5, color=(255,255,255), thickness=1):
+        """Draw text that appears correctly in both mirrored and non-mirrored modes."""
+        if self.virtual_cam:
+            # For virtual cam (non-mirrored), flip text so it reads correctly
+            # Create a small image with the text, flip it, then overlay
+            (text_w, text_h), baseline = cv2.getTextSize(text, font, scale, thickness)
+            text_img = np.zeros((text_h + baseline + 4, text_w + 4, 3), dtype=np.uint8)
+            cv2.putText(text_img, text, (2, text_h + 2), font, scale, color, thickness)
+            text_img = cv2.flip(text_img, 1)  # Flip horizontally
+
+            # Position text at the same location (don't flip x coordinate)
+            x = pos[0]
+            y = pos[1] - text_h - 2
+
+            # Bounds check
+            if x < 0 or y < 0 or x + text_img.shape[1] > self.frame.shape[1] or y + text_img.shape[0] > self.frame.shape[0]:
+                return
+
+            # Overlay where text pixels are non-zero
+            mask = np.any(text_img > 0, axis=2)
+            self.frame[y:y+text_img.shape[0], x:x+text_img.shape[1]][mask] = text_img[mask]
+        else:
+            cv2.putText(self.frame, text, pos, font, scale, color, thickness)
+
+    def _get_fist_center(self, hand):
+        """Get the center of the fist using middle of palm landmarks."""
+        # Use average of wrist (0), index MCP (5), pinky MCP (17), and middle MCP (9)
+        # This gives a better center of the fist than just the wrist
+        landmarks = hand.landmarks
+        cx = int((landmarks[0][0] + landmarks[5][0] + landmarks[9][0] + landmarks[17][0]) / 4)
+        cy = int((landmarks[0][1] + landmarks[5][1] + landmarks[9][1] + landmarks[17][1]) / 4)
+        return (cx, cy)
+
+    def _draw_fading_icon(self):
+        """Draw the selected icon with fade effect after activation."""
+        if self.pie_fade_start is None or self.pie_fade_index < 0:
+            return
+
+        current_time = time.time()
+        elapsed = current_time - self.pie_fade_start
+
+        if elapsed > self.pie_fade_duration:
+            # Fade complete, reset
+            self.pie_fade_start = None
+            self.pie_fade_index = -1
+            self.pie_fade_position = None
+            return
+
+        # Calculate fade (0 = fully visible, 1 = fully faded)
+        fade_progress = elapsed / self.pie_fade_duration
+        alpha = 1.0 - fade_progress
+
+        item = self.pie_menu_items[self.pie_fade_index]
+        ix, iy = self.pie_fade_position
+        active = item['get_state']()
+
+        # Draw with alpha blending
+        overlay = self.frame.copy()
+
+        # Draw icon on overlay
+        radius = self.pie_icon_radius
+        bg_color = (80, 180, 80) if active else (60, 60, 60)
+        cv2.circle(overlay, (ix, iy), radius, bg_color, -1)
+        cv2.circle(overlay, (ix, iy), radius, (200, 200, 200), 2)
+
+        # Draw icon symbol
+        icon_color = (255, 255, 255)
+        icon_type = item['icon']
+        if icon_type == 'pencil':
+            cv2.line(overlay, (ix - 8, iy + 8), (ix + 7, iy - 7), icon_color, 2)
+            cv2.line(overlay, (ix + 5, iy - 5), (ix + 8, iy - 8), icon_color, 2)
+            cv2.circle(overlay, (ix - 8, iy + 8), 2, icon_color, -1)
+        elif icon_type == 'eye':
+            cv2.ellipse(overlay, (ix, iy), (9, 5), 0, 0, 360, icon_color, 2)
+            cv2.circle(overlay, (ix, iy), 3, icon_color, -1)
+            if not active:
+                cv2.line(overlay, (ix - 10, iy + 8), (ix + 10, iy - 8), (0, 0, 255), 2)
+
+        # Blend with alpha
+        cv2.addWeighted(overlay, alpha, self.frame, 1 - alpha, 0, self.frame)
+
+        # Draw label with fade
+        label = item['label']
+        font_scale = 0.4
+        thickness = 1
+        (text_w, text_h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)
+        text_x = ix - text_w // 2
+        text_y = iy + self.pie_icon_radius + 14
+        faded_color = tuple(int(255 * alpha) for _ in range(3))
+        self._draw_text(label, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, font_scale, faded_color, thickness)
+
+    def _handle_pie_menu(self, hands):
+        """Handle fist-activated pie menu."""
+        import math
+        current_time = time.time()
+
+        # Draw fading icon if active
+        self._draw_fading_icon()
+
+        fist_hand = None
+        fist_pos = None
+
+        # Find a fist gesture
+        for hand in hands:
+            if hasattr(hand, 'gesture') and hand.gesture == "FIST":
+                fist_hand = hand
+                # Use center of palm for fist position
+                fist_pos = self._get_fist_center(hand)
+                break
+
+        if fist_hand is None:
+            # No fist detected - reset
+            if self.pie_menu_active:
+                # Menu was active, now closing
+                self.pie_menu_active = False
+                self.pie_menu_center = None
+            self.fist_hold_start = None
+            self.pie_selection_start = None
+            self.pie_selected_index = -1
+            self.pie_menu_cooldown = False  # Reset cooldown when fist is released
+            return
+
+        # If in cooldown, ignore fist until it's released
+        if self.pie_menu_cooldown:
+            return
+
+        # Fist detected
+        if not self.pie_menu_active:
+            # Menu not yet active - track hold time
+            if self.fist_hold_start is None:
+                self.fist_hold_start = current_time
+                self.pie_menu_center = fist_pos  # Remember where fist started
+
+            hold_duration = current_time - self.fist_hold_start
+            hold_progress = min(hold_duration / self.fist_hold_duration, 1.0)
+
+            # Draw hold progress circle around fist (smaller)
+            cv2.circle(self.frame, fist_pos, 27, (100, 100, 100), 2)
+            if hold_progress > 0:
+                end_angle = int(360 * hold_progress)
+                cv2.ellipse(self.frame, fist_pos, (27, 27), -90, 0, end_angle, (0, 255, 255), 3)
+
+            if hold_progress >= 1.0:
+                # Activate menu
+                self.pie_menu_active = True
+                self.pie_menu_center = fist_pos
+                print("Pie menu activated")
+        else:
+            # Menu is active - draw it and handle selection
+            center = self.pie_menu_center
+            positions = self._get_pie_icon_positions(center)
+
+            # Draw center circle (smaller)
+            cv2.circle(self.frame, center, 20, (80, 80, 80), -1)
+            cv2.circle(self.frame, center, 20, (150, 150, 150), 2)
+
+            # Calculate distance from center and angle for quick select
+            dist_from_center = np.sqrt((fist_pos[0] - center[0]) ** 2 + (fist_pos[1] - center[1]) ** 2)
+            angle_from_center = math.atan2(fist_pos[1] - center[1], fist_pos[0] - center[0])
+
+            # Draw connecting lines and icons
+            selected_idx = -1
+            quick_select = False
+
+            for i, (ix, iy) in enumerate(positions):
+                # Draw line from center to icon
+                cv2.line(self.frame, center, (ix, iy), (100, 100, 100), 2)
+
+                # Check if fist is near this icon (hover)
+                dist_to_icon = np.sqrt((fist_pos[0] - ix) ** 2 + (fist_pos[1] - iy) ** 2)
+                if dist_to_icon < self.pie_icon_radius + 15:
+                    selected_idx = i
+
+            # Check for quick select (moved past icon in same direction)
+            if selected_idx < 0 and dist_from_center > self.pie_menu_radius + self.pie_icon_radius:
+                # Fist is beyond the icons - check which direction
+                n = len(self.pie_menu_items)
+                for i in range(n):
+                    icon_angle = (2 * math.pi * i / n) - math.pi / 2
+                    # Normalize angles for comparison
+                    angle_diff = abs(((angle_from_center - icon_angle + math.pi) % (2 * math.pi)) - math.pi)
+                    if angle_diff < math.pi / n:  # Within the angular slice for this icon
+                        selected_idx = i
+                        quick_select = True
+                        break
+
+            # Handle selection timing
+            if selected_idx >= 0:
+                if quick_select:
+                    # Instant activation for quick select
+                    self.pie_menu_items[selected_idx]['action']()
+                    # Start fade animation
+                    self.pie_fade_start = current_time
+                    self.pie_fade_index = selected_idx
+                    self.pie_fade_position = positions[selected_idx]
+                    self.pie_menu_active = False
+                    self.pie_menu_center = None
+                    self.pie_selection_start = None
+                    self.pie_selected_index = -1
+                    self.pie_menu_cooldown = True  # Require fist release before menu can reopen
+                    return
+                elif self.pie_selected_index != selected_idx:
+                    # Changed selection
+                    self.pie_selected_index = selected_idx
+                    self.pie_selection_start = current_time
+                else:
+                    # Same selection - check if held long enough
+                    selection_duration = current_time - self.pie_selection_start
+                    selection_progress = min(selection_duration / self.pie_selection_duration, 1.0)
+
+                    if selection_progress >= 1.0:
+                        # Activate the item
+                        self.pie_menu_items[selected_idx]['action']()
+                        # Start fade animation
+                        self.pie_fade_start = current_time
+                        self.pie_fade_index = selected_idx
+                        self.pie_fade_position = positions[selected_idx]
+                        self.pie_menu_active = False
+                        self.pie_menu_center = None
+                        self.pie_selection_start = None
+                        self.pie_selected_index = -1
+                        self.pie_menu_cooldown = True  # Require fist release before menu can reopen
+                        return
+            else:
+                self.pie_selected_index = -1
+                self.pie_selection_start = None
+
+            # Draw icons with selection state
+            for i, (ix, iy) in enumerate(positions):
+                item = self.pie_menu_items[i]
+                active = item['get_state']()
+                hover_progress = 0
+
+                if i == self.pie_selected_index and self.pie_selection_start:
+                    selection_duration = current_time - self.pie_selection_start
+                    hover_progress = min(selection_duration / self.pie_selection_duration, 1.0)
+
+                self._draw_pie_icon(ix, iy, item['icon'], active, hover_progress)
+
+                # Draw label (smaller font)
+                label = item['label']
+                font_scale = 0.4
+                thickness = 1
+                (text_w, text_h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)
+                text_x = ix - text_w // 2
+                text_y = iy + self.pie_icon_radius + 14
+                self._draw_text(label, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), thickness)
 
     def norm2abs(self, x_y):
         x = int(x_y[0] * self.tracker.frame_size - self.tracker.pad_w)
@@ -241,41 +582,51 @@ class HandTrackerRenderer:
             self.draw_bag(bag)
         if self.draw_mode or (self.interaction_mode == 'draw'):
             peace_gesture_detected = False
-            index_finger_detected = False
+            pinch_detected = False
             for hand in hands:
-                if hand.gesture == "ONE":
-                    index_finger_detected = True
-                    index_finger_tip = hand.landmarks[8]  # Index finger tip landmark
-                    if self.index_finger_start_time is None:
-                        self.index_finger_start_time = time.time()
-                    elif time.time() - self.index_finger_start_time >= self.index_finger_duration:
+                # Detect pinch gesture (thumb tip close to index finger tip)
+                thumb_tip = hand.landmarks[4]  # Thumb tip landmark
+                index_finger_tip = hand.landmarks[8]  # Index finger tip landmark
+                pinch_distance = np.linalg.norm(np.array(thumb_tip) - np.array(index_finger_tip))
+
+                if pinch_distance < self.pinch_threshold:
+                    pinch_detected = True
+                    # Calculate midpoint between thumb and index finger (pen tip position)
+                    pen_tip = ((thumb_tip[0] + index_finger_tip[0]) // 2,
+                               (thumb_tip[1] + index_finger_tip[1]) // 2)
+
+                    if self.pinch_start_time is None:
+                        self.pinch_start_time = time.time()
+                    elif time.time() - self.pinch_start_time >= self.pinch_duration:
                         if not self.draw_now:
                             self.draw_now = True
-                            self.draw_points.append([index_finger_tip])  # Start a new line
+                            self.draw_points.append([pen_tip])  # Start a new line
                         else:
-                            self.draw_points[-1].append(index_finger_tip)  # Add point to the current line
+                            self.draw_points[-1].append(pen_tip)  # Add point to the current line
+
+                    # Draw visual indicator at pen tip position
                     overlay = frame.copy()
-                    cv2.circle(overlay, tuple(index_finger_tip), 30, self.line_color, -1)
+                    cv2.circle(overlay, pen_tip, 15, self.line_color, -1)
                     cv2.addWeighted(overlay, 0.5, frame, 0.5, 0, frame)
                 elif hand.gesture == "PEACE" and self.draw_points:
                     peace_gesture_detected = True
                 elif hand.gesture == "FOUR" and self.draw_points:
-                    index_finger_tip = hand.landmarks[8]  # Index finger tip landmark
+                    index_tip = hand.landmarks[8]  # Index finger tip landmark
                     pinky_finger_tip = hand.landmarks[20]  # Pinky finger tip landmark
 
                     # Draw a white rectangle from index finger tip to pinky finger tip
-                    cv2.rectangle(frame, tuple(index_finger_tip), tuple(pinky_finger_tip), (255, 255, 255), -1)
-                    eraser_point = index_finger_tip  # Index finger tip landmark
-        
+                    cv2.rectangle(frame, tuple(index_tip), tuple(pinky_finger_tip), (255, 255, 255), -1)
+                    eraser_point = index_tip  # Index finger tip landmark
+
                     # Erase lines within a certain radius of the eraser point
                     erase_radius = 30  # Adjust the radius as needed
                     self.draw_points = [line_points for line_points in self.draw_points if not any(np.linalg.norm(np.array(point) - np.array(eraser_point)) <= erase_radius for point in line_points)]
-        
+
                 if not self.hide_extras:
                     self.draw_hand(hand)
-        
-            if not index_finger_detected:
-                self.index_finger_start_time = None
+
+            if not pinch_detected:
+                self.pinch_start_time = None
                 self.draw_now = False
         
             # Check if the "PEACE" gesture is being held for the specified duration
@@ -558,8 +909,11 @@ class HandTrackerRenderer:
             cv2.circle(overlay, (frame.shape[1] - 60, 30), 10, (0, 255, 255), -1)
             cv2.circle(overlay, (frame.shape[1] - 30, 30), 10, (0, 255, 255), -1)
             cv2.addWeighted(overlay, 0.75, frame, 0.25, 0, frame)
-            
-        # Flip the Frames to stop the mirrored effect (only without virtual_cam)
+
+        # Handle pie menu (fist-activated)
+        self._handle_pie_menu(hands)
+
+        # Flip the frame horizontally for mirror effect (selfie view) - display mode only
         if not self.virtual_cam:
             self.frame = cv2.flip(frame, 1)
         return self.frame
@@ -626,15 +980,18 @@ class HandTrackerRenderer:
     def exit(self):
         if self.output:
             self.output.release()
+        if self.virtual_cam and hasattr(self, 'virtual_cam_output') and self.virtual_cam_output:
+            self.virtual_cam_output.close()
         cv2.destroyAllWindows()
 
     def waitKey(self, delay=1):
         if not self.virtual_cam and not self.hide_extras:
             if self.show_fps:
                     self.tracker.fps.draw(self.frame, orig=(50,50), size=1, color=(240,180,100))
-        if self.virtual_cam:
+        if self.virtual_cam and self.virtual_cam_output:
                 # Send the frame to the virtual camera
                 self.virtual_cam_output.send(cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB))
+                self.virtual_cam_output.sleep_until_next_frame()
         else:
             if self.fullscreen:
                 cv2.namedWindow("Hand tracking", cv2.WINDOW_NORMAL)

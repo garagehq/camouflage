@@ -12,10 +12,11 @@ import marshal
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-PALM_DETECTION_MODEL = str(SCRIPT_DIR / "models/palm_detection_sh4.blob")
-LANDMARK_MODEL_FULL = str(SCRIPT_DIR / "models/hand_landmark_full_sh4.blob")
-LANDMARK_MODEL_LITE = str(SCRIPT_DIR / "models/hand_landmark_lite_sh4.blob")
-LANDMARK_MODEL_SPARSE = str(SCRIPT_DIR / "models/hand_landmark_sparse_sh4.blob")
+# Use 6-shave models where available for better performance on OAK-D
+PALM_DETECTION_MODEL = str(SCRIPT_DIR / "models/palm_detection-2021-02-27_sh6.blob")
+LANDMARK_MODEL_FULL = str(SCRIPT_DIR / "models/hand_landmark_full-2022-11-10_sh6.blob")
+LANDMARK_MODEL_LITE = str(SCRIPT_DIR / "models/hand_landmark_lite-2022-11-12_sh6.blob")
+LANDMARK_MODEL_SPARSE = str(SCRIPT_DIR / "models/hand_landmark_sparse_sh4.blob")  # No sh6 available
 DETECTION_POSTPROCESSING_MODEL = str(SCRIPT_DIR / "custom_models/PDPostProcessing_top2_sh1.blob")
 MOVENET_LIGHTNING_MODEL = str(SCRIPT_DIR / "models/movenet_singlepose_lightning_U8_transpose.blob")
 MOVENET_THUNDER_MODEL = str(SCRIPT_DIR / "models/movenet_singlepose_thunder_U8_transpose.blob")

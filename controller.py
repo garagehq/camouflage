@@ -23,7 +23,7 @@ class Controller:
         self.mode_var = tk.StringVar(value=self.interaction_mode)
         self.file_path_var = tk.StringVar()
         self.hide_var = tk.BooleanVar(value=True)
-        self.virtual_cam_var = tk.BooleanVar(value=False)
+        self.virtual_cam_var = tk.BooleanVar(value=True)
         self.fullscreen_var = tk.BooleanVar(value=False)
         self.use_depthai_var = tk.BooleanVar(value=True)  # Default: use DepthAI hardware
         self.interact_button = None

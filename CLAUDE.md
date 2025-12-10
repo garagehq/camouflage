@@ -273,3 +273,61 @@ For 3D interaction mode (STL/OBJ files), the controller sets `PYOPENGL_PLATFORM=
 - `show`: Show extras, enable FPS
 
 The controller waits up to 5 seconds for demo.py to start the socket server, with 3 retry attempts.
+
+## Virtual Camera Support
+
+The application can output to a virtual camera for use in video conferencing apps (Zoom, Meet, etc.):
+
+### Setup
+- **macOS/Windows:** Install OBS and run it once to register the virtual camera
+- **Linux:** Install v4l2loopback: `sudo modprobe v4l2loopback`
+
+### Usage
+- Enable via `--virtual_cam` flag or "Virtual Camera" checkbox in controller.py
+- Virtual camera appears as "OBS Virtual Camera" in video apps
+- Frame is NOT mirrored in virtual camera mode (text/UI elements are flipped to appear correctly)
+
+### Implementation (`HandTrackerRenderer.py`)
+- Uses `pyvirtualcam` library with OBS backend
+- Converts BGR→RGB before sending frames
+- Uses `sleep_until_next_frame()` for frame pacing
+- Proper cleanup on exit via `virtual_cam_output.close()`
+
+## In-Stream Pie Menu
+
+A fist-activated radial menu allows toggling features without leaving the camera view:
+
+### Usage
+1. Make a fist and hold for 1 second (progress circle appears)
+2. Pie menu appears with options: Draw, Extras (show/hide)
+3. Move fist to an icon and hold 0.5s to activate, OR move past the icon for quick-select
+4. Selected icon shows updated state with fade animation
+5. Release fist to close menu; menu won't reopen until a new fist is made
+
+### Implementation (`HandTrackerRenderer.py`)
+- `_handle_pie_menu()`: Main handler for fist detection and menu logic
+- `_draw_pie_icon()`: Renders individual menu icons
+- `_draw_fading_icon()`: Handles post-selection fade animation
+- `_get_fist_center()`: Calculates palm center using landmarks 0, 5, 9, 17
+- `_draw_text()`: Renders text correctly in both mirrored and non-mirrored modes
+
+## Draw Mode
+
+### Pinch-to-Draw Gesture
+- Pinch thumb and index finger together (distance < 40px threshold)
+- Drawing point is the midpoint between thumb tip (landmark 4) and index tip (landmark 8)
+- Hold pinch for 0.05s before drawing starts
+- PEACE gesture clears all drawn lines (hold 0.5s)
+- FOUR gesture acts as eraser (30px radius)
+
+## Model Optimization
+
+Models are compiled with different SHAVE counts for the Myriad X VPU:
+- **6-shave models** (default): Faster inference, recommended for 2-3 concurrent models
+- **4-shave models**: Lower resource usage, for running many models in parallel
+
+The codebase uses 6-shave models where available:
+- `palm_detection-2021-02-27_sh6.blob`
+- `hand_landmark_full-2022-11-10_sh6.blob`
+- `hand_landmark_lite-2022-11-12_sh6.blob`
+- `hand_landmark_sparse_sh4.blob` (no sh6 version available)
