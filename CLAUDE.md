@@ -41,6 +41,47 @@ pip install -r requirements.txt
 - **With DepthAI hardware:** All features available (depth, spatial location, edge mode)
 - **Without hardware (webcam only):** Use Host mode with `-i 0` flag (no edge mode, no depth features)
 
+### WSL2 USB Setup (Windows)
+
+To use Luxonis/DepthAI cameras in WSL2, you need to forward USB devices from Windows to WSL.
+
+**1. Install usbipd-win on Windows:**
+Download and install from https://github.com/dorssel/usbipd-win/releases
+
+**2. Run the USB attach script (from Windows PowerShell):**
+```bash
+cd camouflage
+python usb_oakd.py
+```
+This script attaches Luxonis devices to WSL and keeps them attached. **Keep it running while using the camera.**
+
+Note: "Persisted" devices in usbipd are just shared (available for attachment) - they don't auto-attach to WSL. The script handles the attach step.
+
+**Optional: Auto-start on Windows login**
+
+To run the script automatically when you log in:
+1. Press `Win+R`, type `shell:startup`, press Enter
+2. Create a shortcut in the folder that opens:
+   - Right-click → New → Shortcut
+   - Location: `pythonw "C:\Users\cyeng\Documents\Projects\ara\camouflage\usb_oakd.py"`
+   - Name: `USB OAK-D Auto-Attach`
+
+Using `pythonw` instead of `python` runs it without a console window.
+
+**3. Set up udev rules in WSL (one-time setup):**
+```bash
+echo 'SUBSYSTEM=="usb", ATTRS{idVendor}=="03e7", MODE="0666"' | sudo tee /etc/udev/rules.d/80-movidius.rules
+sudo udevadm control --reload-rules && sudo udevadm trigger
+```
+
+**4. Verify the device is accessible in WSL:**
+```bash
+lsusb  # Should show "Intel Luxonis Bootloader" or similar
+python -c "import depthai; print(depthai.Device.getAllAvailableDevices())"
+```
+
+**Note:** The `usbipd bind` command requires administrator privileges on Windows. Run PowerShell/Terminal as Administrator when first binding devices.
+
 ## Running the Application
 
 ### Basic Demo Commands
