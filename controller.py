@@ -456,7 +456,7 @@ class Controller:
         while True:
             try:
                 # Cross-platform paths
-                model_path = os.path.join("models", "hand_landmark_lite-2022-11-12_sh4.blob")
+                model_path = os.path.join("models", "hand_landmark_full-2022-11-10_sh6.blob")
 
                 command = [
                     sys.executable,  # Use current Python interpreter (works cross-platform)

@@ -3,7 +3,28 @@ import numpy as np
 import time
 import pyvirtualcam
 import threading
+import json
+import os
 from ModelRender import ModelRender
+from TimerWidget import FloatingTimerWidget
+from CalendarWidget import CalendarWidget
+from WeatherWidget import WeatherWidget
+from NotificationsWidget import NotificationsWidget
+
+from PieMenuWidget import PieMenuWidget, FourGesturePieMenu, GestureState, GESTURE_HOLD_DURATION, TRACKING_GRACE_PERIOD
+
+
+def load_camouflage_config():
+    """Load configuration from ~/.camouflage/config.json"""
+    config_path = os.path.join(os.path.expanduser("~"), ".camouflage", "config.json")
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, 'r') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"Warning: Could not load config from {config_path}: {e}")
+    return None
+
 
 LINES_HAND = [[0,1],[1,2],[2,3],[3,4], 
             [0,5],[5,6],[6,7],[7,8],
@@ -27,7 +48,7 @@ class HandTrackerRenderer:
                     interact_3d=False,
                     interaction_file=None,
                     interaction_mode=None,
-                    hide_extras=False,
+                    hide_extras=True,
                     virtual_cam=False,
                     fullscreen=False):
         self.tracker = tracker
@@ -45,6 +66,13 @@ class HandTrackerRenderer:
         self.current_lighting = self.lighting
         self.virtual_cam = virtual_cam
         self.fullscreen = fullscreen
+
+        # Load mirror_virtual_ui from config (defaults to True for mirrored display compatibility)
+        self.mirror_virtual_ui = True
+        self._config_last_check = 0
+        self._config_check_interval = 1.0  # Check config every 1 second
+        self._reload_config_settings()
+
         if (self.interact_2d or self.interaction_mode == 'interact2D') and self.interaction_file :
             self.image_max = self.interaction_file
             print("Image Max Set", self.image_max)
@@ -66,20 +94,21 @@ class HandTrackerRenderer:
         self.fist_start_time = None
         self.current_model_file = None
         self.current_2D_file = None
-        self.fist_duration = 1  # Duration in seconds to hold the fist gesture
+        self.fist_duration = GESTURE_HOLD_DURATION  # Duration in seconds to hold the fist gesture
         self.draw_mode = draw_mode
         self.draw_now = False
         self.prev_peace_distance = None
         self.draw_points = []
-        self.peace_gesture_start_time = None
-        self.peace_gesture_duration = 0.5
-        self.index_finger_start_time = None
-        self.index_finger_duration = 0.1  # Duration in seconds to hold the index finger before starting to draw
+        self.draw_history = []  # Stack for undo functionality
         self.line_color = (0, 255, 0)  # Green color for drawing
         self.line_thickness = 3  # Line thickness
         self.pinch_threshold = 20  # Distance threshold in pixels for pinch detection
-        self.pinch_start_time = None
-        self.pinch_duration = 0.05  # Duration in seconds to hold pinch before starting to draw
+        self.smoothing_factor = 0.5  # 0-1, higher = smoother but more latent
+
+        # Gesture states with grace period support
+        self.peace_gesture_state = GestureState(hold_duration=GESTURE_HOLD_DURATION)
+        self.pinch_gesture_state = GestureState(hold_duration=0.05)  # Short duration for responsive drawing
+        self.eraser_gesture_state = GestureState(hold_duration=0.0)  # Instant eraser for PEACE gesture
 
         self.model_render = None
         # Rendering flags
@@ -98,29 +127,45 @@ class HandTrackerRenderer:
             self.show_scores = False
 
         self.show_xyz_zone = self.show_xyz = self.tracker.xyz
-        self.show_fps = True
+        self.show_fps = not self.hide_extras
         self.show_body = False # self.tracker.body_pre_focusing is not None
         self.show_inferences_status = False
 
-        # Pie menu system for in-stream controls
-        self.pie_menu_active = False
-        self.pie_menu_center = None
-        self.pie_menu_radius = 65  # Reduced by 1/3
-        self.pie_icon_radius = 23  # Reduced by 1/3
-        self.fist_hold_start = None
-        self.fist_hold_duration = 1.0  # Seconds to hold fist to show menu
-        self.pie_selection_start = None
-        self.pie_selection_duration = 0.5  # Seconds to hold on icon to activate
-        self.pie_selected_index = -1
-        self.pie_menu_cooldown = False  # Prevents menu from reopening until fist is released
-        self.pie_fade_start = None  # When fade animation started
-        self.pie_fade_duration = 0.5  # How long to show selected icon before fading
-        self.pie_fade_index = -1  # Which icon is fading
-        self.pie_fade_position = None  # Where to show the fading icon
-        self.pie_menu_items = [
-            {'id': 'draw', 'label': 'Draw', 'icon': 'pencil', 'action': self._toggle_draw_mode, 'get_state': lambda: self.draw_mode},
-            {'id': 'extras', 'label': 'Extras', 'icon': 'eye', 'action': self._toggle_hide_extras, 'get_state': lambda: not self.hide_extras},
+        # Pie menu system for in-stream controls (uses PieMenuWidget)
+        self.pie_menu_items = None  # Will be set by _build_pie_menu_from_config
+        self.pie_menu = None  # PieMenuWidget instance, created after items are built
+        self.pie_icon_radius = 23  # For backward compatibility
+
+        # Timer widget
+        self.timer_widget = None
+        self.timer_visible = False
+
+        # Calendar widget
+        self.calendar_widget = None
+        self.calendar_visible = False
+
+        # Weather widget
+        self.weather_widget = None
+        self.weather_visible = False
+
+        # Notifications widget
+        self.notifications_widget = None
+        self.notifications_visible = False
+
+        # Avoid Gestures mode - when enabled, all gestures are ignored except dual PEACE to disable
+        self.avoid_gestures_mode = False
+        self.dual_peace_state = GestureState(hold_duration=GESTURE_HOLD_DURATION)
+
+        # Build pie menu from config or use defaults
+        self.pie_menu_items = self._build_pie_menu_from_config()
+        self.pie_menu = PieMenuWidget(self.pie_menu_items, mirrored=self.mirror_virtual_ui)
+
+        # Draw menu (activated by FOUR gesture in draw mode, uses FourGesturePieMenu)
+        self.draw_menu_items = [
+            {'id': 'undo', 'label': 'Undo', 'icon': 'undo', 'action': self._undo_last_line, 'get_state': lambda: bool(self.draw_points)},
+            {'id': 'clear', 'label': 'Clear', 'icon': 'trash', 'action': self._clear_all_drawing, 'get_state': lambda: bool(self.draw_points)},
         ]
+        self.draw_menu = FourGesturePieMenu(self.draw_menu_items, mirrored=self.mirror_virtual_ui)
 
         if output is None:
             self.output = None
@@ -144,6 +189,20 @@ class HandTrackerRenderer:
                 print("On Windows: Install OBS Virtual Camera")
                 self.virtual_cam = False
 
+    def _reload_config_settings(self, force=False):
+        """Reload settings from config file (with time-based caching)."""
+        current_time = time.time()
+        if not force and (current_time - self._config_last_check) < self._config_check_interval:
+            return  # Skip if checked recently
+
+        self._config_last_check = current_time
+        config = load_camouflage_config()
+        old_value = self.mirror_virtual_ui
+        if config and 'general' in config:
+            self.mirror_virtual_ui = config['general'].get('mirror_virtual_ui', True)
+        if old_value != self.mirror_virtual_ui:
+            print(f"mirror_virtual_ui changed: {old_value} -> {self.mirror_virtual_ui}")
+
     def _toggle_draw_mode(self):
         """Toggle draw mode on/off."""
         self.draw_mode = not self.draw_mode
@@ -153,66 +212,268 @@ class HandTrackerRenderer:
             self.interaction_mode = None
         print(f"Draw mode: {'ON' if self.draw_mode else 'OFF'}")
 
-    def _toggle_hide_extras(self):
-        """Toggle hide extras on/off."""
+    def _toggle_nerd_stats(self):
+        """Toggle nerd stats (FPS, landmarks, etc.) on/off."""
         self.hide_extras = not self.hide_extras
         self.show_fps = not self.hide_extras
-        print(f"Extras: {'SHOWN' if not self.hide_extras else 'HIDDEN'}")
+        print(f"Nerd Stats: {'ON' if not self.hide_extras else 'OFF'}")
 
-    def _get_pie_icon_positions(self, center):
-        """Calculate positions for pie menu icons around center."""
-        import math
-        positions = []
-        n = len(self.pie_menu_items)
-        for i in range(n):
-            angle = (2 * math.pi * i / n) - math.pi / 2  # Start from top
-            x = int(center[0] + self.pie_menu_radius * math.cos(angle))
-            y = int(center[1] + self.pie_menu_radius * math.sin(angle))
-            positions.append((x, y))
-        return positions
+    def _undo_last_line(self):
+        """Undo the last drawn line."""
+        if self.draw_points:
+            removed_line = self.draw_points.pop()
+            self.draw_history.append(removed_line)
+            print(f"Undo: removed line with {len(removed_line)} points")
+        else:
+            print("Undo: nothing to undo")
 
-    def _draw_pie_icon(self, cx, cy, icon_type, active, hover_progress=0):
-        """Draw a pie menu icon at position (cx, cy)."""
-        radius = self.pie_icon_radius
+    def _clear_all_drawing(self):
+        """Clear all drawn lines."""
+        if self.draw_points:
+            # Save all lines to history for potential redo
+            self.draw_history.extend(self.draw_points)
+            count = len(self.draw_points)
+            self.draw_points = []
+            print(f"Cleared {count} lines")
+        else:
+            print("Clear: nothing to clear")
 
-        # Background circle
-        bg_color = (80, 180, 80) if active else (60, 60, 60)
-        if hover_progress > 0:
-            highlight = (100, 200, 255)
-            bg_color = tuple(int(bg_color[i] + (highlight[i] - bg_color[i]) * hover_progress) for i in range(3))
+    def _toggle_timer(self):
+        """Toggle timer widget visibility."""
+        self.timer_visible = not self.timer_visible
+        if self.timer_visible and self.timer_widget is None:
+            # Create timer widget: vertically centered, 25% from right side
+            frame_w = getattr(self.tracker, 'img_w', 640)
+            frame_h = getattr(self.tracker, 'img_h', 480)
+            widget_w, widget_h = 200, 100
+            # Position 25% from right edge (which appears on left after mirror flip)
+            pos_x = int(frame_w * 0.75) - widget_w // 2
+            pos_y = (frame_h - widget_h) // 2
+            self.timer_widget = FloatingTimerWidget(
+                position=(pos_x, pos_y),
+                size=(widget_w, widget_h)
+            )
+        print(f"Timer: {'ON' if self.timer_visible else 'OFF'}")
 
-        cv2.circle(self.frame, (cx, cy), radius, bg_color, -1)
-        cv2.circle(self.frame, (cx, cy), radius, (200, 200, 200), 2)
+    def _toggle_avoid_gestures(self):
+        """Toggle avoid gestures mode on/off."""
+        self.avoid_gestures_mode = not self.avoid_gestures_mode
+        print(f"Avoid Gestures: {'ON' if self.avoid_gestures_mode else 'OFF'}")
 
-        # Draw progress arc if hovering
-        if hover_progress > 0:
-            end_angle = int(360 * hover_progress)
-            cv2.ellipse(self.frame, (cx, cy), (radius - 2, radius - 2), -90, 0, end_angle, (0, 255, 255), 3)
+    def _toggle_calendar(self):
+        """Toggle calendar widget visibility."""
+        self.calendar_visible = not self.calendar_visible
+        if self.calendar_visible and self.calendar_widget is None:
+            # Create calendar widget: positioned 25% from left, vertically centered
+            frame_w = getattr(self.tracker, 'img_w', 640)
+            frame_h = getattr(self.tracker, 'img_h', 480)
+            widget_w, widget_h = 280, 180
+            pos_x = int(frame_w * 0.25) - widget_w // 2
+            pos_y = (frame_h - widget_h) // 2
+            self.calendar_widget = CalendarWidget(position=(pos_x, pos_y))
+        if self.calendar_widget:
+            self.calendar_widget.visible = self.calendar_visible
+        print(f"Calendar: {'ON' if self.calendar_visible else 'OFF'}")
 
-        # Draw icon symbol (scaled down by 1/3)
-        icon_color = (255, 255, 255)
+    def _toggle_weather(self):
+        """Toggle weather widget visibility."""
+        self.weather_visible = not self.weather_visible
+        if self.weather_visible and self.weather_widget is None:
+            # Create weather widget: positioned top-right area
+            frame_w = getattr(self.tracker, 'img_w', 640)
+            widget_w, widget_h = 200, 120
+            pos_x = frame_w - widget_w - 20
+            pos_y = 50
+            self.weather_widget = WeatherWidget(position=(pos_x, pos_y))
+        if self.weather_widget:
+            self.weather_widget.visible = self.weather_visible
+        print(f"Weather: {'ON' if self.weather_visible else 'OFF'}")
 
-        if icon_type == 'pencil':
-            cv2.line(self.frame, (cx - 8, cy + 8), (cx + 7, cy - 7), icon_color, 2)
-            cv2.line(self.frame, (cx + 5, cy - 5), (cx + 8, cy - 8), icon_color, 2)
-            cv2.circle(self.frame, (cx - 8, cy + 8), 2, icon_color, -1)
-        elif icon_type == 'eye':
-            cv2.ellipse(self.frame, (cx, cy), (9, 5), 0, 0, 360, icon_color, 2)
-            cv2.circle(self.frame, (cx, cy), 3, icon_color, -1)
-            if not active:
-                cv2.line(self.frame, (cx - 10, cy + 8), (cx + 10, cy - 8), (0, 0, 255), 2)
+    def _toggle_notifications(self):
+        """Toggle notifications widget visibility."""
+        self.notifications_visible = not self.notifications_visible
+        if self.notifications_visible and self.notifications_widget is None:
+            # Create notifications widget: positioned bottom-left area
+            frame_w = getattr(self.tracker, 'img_w', 640)
+            frame_h = getattr(self.tracker, 'img_h', 480)
+            widget_w, widget_h = 280, 160
+            pos_x = 20
+            pos_y = frame_h - widget_h - 50
+            self.notifications_widget = NotificationsWidget(position=(pos_x, pos_y))
+        if self.notifications_widget:
+            self.notifications_widget.visible = self.notifications_visible
+        print(f"Notifications: {'ON' if self.notifications_visible else 'OFF'}")
 
-    def _draw_text(self, text, pos, font=cv2.FONT_HERSHEY_SIMPLEX, scale=0.5, color=(255,255,255), thickness=1):
-        """Draw text that appears correctly in both mirrored and non-mirrored modes."""
-        if self.virtual_cam:
-            # For virtual cam (non-mirrored), flip text so it reads correctly
-            # Create a small image with the text, flip it, then overlay
+    def _check_dual_peace(self, hands, current_time):
+        """Check for dual PEACE gesture (both hands showing PEACE) to disable avoid_gestures mode."""
+        if not self.avoid_gestures_mode:
+            self.dual_peace_state.reset()
+            return False
+
+        # Count PEACE gestures
+        peace_count = sum(1 for hand in hands if hasattr(hand, 'gesture') and hand.gesture == "PEACE")
+        dual_peace = peace_count >= 2
+
+        # Update gesture state with grace period support
+        self.dual_peace_state.update(dual_peace, current_time)
+
+        if self.dual_peace_state.is_complete:
+            self.avoid_gestures_mode = False
+            self.dual_peace_state.reset()
+            print("Avoid Gestures: OFF (dual PEACE detected)")
+            return True
+
+        return False
+
+    def _draw_avoid_gestures_indicator(self, frame, hands, current_time):
+        """Draw visual indicator when avoid_gestures mode is active."""
+        h, w = frame.shape[:2]
+
+        # Draw semi-transparent overlay at top of screen
+        overlay = frame.copy()
+        cv2.rectangle(overlay, (0, 0), (w, 40), (40, 40, 40), -1)
+        cv2.addWeighted(overlay, 0.7, frame, 0.3, 0, frame)
+
+        # Draw text indicator (use _draw_text for proper mirroring)
+        text = "GESTURES PAUSED"
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 0.6
+        thickness = 2
+        (text_w, text_h), _ = cv2.getTextSize(text, font, font_scale, thickness)
+        text_x = (w - text_w) // 2
+        text_y = 28
+        self._draw_text(text, (text_x, text_y), font, font_scale, (100, 100, 255), thickness)
+
+        # Check for dual PEACE progress and show unlock indicator
+        peace_count = sum(1 for hand in hands if hasattr(hand, 'gesture') and hand.gesture == "PEACE")
+
+        if peace_count >= 2:
+            # Show dual PEACE progress indicator
+            progress = self.dual_peace_state.progress
+
+            # Draw progress bar
+            bar_width = 150
+            bar_height = 6
+            bar_x = (w - bar_width) // 2
+            bar_y = 34
+
+            # Background
+            cv2.rectangle(frame, (bar_x, bar_y), (bar_x + bar_width, bar_y + bar_height), (60, 60, 60), -1)
+            # Progress
+            progress_width = int(bar_width * progress)
+            if progress_width > 0:
+                cv2.rectangle(frame, (bar_x, bar_y), (bar_x + progress_width, bar_y + bar_height), (0, 255, 0), -1)
+
+        elif peace_count == 1:
+            # Show hint to use both hands (use _draw_text for proper mirroring)
+            hint = "Use both hands"
+            (hint_w, _), _ = cv2.getTextSize(hint, font, 0.4, 1)
+            hint_x = (w - hint_w) // 2
+            self._draw_text(hint, (hint_x, 38), font, 0.4, (150, 150, 150), 1)
+
+    def _build_pie_menu_from_config(self):
+        """Build pie menu items from config file or use defaults."""
+        # Define available actions
+        action_map = {
+            'draw': {
+                'action': self._toggle_draw_mode,
+                'get_state': lambda: self.draw_mode,
+                'icon': 'pencil',
+                'label': 'Draw'
+            },
+            'nerd_stats': {
+                'action': self._toggle_nerd_stats,
+                'get_state': lambda: not self.hide_extras,
+                'icon': 'eye',
+                'label': 'Nerd Stats'
+            },
+            'timer': {
+                'action': self._toggle_timer,
+                'get_state': lambda: self.timer_visible,
+                'icon': 'clock',
+                'label': 'Timer'
+            },
+            'avoid_gestures': {
+                'action': self._toggle_avoid_gestures,
+                'get_state': lambda: self.avoid_gestures_mode,
+                'icon': 'pause',
+                'label': 'Pause Gestures'
+            },
+            'calendar': {
+                'action': self._toggle_calendar,
+                'get_state': lambda: self.calendar_visible,
+                'icon': 'calendar',
+                'label': 'Calendar'
+            },
+            'weather': {
+                'action': self._toggle_weather,
+                'get_state': lambda: self.weather_visible,
+                'icon': 'cloud',
+                'label': 'Weather'
+            },
+            'notifications': {
+                'action': self._toggle_notifications,
+                'get_state': lambda: self.notifications_visible,
+                'icon': 'bell',
+                'label': 'Notifications'
+            }
+        }
+
+        # Try to load config
+        config = load_camouflage_config()
+        if config and 'pie_menu' in config and 'widgets' in config['pie_menu']:
+            widgets = config['pie_menu']['widgets']
+            # Filter enabled widgets and sort by position
+            enabled_widgets = [w for w in widgets if w.get('enabled', True)]
+            enabled_widgets.sort(key=lambda w: w.get('position', 99))
+
+            menu_items = []
+            for widget in enabled_widgets:
+                widget_id = widget.get('id')
+                if widget_id in action_map:
+                    item = action_map[widget_id]
+                    menu_items.append({
+                        'id': widget_id,
+                        'label': widget.get('label', item['label']),
+                        'icon': widget.get('icon', item['icon']),
+                        'action': item['action'],
+                        'get_state': item['get_state'],
+                        'position': widget.get('position', len(menu_items))  # Include slot position
+                    })
+
+            if menu_items:
+                print(f"Loaded {len(menu_items)} pie menu items from config")
+                return menu_items
+
+        # Default fallback
+        print("Using default pie menu items")
+        return [
+            {'id': 'draw', 'label': 'Draw', 'icon': 'pencil', 'action': self._toggle_draw_mode, 'get_state': lambda: self.draw_mode},
+            {'id': 'nerd_stats', 'label': 'Nerd Stats', 'icon': 'eye', 'action': self._toggle_nerd_stats, 'get_state': lambda: not self.hide_extras},
+        ]
+
+    def _draw_text(self, text, pos, font=cv2.FONT_HERSHEY_SIMPLEX, scale=0.5, color=(255,255,255), thickness=1, mirrored=None):
+        """Draw text that appears correctly based on mirror_virtual_ui setting.
+
+        When mirror_virtual_ui is True, text is pre-flipped so it appears readable
+        after any mirroring (either by our frame flip or by video conferencing apps).
+        """
+        # Pre-flip text when mirror_virtual_ui is enabled (or explicitly requested)
+        should_preflip = mirrored if mirrored is not None else self.mirror_virtual_ui
+
+        # Debug output
+        if not hasattr(self, '_last_debug') or (time.time() - self._last_debug) > 2:
+            self._last_debug = time.time()
+            print(f"[DEBUG] mirror_virtual_ui={self.mirror_virtual_ui}, virtual_cam={self.virtual_cam}, should_preflip={should_preflip}")
+
+        if should_preflip:
+            # Pre-flip text so it reads correctly after frame mirror
             (text_w, text_h), baseline = cv2.getTextSize(text, font, scale, thickness)
             text_img = np.zeros((text_h + baseline + 4, text_w + 4, 3), dtype=np.uint8)
             cv2.putText(text_img, text, (2, text_h + 2), font, scale, color, thickness)
             text_img = cv2.flip(text_img, 1)  # Flip horizontally
 
-            # Position text at the same location (don't flip x coordinate)
+            # Position text at the same location
             x = pos[0]
             y = pos[1] - text_h - 2
 
@@ -226,229 +487,169 @@ class HandTrackerRenderer:
         else:
             cv2.putText(self.frame, text, pos, font, scale, color, thickness)
 
-    def _get_fist_center(self, hand):
-        """Get the center of the fist using middle of palm landmarks."""
-        # Use average of wrist (0), index MCP (5), pinky MCP (17), and middle MCP (9)
-        # This gives a better center of the fist than just the wrist
-        landmarks = hand.landmarks
-        cx = int((landmarks[0][0] + landmarks[5][0] + landmarks[9][0] + landmarks[17][0]) / 4)
-        cy = int((landmarks[0][1] + landmarks[5][1] + landmarks[9][1] + landmarks[17][1]) / 4)
-        return (cx, cy)
-
-    def _draw_fading_icon(self):
-        """Draw the selected icon with fade effect after activation."""
-        if self.pie_fade_start is None or self.pie_fade_index < 0:
-            return
-
-        current_time = time.time()
-        elapsed = current_time - self.pie_fade_start
-
-        if elapsed > self.pie_fade_duration:
-            # Fade complete, reset
-            self.pie_fade_start = None
-            self.pie_fade_index = -1
-            self.pie_fade_position = None
-            return
-
-        # Calculate fade (0 = fully visible, 1 = fully faded)
-        fade_progress = elapsed / self.pie_fade_duration
-        alpha = 1.0 - fade_progress
-
-        item = self.pie_menu_items[self.pie_fade_index]
-        ix, iy = self.pie_fade_position
-        active = item['get_state']()
-
-        # Draw with alpha blending
-        overlay = self.frame.copy()
-
-        # Draw icon on overlay
-        radius = self.pie_icon_radius
-        bg_color = (80, 180, 80) if active else (60, 60, 60)
-        cv2.circle(overlay, (ix, iy), radius, bg_color, -1)
-        cv2.circle(overlay, (ix, iy), radius, (200, 200, 200), 2)
-
-        # Draw icon symbol
-        icon_color = (255, 255, 255)
-        icon_type = item['icon']
-        if icon_type == 'pencil':
-            cv2.line(overlay, (ix - 8, iy + 8), (ix + 7, iy - 7), icon_color, 2)
-            cv2.line(overlay, (ix + 5, iy - 5), (ix + 8, iy - 8), icon_color, 2)
-            cv2.circle(overlay, (ix - 8, iy + 8), 2, icon_color, -1)
-        elif icon_type == 'eye':
-            cv2.ellipse(overlay, (ix, iy), (9, 5), 0, 0, 360, icon_color, 2)
-            cv2.circle(overlay, (ix, iy), 3, icon_color, -1)
-            if not active:
-                cv2.line(overlay, (ix - 10, iy + 8), (ix + 10, iy - 8), (0, 0, 255), 2)
-
-        # Blend with alpha
-        cv2.addWeighted(overlay, alpha, self.frame, 1 - alpha, 0, self.frame)
-
-        # Draw label with fade
-        label = item['label']
-        font_scale = 0.4
-        thickness = 1
-        (text_w, text_h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)
-        text_x = ix - text_w // 2
-        text_y = iy + self.pie_icon_radius + 14
-        faded_color = tuple(int(255 * alpha) for _ in range(3))
-        self._draw_text(label, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, font_scale, faded_color, thickness)
-
     def _handle_pie_menu(self, hands):
-        """Handle fist-activated pie menu."""
-        import math
+        """Handle fist-activated pie menu (delegates to PieMenuWidget)."""
         current_time = time.time()
+        # Sync mirrored state with current config
+        self.pie_menu.mirrored = self.mirror_virtual_ui
+        self.pie_menu.handle(self.frame, hands, current_time, self._draw_text)
 
-        # Draw fading icon if active
-        self._draw_fading_icon()
+    def _handle_draw_menu(self, hands):
+        """Handle FOUR-gesture activated draw menu (delegates to FourGesturePieMenu)."""
+        current_time = time.time()
+        # Sync mirrored state with current config
+        self.draw_menu.mirrored = self.mirror_virtual_ui
+        self.draw_menu.handle(self.frame, hands, current_time, self._draw_text, progress_color=(255, 200, 0))
 
-        fist_hand = None
-        fist_pos = None
+    def _handle_timer_widget(self, frame, hands, current_time):
+        """Handle timer widget interaction and rendering."""
+        if self.timer_widget is None:
+            return
 
-        # Find a fist gesture
+        # Collect gesture info from all hands
+        finger_pos = None
+        is_pinching = False
+        is_ok_gesture = False
+        pinch_positions = []  # For two-hand pinch zoom
+
         for hand in hands:
-            if hasattr(hand, 'gesture') and hand.gesture == "FIST":
-                fist_hand = hand
-                # Use center of palm for fist position
-                fist_pos = self._get_fist_center(hand)
-                break
+            # Get thumb and index finger tips
+            thumb_tip = hand.landmarks[4]
+            index_tip = hand.landmarks[8]
+            pinch_distance = np.linalg.norm(np.array(thumb_tip) - np.array(index_tip))
 
-        if fist_hand is None:
-            # No fist detected - reset
-            if self.pie_menu_active:
-                # Menu was active, now closing
-                self.pie_menu_active = False
-                self.pie_menu_center = None
-            self.fist_hold_start = None
-            self.pie_selection_start = None
-            self.pie_selected_index = -1
-            self.pie_menu_cooldown = False  # Reset cooldown when fist is released
+            # Check for pinch
+            if pinch_distance < self.pinch_threshold:
+                pinch_midpoint = ((thumb_tip[0] + index_tip[0]) // 2,
+                                 (thumb_tip[1] + index_tip[1]) // 2)
+                pinch_positions.append(pinch_midpoint)
+
+                if not is_pinching:
+                    is_pinching = True
+                    finger_pos = pinch_midpoint
+
+            # Check for OK gesture (for corner drag resize)
+            if hasattr(hand, 'gesture') and hand.gesture == "OK":
+                is_ok_gesture = True
+                # For OK gesture, use index finger tip as interaction point
+                finger_pos = (int(index_tip[0]), int(index_tip[1]))
+
+            # Fallback to index finger for hover
+            if finger_pos is None:
+                finger_pos = (int(index_tip[0]), int(index_tip[1]))
+
+        # Determine two-hand pinch positions (only if exactly 2 hands pinching)
+        two_hand_pinch_positions = pinch_positions if len(pinch_positions) == 2 else None
+
+        # Handle widget interaction
+        self.timer_widget.handle_interaction(
+            finger_pos, is_pinching, current_time,
+            is_ok_gesture=is_ok_gesture,
+            two_hand_pinch_positions=two_hand_pinch_positions,
+            mirrored=self.mirror_virtual_ui
+        )
+
+        # Draw the widget (mirrored when mirror_virtual_ui is enabled AND display is mirrored)
+        start_pause_progress = self.timer_widget.start_pause_state.progress
+        reset_progress = self.timer_widget.reset_state.progress
+        should_mirror = self.mirror_virtual_ui
+        self.timer_widget.draw(frame, finger_pos, start_pause_progress, reset_progress,
+                               mirrored=should_mirror)
+
+    def _handle_overlay_widget(self, widget, frame, hands, current_time):
+        """Handle overlay widget interaction and rendering."""
+        if widget is None or not widget.visible:
             return
 
-        # If in cooldown, ignore fist until it's released
-        if self.pie_menu_cooldown:
-            return
+        # Collect gesture info from all hands
+        finger_pos = None
+        is_pinching = False
+        is_ok_gesture = False
+        pinch_positions = []  # For two-hand pinch zoom
 
-        # Fist detected
-        if not self.pie_menu_active:
-            # Menu not yet active - track hold time
-            if self.fist_hold_start is None:
-                self.fist_hold_start = current_time
-                self.pie_menu_center = fist_pos  # Remember where fist started
+        for hand in hands:
+            # Get thumb and index finger tips
+            thumb_tip = hand.landmarks[4]
+            index_tip = hand.landmarks[8]
+            pinch_distance = np.linalg.norm(np.array(thumb_tip) - np.array(index_tip))
 
-            hold_duration = current_time - self.fist_hold_start
-            hold_progress = min(hold_duration / self.fist_hold_duration, 1.0)
+            # Check for pinch
+            if pinch_distance < self.pinch_threshold:
+                pinch_midpoint = ((thumb_tip[0] + index_tip[0]) // 2,
+                                 (thumb_tip[1] + index_tip[1]) // 2)
+                pinch_positions.append(pinch_midpoint)
 
-            # Draw hold progress circle around fist (smaller)
-            cv2.circle(self.frame, fist_pos, 27, (100, 100, 100), 2)
-            if hold_progress > 0:
-                end_angle = int(360 * hold_progress)
-                cv2.ellipse(self.frame, fist_pos, (27, 27), -90, 0, end_angle, (0, 255, 255), 3)
+                if not is_pinching:
+                    is_pinching = True
+                    finger_pos = pinch_midpoint
 
-            if hold_progress >= 1.0:
-                # Activate menu
-                self.pie_menu_active = True
-                self.pie_menu_center = fist_pos
-                print("Pie menu activated")
-        else:
-            # Menu is active - draw it and handle selection
-            center = self.pie_menu_center
-            positions = self._get_pie_icon_positions(center)
+            # Check for OK gesture (for corner drag resize)
+            if hasattr(hand, 'gesture') and hand.gesture == "OK":
+                is_ok_gesture = True
+                finger_pos = (int(index_tip[0]), int(index_tip[1]))
 
-            # Draw center circle (smaller)
-            cv2.circle(self.frame, center, 20, (80, 80, 80), -1)
-            cv2.circle(self.frame, center, 20, (150, 150, 150), 2)
+            # Fallback to index finger for hover
+            if finger_pos is None:
+                finger_pos = (int(index_tip[0]), int(index_tip[1]))
 
-            # Calculate distance from center and angle for quick select
-            dist_from_center = np.sqrt((fist_pos[0] - center[0]) ** 2 + (fist_pos[1] - center[1]) ** 2)
-            angle_from_center = math.atan2(fist_pos[1] - center[1], fist_pos[0] - center[0])
+        # Determine two-hand pinch positions (only if exactly 2 hands pinching)
+        two_hand_pinch_positions = pinch_positions if len(pinch_positions) == 2 else None
 
-            # Draw connecting lines and icons
-            selected_idx = -1
-            quick_select = False
+        # Handle widget interaction
+        widget.handle_interaction(
+            finger_pos, is_pinching, current_time,
+            is_ok_gesture=is_ok_gesture,
+            two_hand_pinch_positions=two_hand_pinch_positions,
+            mirrored=self.mirror_virtual_ui
+        )
 
-            for i, (ix, iy) in enumerate(positions):
-                # Draw line from center to icon
-                cv2.line(self.frame, center, (ix, iy), (100, 100, 100), 2)
+        # Draw the widget
+        should_mirror = self.mirror_virtual_ui
+        widget.draw(frame, mirrored=should_mirror)
 
-                # Check if fist is near this icon (hover)
-                dist_to_icon = np.sqrt((fist_pos[0] - ix) ** 2 + (fist_pos[1] - iy) ** 2)
-                if dist_to_icon < self.pie_icon_radius + 15:
-                    selected_idx = i
+    def _smooth_points(self, points, num_output_points=None):
+        """
+        Smooth a list of points using Catmull-Rom spline interpolation.
+        Returns a smoother curve passing through all original points.
+        """
+        if len(points) < 3:
+            return points
 
-            # Check for quick select (moved past icon in same direction)
-            if selected_idx < 0 and dist_from_center > self.pie_menu_radius + self.pie_icon_radius:
-                # Fist is beyond the icons - check which direction
-                n = len(self.pie_menu_items)
-                for i in range(n):
-                    icon_angle = (2 * math.pi * i / n) - math.pi / 2
-                    # Normalize angles for comparison
-                    angle_diff = abs(((angle_from_center - icon_angle + math.pi) % (2 * math.pi)) - math.pi)
-                    if angle_diff < math.pi / n:  # Within the angular slice for this icon
-                        selected_idx = i
-                        quick_select = True
-                        break
+        points_array = np.array(points, dtype=np.float32)
 
-            # Handle selection timing
-            if selected_idx >= 0:
-                if quick_select:
-                    # Instant activation for quick select
-                    self.pie_menu_items[selected_idx]['action']()
-                    # Start fade animation
-                    self.pie_fade_start = current_time
-                    self.pie_fade_index = selected_idx
-                    self.pie_fade_position = positions[selected_idx]
-                    self.pie_menu_active = False
-                    self.pie_menu_center = None
-                    self.pie_selection_start = None
-                    self.pie_selected_index = -1
-                    self.pie_menu_cooldown = True  # Require fist release before menu can reopen
-                    return
-                elif self.pie_selected_index != selected_idx:
-                    # Changed selection
-                    self.pie_selected_index = selected_idx
-                    self.pie_selection_start = current_time
-                else:
-                    # Same selection - check if held long enough
-                    selection_duration = current_time - self.pie_selection_start
-                    selection_progress = min(selection_duration / self.pie_selection_duration, 1.0)
+        if num_output_points is None:
+            num_output_points = max(len(points) * 3, 10)
 
-                    if selection_progress >= 1.0:
-                        # Activate the item
-                        self.pie_menu_items[selected_idx]['action']()
-                        # Start fade animation
-                        self.pie_fade_start = current_time
-                        self.pie_fade_index = selected_idx
-                        self.pie_fade_position = positions[selected_idx]
-                        self.pie_menu_active = False
-                        self.pie_menu_center = None
-                        self.pie_selection_start = None
-                        self.pie_selected_index = -1
-                        self.pie_menu_cooldown = True  # Require fist release before menu can reopen
-                        return
-            else:
-                self.pie_selected_index = -1
-                self.pie_selection_start = None
+        # Catmull-Rom spline interpolation
+        def catmull_rom(p0, p1, p2, p3, t):
+            """Calculate point on Catmull-Rom spline at parameter t (0-1)."""
+            t2 = t * t
+            t3 = t2 * t
+            return 0.5 * (
+                (2 * p1) +
+                (-p0 + p2) * t +
+                (2*p0 - 5*p1 + 4*p2 - p3) * t2 +
+                (-p0 + 3*p1 - 3*p2 + p3) * t3
+            )
 
-            # Draw icons with selection state
-            for i, (ix, iy) in enumerate(positions):
-                item = self.pie_menu_items[i]
-                active = item['get_state']()
-                hover_progress = 0
+        # Pad the points array for boundary conditions
+        padded = np.vstack([points_array[0], points_array, points_array[-1]])
 
-                if i == self.pie_selected_index and self.pie_selection_start:
-                    selection_duration = current_time - self.pie_selection_start
-                    hover_progress = min(selection_duration / self.pie_selection_duration, 1.0)
+        smoothed = []
+        n_segments = len(padded) - 3
+        points_per_segment = max(1, num_output_points // n_segments)
 
-                self._draw_pie_icon(ix, iy, item['icon'], active, hover_progress)
+        for i in range(n_segments):
+            p0, p1, p2, p3 = padded[i], padded[i+1], padded[i+2], padded[i+3]
+            for j in range(points_per_segment):
+                t = j / points_per_segment
+                point = catmull_rom(p0, p1, p2, p3, t)
+                smoothed.append((int(point[0]), int(point[1])))
 
-                # Draw label (smaller font)
-                label = item['label']
-                font_scale = 0.4
-                thickness = 1
-                (text_w, text_h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)
-                text_x = ix - text_w // 2
-                text_y = iy + self.pie_icon_radius + 14
-                self._draw_text(label, (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), thickness)
+        # Add the last point
+        smoothed.append((int(points_array[-1][0]), int(points_array[-1][1])))
+
+        return smoothed
 
     def norm2abs(self, x_y):
         x = int(x_y[0] * self.tracker.frame_size - self.tracker.pad_w)
@@ -501,15 +702,15 @@ class HandTrackerRenderer:
                             cv2.circle(self.frame, (int(x), int(y)), radius, color, -1)
 
                 if self.show_handedness == 1:
-                    cv2.putText(self.frame, f"{hand.label.upper()} {hand.handedness:.2f}", 
-                            (info_ref_x-90, info_ref_y+40), 
+                    self._draw_text(f"{hand.label.upper()} {hand.handedness:.2f}",
+                            (info_ref_x-90, info_ref_y+40),
                             cv2.FONT_HERSHEY_PLAIN, 2, (0,255,0) if hand.handedness > 0.5 else (0,0,255), 2)
                 if self.show_scores:
-                    cv2.putText(self.frame, f"Landmark score: {hand.lm_score:.2f}", 
-                            (info_ref_x-90, info_ref_y+110), 
+                    self._draw_text(f"Landmark score: {hand.lm_score:.2f}",
+                            (info_ref_x-90, info_ref_y+110),
                             cv2.FONT_HERSHEY_PLAIN, 2, (255,255,0), 2)
                 if self.tracker.use_gesture and self.show_gesture:
-                    cv2.putText(self.frame, hand.gesture, (info_ref_x-20, info_ref_y-50), 
+                    self._draw_text(hand.gesture, (info_ref_x-20, info_ref_y-50),
                             cv2.FONT_HERSHEY_PLAIN, 3, (255,255,255), 3)
 
         if hand.pd_box is not None:
@@ -522,26 +723,26 @@ class HandTrackerRenderer:
                 for i,kp in enumerate(hand.pd_kps):
                     x_y = self.norm2abs(kp)
                     cv2.circle(self.frame, x_y, 6, (0,0,255), -1)
-                    cv2.putText(self.frame, str(i), (x_y[0], x_y[1]+12), cv2.FONT_HERSHEY_PLAIN, 1.5, (0,255,0), 2)
+                    self._draw_text(str(i), (x_y[0], x_y[1]+12), cv2.FONT_HERSHEY_PLAIN, 1.5, (0,255,0), 2)
             if self.show_scores:
                 if self.tracker.use_lm:
                     x, y = info_ref_x - 90, info_ref_y + 80
                 else:
                     x, y = box_tl[0], box_br[1]+60
-                cv2.putText(self.frame, f"Palm score: {hand.pd_score:.2f}", 
-                        (x, y), 
+                self._draw_text(f"Palm score: {hand.pd_score:.2f}",
+                        (x, y),
                         cv2.FONT_HERSHEY_PLAIN, 2, (255,255,0), 2)
         
-        if not self.hide_extras: 
+        if not self.hide_extras:
             if self.show_xyz:
                 if self.tracker.use_lm:
                     x0, y0 = info_ref_x - 40, info_ref_y + 40
                 else:
                     x0, y0 = box_tl[0], box_br[1]+20
                 cv2.rectangle(self.frame, (x0,y0), (x0+100, y0+85), (220,220,240), -1)
-                cv2.putText(self.frame, f"X:{hand.xyz[0]/10:3.0f} cm", (x0+10, y0+20), cv2.FONT_HERSHEY_PLAIN, 1, (20,180,0), 2)
-                cv2.putText(self.frame, f"Y:{hand.xyz[1]/10:3.0f} cm", (x0+10, y0+45), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0), 2)
-                cv2.putText(self.frame, f"Z:{hand.xyz[2]/10:3.0f} cm", (x0+10, y0+70), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,255), 2)
+                self._draw_text(f"X:{hand.xyz[0]/10:3.0f} cm", (x0+10, y0+20), cv2.FONT_HERSHEY_PLAIN, 1, (20,180,0), 2)
+                self._draw_text(f"Y:{hand.xyz[1]/10:3.0f} cm", (x0+10, y0+45), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0), 2)
+                self._draw_text(f"Z:{hand.xyz[2]/10:3.0f} cm", (x0+10, y0+70), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,255), 2)
             if self.show_xyz_zone:
                 # Show zone on which the spatial data were calculated
                 cv2.rectangle(self.frame, tuple(hand.xyz_zone[0:2]), tuple(hand.xyz_zone[2:4]), (180,0,180), 2)
@@ -578,11 +779,60 @@ class HandTrackerRenderer:
 
     def draw(self, frame, hands, bag={}):
         self.frame = frame
+        current_time = time.time()
+
+        # Reload config settings periodically (every 1 second)
+        self._reload_config_settings()
+
         if bag:
             self.draw_bag(bag)
+
+        # Handle dual PEACE gesture to disable avoid_gestures mode
+        dual_peace_detected = self._check_dual_peace(hands, current_time)
+
+        # If avoid_gestures mode is active, skip gesture processing but still render
+        if self.avoid_gestures_mode:
+            # Draw hands for visual feedback
+            for hand in hands:
+                if not self.hide_extras:
+                    self.draw_hand(hand)
+
+            # Draw persistent lines
+            for line_points in self.draw_points:
+                if len(line_points) >= 3:
+                    smoothed = self._smooth_points(line_points)
+                    for i in range(1, len(smoothed)):
+                        cv2.line(frame, smoothed[i-1], smoothed[i], self.line_color, int(self.line_thickness * 1.1))
+                else:
+                    for i in range(1, len(line_points)):
+                        cv2.line(frame, tuple(line_points[i-1]), tuple(line_points[i]), self.line_color, int(self.line_thickness * 1.1))
+
+            # Draw "Avoid Gestures" indicator
+            self._draw_avoid_gestures_indicator(frame, hands, current_time)
+
+            # Handle timer widget if visible (timer should keep running)
+            if self.timer_visible and self.timer_widget is not None:
+                self._handle_timer_widget(frame, [], current_time)  # Pass empty hands to prevent interaction
+
+            # Handle overlay widgets (display only, no interaction in avoid gestures mode)
+            should_mirror = self.mirror_virtual_ui
+            if self.calendar_visible and self.calendar_widget is not None:
+                self.calendar_widget.draw(frame, mirrored=should_mirror)
+            if self.weather_visible and self.weather_widget is not None:
+                self.weather_widget.draw(frame, mirrored=should_mirror)
+            if self.notifications_visible and self.notifications_widget is not None:
+                self.notifications_widget.draw(frame, mirrored=should_mirror)
+
+            # Flip the frame horizontally for mirror effect (selfie view) - display mode only
+            if not self.virtual_cam:
+                self.frame = cv2.flip(frame, 1)
+            return self.frame
+
         if self.draw_mode or (self.interaction_mode == 'draw'):
-            peace_gesture_detected = False
             pinch_detected = False
+            pen_tip = None
+            eraser_active = False
+            eraser_box = None
             for hand in hands:
                 # Detect pinch gesture (thumb tip close to index finger tip)
                 thumb_tip = hand.landmarks[4]  # Thumb tip landmark
@@ -595,54 +845,84 @@ class HandTrackerRenderer:
                     pen_tip = ((thumb_tip[0] + index_finger_tip[0]) // 2,
                                (thumb_tip[1] + index_finger_tip[1]) // 2)
 
-                    if self.pinch_start_time is None:
-                        self.pinch_start_time = time.time()
-                    elif time.time() - self.pinch_start_time >= self.pinch_duration:
-                        if not self.draw_now:
-                            self.draw_now = True
-                            self.draw_points.append([pen_tip])  # Start a new line
-                        else:
-                            self.draw_points[-1].append(pen_tip)  # Add point to the current line
-
                     # Draw visual indicator at pen tip position
                     overlay = frame.copy()
                     cv2.circle(overlay, pen_tip, 15, self.line_color, -1)
                     cv2.addWeighted(overlay, 0.5, frame, 0.5, 0, frame)
                 elif hand.gesture == "PEACE" and self.draw_points:
-                    peace_gesture_detected = True
-                elif hand.gesture == "FOUR" and self.draw_points:
-                    index_tip = hand.landmarks[8]  # Index finger tip landmark
-                    pinky_finger_tip = hand.landmarks[20]  # Pinky finger tip landmark
+                    # PEACE gesture is now the eraser
+                    eraser_active = True
+                    index_tip = hand.landmarks[8]  # Index finger tip
+                    middle_tip = hand.landmarks[12]  # Middle finger tip
 
-                    # Draw a white rectangle from index finger tip to pinky finger tip
-                    cv2.rectangle(frame, tuple(index_tip), tuple(pinky_finger_tip), (255, 255, 255), -1)
-                    eraser_point = index_tip  # Index finger tip landmark
+                    # Calculate eraser box size based on distance between fingertips
+                    finger_distance = int(np.linalg.norm(np.array(index_tip) - np.array(middle_tip)))
+                    eraser_size = max(finger_distance, 20)  # Minimum size of 20px
 
-                    # Erase lines within a certain radius of the eraser point
-                    erase_radius = 30  # Adjust the radius as needed
-                    self.draw_points = [line_points for line_points in self.draw_points if not any(np.linalg.norm(np.array(point) - np.array(eraser_point)) <= erase_radius for point in line_points)]
+                    # Calculate center point between the two fingertips
+                    eraser_center_x = (index_tip[0] + middle_tip[0]) // 2
+                    eraser_center_y = (index_tip[1] + middle_tip[1]) // 2
+
+                    # Define square eraser box
+                    half_size = eraser_size // 2
+                    box_x1 = eraser_center_x - half_size
+                    box_y1 = eraser_center_y - half_size
+                    box_x2 = eraser_center_x + half_size
+                    box_y2 = eraser_center_y + half_size
+                    eraser_box = (box_x1, box_y1, box_x2, box_y2)
+
+                    # Draw the white eraser square
+                    cv2.rectangle(frame, (box_x1, box_y1), (box_x2, box_y2), (255, 255, 255), -1)
+
+                    # Erase individual points that fall within the eraser box
+                    new_draw_points = []
+                    for line_points in self.draw_points:
+                        # Filter out points that are inside the eraser box
+                        filtered_points = [
+                            point for point in line_points
+                            if not (box_x1 <= point[0] <= box_x2 and box_y1 <= point[1] <= box_y2)
+                        ]
+
+                        # Split the line into segments where points were removed
+                        if filtered_points:
+                            # Check for gaps in the original line and split accordingly
+                            current_segment = []
+                            original_indices = [i for i, p in enumerate(line_points)
+                                              if not (box_x1 <= p[0] <= box_x2 and box_y1 <= p[1] <= box_y2)]
+
+                            for i, idx in enumerate(original_indices):
+                                if i == 0 or idx == original_indices[i-1] + 1:
+                                    current_segment.append(line_points[idx])
+                                else:
+                                    # Gap detected, save current segment and start new one
+                                    if len(current_segment) >= 2:
+                                        new_draw_points.append(current_segment)
+                                    current_segment = [line_points[idx]]
+
+                            # Save the last segment
+                            if len(current_segment) >= 2:
+                                new_draw_points.append(current_segment)
+
+                    self.draw_points = new_draw_points
 
                 if not self.hide_extras:
                     self.draw_hand(hand)
 
-            if not pinch_detected:
-                self.pinch_start_time = None
+            # Handle draw menu (FOUR gesture for undo/clear)
+            self._handle_draw_menu(hands)
+
+            # Update pinch gesture state with grace period support
+            self.pinch_gesture_state.update(pinch_detected, current_time)
+
+            if self.pinch_gesture_state.is_active and self.pinch_gesture_state.is_complete and pen_tip:
+                if not self.draw_now:
+                    self.draw_now = True
+                    self.draw_points.append([pen_tip])  # Start a new line
+                else:
+                    self.draw_points[-1].append(pen_tip)  # Add point to the current line
+            elif not self.pinch_gesture_state.is_active:
                 self.draw_now = False
-        
-            # Check if the "PEACE" gesture is being held for the specified duration
-            if peace_gesture_detected:
-                if self.peace_gesture_start_time is None:
-                    self.peace_gesture_start_time = time.time()
-                elif time.time() - self.peace_gesture_start_time >= self.peace_gesture_duration:
-                    self.draw_points = []  # Clear the drawn lines
-                    self.peace_gesture_start_time = None
-            else:
-                self.peace_gesture_start_time = None
-        
-            # Draw the persistent lines
-            for line_points in self.draw_points:
-                for i in range(1, len(line_points)):
-                    cv2.line(frame, tuple(line_points[i-1]), tuple(line_points[i]), self.line_color, int(self.line_thickness * 1.1))
+
         elif self.interact_2d or (self.interaction_mode == 'interact2D'):
             fist_detected = False
             palm_detected = False
@@ -900,18 +1180,44 @@ class HandTrackerRenderer:
                 if not self.hide_extras:
                     self.draw_hand(hand)
         
-        if len(hands) == 1:
-            overlay = frame.copy()
-            cv2.circle(overlay, (frame.shape[1] - 30, 30), 10, (0, 255, 255), -1)
-            cv2.addWeighted(overlay, 0.75, frame, 0.25, 0, frame)
-        elif len(hands) == 2:
-            overlay = frame.copy()
-            cv2.circle(overlay, (frame.shape[1] - 60, 30), 10, (0, 255, 255), -1)
-            cv2.circle(overlay, (frame.shape[1] - 30, 30), 10, (0, 255, 255), -1)
-            cv2.addWeighted(overlay, 0.75, frame, 0.25, 0, frame)
+        # Show hand detection indicator dots only when nerd stats are enabled
+        if not self.hide_extras:
+            if len(hands) == 1:
+                overlay = frame.copy()
+                cv2.circle(overlay, (frame.shape[1] - 30, 30), 10, (0, 255, 255), -1)
+                cv2.addWeighted(overlay, 0.75, frame, 0.25, 0, frame)
+            elif len(hands) == 2:
+                overlay = frame.copy()
+                cv2.circle(overlay, (frame.shape[1] - 60, 30), 10, (0, 255, 255), -1)
+                cv2.circle(overlay, (frame.shape[1] - 30, 30), 10, (0, 255, 255), -1)
+                cv2.addWeighted(overlay, 0.75, frame, 0.25, 0, frame)
 
         # Handle pie menu (fist-activated)
         self._handle_pie_menu(hands)
+
+        # Handle timer widget if visible
+        if self.timer_visible and self.timer_widget is not None:
+            self._handle_timer_widget(frame, hands, current_time)
+
+        # Handle overlay widgets (with interaction)
+        if self.calendar_visible and self.calendar_widget is not None:
+            self._handle_overlay_widget(self.calendar_widget, frame, hands, current_time)
+        if self.weather_visible and self.weather_widget is not None:
+            self._handle_overlay_widget(self.weather_widget, frame, hands, current_time)
+        if self.notifications_visible and self.notifications_widget is not None:
+            self._handle_overlay_widget(self.notifications_widget, frame, hands, current_time)
+
+        # Draw persistent lines (visible regardless of draw mode)
+        for line_points in self.draw_points:
+            if len(line_points) >= 3:
+                # Apply Catmull-Rom spline smoothing for smoother curves
+                smoothed = self._smooth_points(line_points)
+                for i in range(1, len(smoothed)):
+                    cv2.line(frame, smoothed[i-1], smoothed[i], self.line_color, int(self.line_thickness * 1.1))
+            else:
+                # Not enough points for smoothing, draw directly
+                for i in range(1, len(line_points)):
+                    cv2.line(frame, tuple(line_points[i-1]), tuple(line_points[i]), self.line_color, int(self.line_thickness * 1.1))
 
         # Flip the frame horizontally for mirror effect (selfie view) - display mode only
         if not self.virtual_cam:
@@ -987,7 +1293,8 @@ class HandTrackerRenderer:
     def waitKey(self, delay=1):
         if not self.virtual_cam and not self.hide_extras:
             if self.show_fps:
-                    self.tracker.fps.draw(self.frame, orig=(50,50), size=1, color=(240,180,100))
+                fps_text = f"FPS={self.tracker.fps.get():.2f}"
+                self._draw_text(fps_text, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (240, 180, 100), 2)
         if self.virtual_cam and self.virtual_cam_output:
                 # Send the frame to the virtual camera
                 self.virtual_cam_output.send(cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB))

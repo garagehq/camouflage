@@ -2,6 +2,7 @@ opencv-python >= 4.5.1.48
 depthai<3.0,>=2.13  # Pin to v2.x - code needs updating for v3 API changes
 numpy~=1.24.3
 tensorflow~=2.13.0
+Pillow>=9.0.0  # For modern UI rendering
 blobconverter
 pyvirtualcam # on Linux, you have to manually install this from source git clone https://github.com/letmaik/pyvirtualcam.git && cd pyvirtualcam && python3 -m pip install .
 pyrender

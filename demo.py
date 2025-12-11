@@ -91,7 +91,13 @@ def receive_messages(sock):
                     x, y, z = map(float, lighting_values)
                     renderer.lighting = (x, y, z)
                     print("Lighting", renderer.lighting)
-                
+            elif data == "timer":
+                print("Received timer toggle")
+                renderer._toggle_timer()
+            elif data == "avoid_gestures":
+                print("Received avoid gestures toggle")
+                renderer._toggle_avoid_gestures()
+
         except socket.error as e:
             print(f"Socket error: {e}")
             break 
@@ -138,7 +144,7 @@ parser_renderer = parser.add_argument_group("Renderer arguments")
 parser_renderer.add_argument('-o', '--output', 
                     help="Path to output video file")
 parser_renderer.add_argument('-d', '--draw', action="store_true", help="Enable drawing with index finger")
-parser_renderer.add_argument('-sh', '--hide', action="store_true", help="Hide XYZ coordinates, hand skeletons, and gesture recognition text")
+parser_renderer.add_argument('-sh', '--hide', action="store_false", help="Hide XYZ coordinates, hand skeletons, and gesture recognition text")
 parser_renderer.add_argument(
     '--interact2D', action="store_true", help="Enable 2D object interaction")
 parser_renderer.add_argument(
